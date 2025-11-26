@@ -1,0 +1,253 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id // ITS Number will be the ID
+  itsNumber    String   @unique // Kept for backward compatibility/clarity, will match ID
+  name         String
+  email        String?
+  phone        String?
+  role         Role     @default(MUMIN)
+  password     String
+  profileImage String?
+  qrCode       String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  enrollments    Enrollment[]
+  attendances    Attendance[]
+  questions      Question[]
+  votes          QuestionVote[]
+  assignedSabaqs SabaqAdmin[]
+  managedSabaqs  Sabaq[]        @relation("SabaqJanab")
+  SecurityLog    SecurityLog[]
+
+  @@index([role])
+  @@index([itsNumber])
+}
+
+model Location {
+  id           String   @id // Slugified name
+  name         String
+  address      String
+  latitude     Decimal  @db.Decimal(10, 8)
+  longitude    Decimal  @db.Decimal(11, 8)
+  radiusMeters Int      @default(100)
+  isActive     Boolean  @default(true)
+  createdBy    String
+  createdAt    DateTime @default(now())
+
+  sabaqs Sabaq[]
+
+  @@index([isActive])
+}
+
+model Sabaq {
+  id                      String   @id // Slugified name
+  name                    String
+  kitaab                  String
+  level                   String
+  description             String?
+  criteria                String
+  enrollmentStartsAt      DateTime
+  enrollmentEndsAt        DateTime
+  allowLocationAttendance Boolean  @default(false)
+  locationId              String?
+  janabId                 String?
+  isActive                Boolean  @default(true)
+  createdBy               String
+  createdAt               DateTime @default(now())
+
+  location    Location?    @relation(fields: [locationId], references: [id])
+  janab       User?        @relation("SabaqJanab", fields: [janabId], references: [id])
+  admins      SabaqAdmin[]
+  enrollments Enrollment[]
+  sessions    Session[]
+
+  @@index([isActive])
+  @@index([enrollmentStartsAt, enrollmentEndsAt])
+  @@index([janabId])
+}
+
+model SabaqAdmin {
+  id         String   @id @default(cuid())
+  sabaqId    String
+  userId     String
+  assignedAt DateTime @default(now())
+
+  sabaq Sabaq @relation(fields: [sabaqId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([sabaqId, userId])
+  @@index([sabaqId])
+}
+
+model Enrollment {
+  id              String           @id @default(cuid()) // Keep CUID for internal use, composite key is unique
+  sabaqId         String
+  userId          String
+  status          EnrollmentStatus @default(PENDING)
+  requestedAt     DateTime         @default(now())
+  approvedAt      DateTime?
+  approvedBy      String?
+  rejectedAt      DateTime?
+  rejectedBy      String?
+  rejectionReason String?
+
+  sabaq Sabaq @relation(fields: [sabaqId], references: [id])
+  user  User  @relation(fields: [userId], references: [id])
+
+  @@unique([sabaqId, userId])
+  @@index([sabaqId])
+  @@index([userId])
+  @@index([status])
+  @@index([sabaqId, status])
+}
+
+model Session {
+  id          String    @id @default(cuid()) // Keep CUID for simplicity in URLs, meaningful ID is hard for sessions
+  sabaqId     String
+  scheduledAt DateTime
+  cutoffTime  DateTime
+  startedAt   DateTime?
+  endedAt     DateTime?
+  isActive    Boolean   @default(false)
+  isSynced    Boolean   @default(false)
+  createdBy   String
+  createdAt   DateTime  @default(now())
+
+  sabaq       Sabaq        @relation(fields: [sabaqId], references: [id])
+  attendances Attendance[]
+  questions   Question[]
+
+  @@index([sabaqId])
+  @@index([isActive])
+  @@index([scheduledAt])
+  @@index([startedAt])
+  @@index([endedAt])
+}
+
+model Attendance {
+  id             String           @id @default(cuid())
+  sessionId      String
+  userId         String
+  itsNumber      String
+  markedAt       DateTime         @default(now())
+  markedBy       String
+  method         AttendanceMethod
+  latitude       Decimal?         @db.Decimal(10, 8)
+  longitude      Decimal?         @db.Decimal(11, 8)
+  distanceMeters Int?
+  isLate         Boolean          @default(false)
+  minutesLate    Int              @default(0)
+  isVerified     Boolean          @default(false)
+
+  session Session @relation(fields: [sessionId], references: [id])
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([userId])
+  @@index([markedAt])
+  @@index([isLate])
+}
+
+model Question {
+  id         String    @id @default(cuid())
+  sessionId  String
+  sabaqId    String
+  userId     String
+  question   String    @db.Text
+  upvotes    Int       @default(0)
+  isAnswered Boolean   @default(false)
+  answer     String?   @db.Text
+  answeredBy String?
+  answeredAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  session Session        @relation(fields: [sessionId], references: [id])
+  user    User           @relation(fields: [userId], references: [id])
+  votes   QuestionVote[]
+
+  @@index([sessionId])
+  @@index([userId])
+  @@index([sessionId, upvotes])
+}
+
+model QuestionVote {
+  id         String   @id @default(cuid())
+  questionId String
+  userId     String
+  createdAt  DateTime @default(now())
+
+  question Question @relation(fields: [questionId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([questionId, userId])
+  @@index([questionId])
+  @@index([userId])
+}
+
+model EmailLog {
+  id        String      @id @default(cuid())
+  to        String
+  subject   String
+  template  String
+  status    EmailStatus @default(PENDING)
+  error     String?
+  sentAt    DateTime?
+  createdAt DateTime    @default(now())
+
+  @@index([status])
+}
+
+enum Role {
+  SUPERADMIN
+  ADMIN
+  MANAGER
+  ATTENDANCE_INCHARGE
+  JANAB
+  MUMIN
+}
+
+enum EnrollmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AttendanceMethod {
+  QR_SCAN
+  MANUAL_ENTRY
+  LOCATION_BASED_SELF
+}
+
+enum EmailStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+model SecurityLog {
+  id        String   @id @default(cuid())
+  userId    String
+  action    String
+  resource  String
+  details   Json?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
+}

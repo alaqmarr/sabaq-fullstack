@@ -1,0 +1,54 @@
+import { auth } from '@/auth';
+import { redirect } from 'next/navigation';
+import { Suspense } from 'react';
+import { ActiveSessionsSection } from '@/components/dashboard/active-sessions';
+import { UpcomingSessionsSection } from '@/components/dashboard/upcoming-sessions';
+import { ActiveSessionsSkeleton, UpcomingSessionsSkeleton } from '@/components/dashboard/skeletons';
+import { AdminQuickActions } from '@/components/dashboard/admin-quick-actions';
+
+export const metadata = {
+    title: "Admin Dashboard",
+};
+
+export default async function DashboardPage() {
+    const session = await auth();
+
+    if (!session?.user) {
+        redirect('/login');
+    }
+
+    const role = session.user.role;
+    const isAdminOrManager = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(role);
+
+    if (!isAdminOrManager) {
+        redirect('/');
+    }
+
+    return (
+        <div className="space-y-6 sm:space-y-8">
+            {/* Page Header */}
+            <div>
+                <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+                    Dashboard
+                </h1>
+                <p className="text-muted-foreground mt-2">Welcome back, {session.user.name}</p>
+            </div>
+
+            {/* SESSION CARDS AT THE VERY TOP - Priority #1 */}
+            <div className="space-y-6">
+                {/* Active Sessions - Highest Priority */}
+                <Suspense fallback={<ActiveSessionsSkeleton />}>
+                    <ActiveSessionsSection />
+                </Suspense>
+
+                {/* Upcoming Sessions - Second Priority */}
+                <Suspense fallback={<UpcomingSessionsSkeleton />}>
+                    <UpcomingSessionsSection />
+                </Suspense>
+            </div>
+
+            {/* Quick Actions - Last */}
+            <AdminQuickActions />
+        </div>
+    );
+}

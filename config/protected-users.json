@@ -1,0 +1,7 @@
+{
+  "protectedUsers": [
+    "12345678",
+    "30800976"
+  ],
+  "description": "ITS Numbers listed here are protected from role modifications by anyone, including SuperAdmins. Add ITS numbers to this array to protect system-critical accounts."
+}

@@ -1,0 +1,76 @@
+{
+  "roles": {
+    "SUPERADMIN": {
+      "users": ["create", "read", "update", "delete", "manage_roles"],
+      "locations": ["create", "read", "update", "delete"],
+      "sabaqs": ["create", "read", "update", "delete", "assign_admin"],
+      "sessions": ["create", "read", "update", "delete", "start", "end"],
+      "attendance": ["create", "read", "update", "delete", "verify"],
+      "enrollments": ["read", "approve", "reject", "bulk_enroll"],
+      "questions": ["read", "delete", "answer"],
+      "analytics": ["read", "export"],
+      "emails": ["read", "send"],
+      "scan": ["read"]
+    },
+    "ADMIN": {
+      "users": [],
+      "locations": [],
+      "sabaqs": ["read", "update"],
+      "sessions": ["create", "read", "update", "delete", "start", "end"],
+      "attendance": ["create", "read", "update", "verify"],
+      "enrollments": ["read", "approve", "reject", "bulk_enroll"],
+      "questions": ["read", "answer"],
+      "analytics": ["read", "export"],
+      "emails": ["read", "send"],
+      "scan": ["read"]
+    },
+    "MANAGER": {
+      "users": [],
+      "locations": [],
+      "sabaqs": ["read"],
+      "sessions": ["read"],
+      "attendance": ["read"],
+      "enrollments": ["read"],
+      "questions": ["read"],
+      "analytics": ["read", "export"],
+      "emails": [],
+      "scan": []
+    },
+    "ATTENDANCE_INCHARGE": {
+      "users": [],
+      "locations": [],
+      "sabaqs": ["read"],
+      "sessions": ["read"],
+      "attendance": ["create", "read", "verify"],
+      "enrollments": [],
+      "questions": [],
+      "analytics": [],
+      "emails": [],
+      "scan": ["read"]
+    },
+    "JANAB": {
+      "users": [],
+      "locations": [],
+      "sabaqs": ["read", "update"],
+      "sessions": ["read"],
+      "attendance": ["read"],
+      "enrollments": ["read"],
+      "questions": ["read"],
+      "analytics": ["read", "export"],
+      "emails": [],
+      "scan": []
+    },
+    "MUMIN": {
+      "users": [],
+      "locations": [],
+      "sabaqs": ["read"],
+      "sessions": ["read"],
+      "attendance": ["read_self", "mark_self"],
+      "enrollments": ["create", "read_self"],
+      "questions": ["create", "read", "upvote"],
+      "analytics": [],
+      "emails": [],
+      "scan": []
+    }
+  }
+}
