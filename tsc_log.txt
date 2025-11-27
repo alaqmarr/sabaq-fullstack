@@ -1,0 +1,2 @@
+components/dashboard/admin-dashboard.tsx(23,32): error TS2322: Type '{ role: any; }' is not assignable to type 'IntrinsicAttributes'.
+  Property 'role' does not exist on type 'IntrinsicAttributes'.

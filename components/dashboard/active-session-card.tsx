@@ -39,14 +39,15 @@ export function ActiveSessionCard({ session, userRole, isAttended }: ActiveSessi
     const attendanceCount = session._count?.attendance || 0;
 
     return (
-        <Card className="glass lift-lg session-card-active">
-            <CardHeader className="pb-3">
+        <Card className="glass lift-lg session-card-active relative overflow-hidden">
+            <Link href={`/dashboard/sessions/${session.id}`} className="absolute inset-0 z-0" />
+            <CardHeader className="pb-3 relative z-10 pointer-events-none">
                 <div className="flex items-start justify-between gap-2">
-                    <CardTitle className="text-base sm:text-lg line-clamp-2 flex-1">{session.sabaq.name}</CardTitle>
+                    <CardTitle className="text-base sm:text-lg line-clamp-2 flex-1 pointer-events-auto">{session.sabaq.name}</CardTitle>
                     <Badge variant="default" className="shrink-0 animate-pulse">Live</Badge>
                 </div>
             </CardHeader>
-            <CardContent className="space-y-3 sm:space-y-4">
+            <CardContent className="space-y-3 sm:space-y-4 relative z-10 pointer-events-none">
                 <div className="space-y-2 text-xs sm:text-sm text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
@@ -72,7 +73,7 @@ export function ActiveSessionCard({ session, userRole, isAttended }: ActiveSessi
                     )}
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 pointer-events-auto">
                     {canEndSession && (
                         <Button size="sm" variant="destructive" onClick={handleEndSession} disabled={loading} className="gap-2 flex-1">
                             <Square className="h-3.5 w-3.5" />
@@ -80,21 +81,22 @@ export function ActiveSessionCard({ session, userRole, isAttended }: ActiveSessi
                         </Button>
                     )}
 
+                    {canScan && (
+                        <Button size="sm" variant="outline" asChild className="gap-2">
+                            <Link href={`/dashboard/scan?sessionId=${session.id}`}>
+                                <QrCode className="h-3.5 w-3.5" />
+                                QR Scan
+                            </Link>
+                        </Button>
+                    )}
+
                     {!isAttended && canScan && (
-                        <>
-                            <Button size="sm" variant="outline" asChild className="gap-2">
-                                <Link href="/dashboard/scan">
-                                    <QrCode className="h-3.5 w-3.5" />
-                                    QR Scan
-                                </Link>
-                            </Button>
-                            <Button size="sm" variant="outline" asChild className="gap-2">
-                                <Link href={`/dashboard/sessions/${session.id}/attendance`}>
-                                    <UserPlus className="h-3.5 w-3.5" />
-                                    Manual
-                                </Link>
-                            </Button>
-                        </>
+                        <Button size="sm" variant="outline" asChild className="gap-2">
+                            <Link href={`/dashboard/sessions/${session.id}/attendance`}>
+                                <UserPlus className="h-3.5 w-3.5" />
+                                Manual
+                            </Link>
+                        </Button>
                     )}
 
                     {isAttended && (

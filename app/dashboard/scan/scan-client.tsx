@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { QRScanner } from '@/components/attendance/qr-scanner';
 import { markAttendanceManual } from '@/actions/attendance';
 import { getActiveSessions } from '@/actions/sessions';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { playSuccessSound, playErrorSound } from '@/lib/sounds';
 import { Loader2 } from 'lucide-react';
 
 export default function ScanClient() {
@@ -15,26 +17,32 @@ export default function ScanClient() {
     const [selectedSessionId, setSelectedSessionId] = useState<string>('');
     const [loading, setLoading] = useState(true);
 
+    const searchParams = useSearchParams();
+    const initialSessionId = searchParams.get('sessionId');
+
     useEffect(() => {
         const loadSessions = async () => {
             const res = await getActiveSessions();
             if (res.success && res.sessions) {
                 setSessions(res.sessions);
-                if (res.sessions.length > 0) {
+                if (initialSessionId && res.sessions.some(s => s.id === initialSessionId)) {
+                    setSelectedSessionId(initialSessionId);
+                } else if (res.sessions.length > 0) {
                     setSelectedSessionId(res.sessions[0].id);
                 }
             }
             setLoading(false);
         };
         loadSessions();
-    }, []);
+    }, [initialSessionId]);
 
     const handleScan = async (decodedText: string) => {
         if (processing || !selectedSessionId) return;
 
         // Basic validation: ITS number should be 8 digits
         if (!/^\d{8}$/.test(decodedText)) {
-            toast.error('Invalid QR Code: Not a valid ITS number');
+            playErrorSound();
+            toast.error('Invalid QR Code/Barcode: Not a valid 8-digit ITS number');
             return;
         }
 
@@ -45,18 +53,21 @@ export default function ScanClient() {
             const result = await markAttendanceManual(selectedSessionId, decodedText);
 
             if (result.success) {
+                playSuccessSound();
                 toast.success(`✅ Attendance marked successfully for ITS ${decodedText}`, {
                     duration: 3000,
                 });
                 // Add a small delay before next scan to prevent double scanning
                 setTimeout(() => setProcessing(false), 2000);
             } else {
+                playErrorSound();
                 toast.error(`❌ ${result.error || 'Failed to mark attendance'}`, {
                     duration: 4000,
                 });
                 setTimeout(() => setProcessing(false), 2000);
             }
         } catch (error) {
+            playErrorSound();
             toast.error('❌ Something went wrong. Please try again.', {
                 duration: 4000,
             });
@@ -91,9 +102,9 @@ export default function ScanClient() {
         <div className="container max-w-md mx-auto py-8 space-y-6">
             <Card>
                 <CardHeader>
-                    <CardTitle className="text-center">Scan User QR</CardTitle>
+                    <CardTitle className="text-center">Scan QR Code or Barcode</CardTitle>
                     <CardDescription className="text-center">
-                        Select a session and scan user ID cards
+                        Select a session and scan user ID cards (QR codes or barcodes)
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

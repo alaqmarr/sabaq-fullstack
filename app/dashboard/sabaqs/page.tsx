@@ -2,6 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getSabaqs } from '@/actions/sabaqs';
 import { getLocations } from '@/actions/locations';
+import { getUsers } from '@/actions/users';
 import { SabaqGrid } from '@/components/sabaqs/sabaq-grid';
 import { SabaqTable } from '@/components/sabaqs/sabaq-table';
 import { SabaqHeader } from '@/components/sabaqs/sabaq-header';
@@ -27,13 +28,18 @@ export default async function SabaqsPage({ searchParams }: { searchParams: Promi
     const { action, view } = await searchParams;
     const currentView = view === 'table' ? 'table' : 'grid';
 
-    const [sabaqsRes, locationsRes] = await Promise.all([
+    const [sabaqsRes, locationsRes, usersRes] = await Promise.all([
         getSabaqs(),
-        getLocations()
+        getLocations(),
+        getUsers()
     ]);
 
     const sabaqs = sabaqsRes.success && sabaqsRes.sabaqs ? sabaqsRes.sabaqs : [];
     const locations = locationsRes.success && locationsRes.locations ? locationsRes.locations : [];
+    const users = usersRes.success && usersRes.users ? usersRes.users : [];
+
+    // Filter users who can be Janab (Strictly JANAB role as requested)
+    const potentialJanabs = users.filter(u => u.role === 'JANAB');
 
     return (
         <div className="space-y-6 sm:space-y-8">
@@ -51,12 +57,12 @@ export default async function SabaqsPage({ searchParams }: { searchParams: Promi
                 </div>
             </div>
 
-            <SabaqHeader locations={locations} defaultOpen={action === 'new'} />
+            <SabaqHeader locations={locations} users={potentialJanabs} defaultOpen={action === 'new'} />
 
             {currentView === 'grid' ? (
-                <SabaqGrid sabaqs={sabaqs} locations={locations} />
+                <SabaqGrid sabaqs={sabaqs} locations={locations} users={potentialJanabs} />
             ) : (
-                <SabaqTable sabaqs={sabaqs} locations={locations} />
+                <SabaqTable sabaqs={sabaqs} locations={locations} users={potentialJanabs} />
             )}
         </div>
     );

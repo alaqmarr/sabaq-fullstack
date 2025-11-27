@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import Link from 'next/link';
 import { getMyEnrollments } from '@/actions/enrollments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -79,21 +80,23 @@ export async function UserDashboard({ user }: { user: any }) {
                         <h3 className="text-md font-semibold mb-3 text-green-600">✓ Enrolled Sabaqs</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {approved.map(enrollment => (
-                                <Card key={enrollment.id} className="glass-subtle border-green-500/20">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex items-start justify-between">
-                                            <CardTitle className="text-base">{enrollment.sabaq.name}</CardTitle>
-                                            <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-600 border-green-500/50">Active</Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="text-sm text-muted-foreground space-y-1">
-                                        <div>{enrollment.sabaq.kitaab}</div>
-                                        <div className="flex items-center gap-1 text-xs">
-                                            <CheckCircle className="h-3 w-3 text-green-600" />
-                                            Approved {enrollment.approvedAt && `on ${new Date(enrollment.approvedAt).toLocaleDateString()}`}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <Link key={enrollment.id} href={`/dashboard/sabaqs/${enrollment.sabaq.id}`}>
+                                    <Card className="glass-subtle border-green-500/20 hover:bg-green-500/10 transition-colors cursor-pointer h-full">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex items-start justify-between">
+                                                <CardTitle className="text-base">{enrollment.sabaq.name}</CardTitle>
+                                                <Badge variant="outline" className="bg-green-50 dark:bg-green-950 text-green-600 border-green-500/50">Active</Badge>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="text-sm text-muted-foreground space-y-1">
+                                            <div>{enrollment.sabaq.kitaab}</div>
+                                            <div className="flex items-center gap-1 text-xs">
+                                                <CheckCircle className="h-3 w-3 text-green-600" />
+                                                Approved {enrollment.approvedAt && `on ${new Date(enrollment.approvedAt).toLocaleDateString()}`}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             ))}
                         </div>
                     </div>
@@ -104,21 +107,23 @@ export async function UserDashboard({ user }: { user: any }) {
                         <h3 className="text-md font-semibold mb-3 text-yellow-600">⏳ Pending Approval</h3>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             {pending.map(enrollment => (
-                                <Card key={enrollment.id} className="glass-subtle border-yellow-500/20">
-                                    <CardHeader className="pb-2">
-                                        <div className="flex items-start justify-between">
-                                            <CardTitle className="text-base">{enrollment.sabaq.name}</CardTitle>
-                                            <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950 text-yellow-600 border-yellow-500/50">Pending</Badge>
-                                        </div>
-                                    </CardHeader>
-                                    <CardContent className="text-sm text-muted-foreground space-y-1">
-                                        <div>{enrollment.sabaq.kitaab}</div>
-                                        <div className="flex items-center gap-1 text-xs">
-                                            <Clock className="h-3 w-3 text-yellow-600" />
-                                            Requested {new Date(enrollment.requestedAt).toLocaleDateString()}
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                <Link key={enrollment.id} href={`/dashboard/sabaqs/${enrollment.sabaq.id}`}>
+                                    <Card className="glass-subtle border-yellow-500/20 hover:bg-yellow-500/10 transition-colors cursor-pointer h-full">
+                                        <CardHeader className="pb-2">
+                                            <div className="flex items-start justify-between">
+                                                <CardTitle className="text-base">{enrollment.sabaq.name}</CardTitle>
+                                                <Badge variant="outline" className="bg-yellow-50 dark:bg-yellow-950 text-yellow-600 border-yellow-500/50">Pending</Badge>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent className="text-sm text-muted-foreground space-y-1">
+                                            <div>{enrollment.sabaq.kitaab}</div>
+                                            <div className="flex items-center gap-1 text-xs">
+                                                <Clock className="h-3 w-3 text-yellow-600" />
+                                                Requested {new Date(enrollment.requestedAt).toLocaleDateString()}
+                                            </div>
+                                        </CardContent>
+                                    </Card>
+                                </Link>
                             ))}
                         </div>
                     </div>

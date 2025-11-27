@@ -44,6 +44,7 @@ const sabaqSchema = z.object({
     enrollmentEndsAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
     allowLocationAttendance: z.boolean().default(false),
     locationId: z.string().optional(),
+    janabId: z.string().optional(),
 });
 
 type SabaqFormValues = z.infer<typeof sabaqSchema>;
@@ -51,11 +52,12 @@ type SabaqFormValues = z.infer<typeof sabaqSchema>;
 interface SabaqDialogProps {
     sabaq?: any;
     locations: any[];
+    users: any[];
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function SabaqDialog({ sabaq, locations, open, onOpenChange }: SabaqDialogProps) {
+export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: SabaqDialogProps) {
     const [loading, setLoading] = useState(false);
     const form = useForm<SabaqFormValues>({
         resolver: zodResolver(sabaqSchema) as any,
@@ -69,6 +71,7 @@ export function SabaqDialog({ sabaq, locations, open, onOpenChange }: SabaqDialo
             enrollmentEndsAt: sabaq?.enrollmentEndsAt ? new Date(sabaq.enrollmentEndsAt).toISOString().slice(0, 16) : '',
             allowLocationAttendance: sabaq?.allowLocationAttendance || false,
             locationId: sabaq?.locationId || undefined,
+            janabId: sabaq?.janabId || undefined,
         },
     });
 
@@ -136,19 +139,45 @@ export function SabaqDialog({ sabaq, locations, open, onOpenChange }: SabaqDialo
                                 )}
                             />
                         </div>
-                        <FormField
-                            control={form.control}
-                            name="level"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Nisaab</FormLabel>
-                                    <FormControl>
-                                        <Input placeholder="Nisaab (e.g., 1, 2, 3)" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        <div className="grid grid-cols-2 gap-4">
+                            <FormField
+                                control={form.control}
+                                name="level"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Nisaab</FormLabel>
+                                        <FormControl>
+                                            <Input placeholder="Nisaab (e.g., 1, 2, 3)" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="janabId"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Janab</FormLabel>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                            <FormControl>
+                                                <SelectTrigger>
+                                                    <SelectValue placeholder="Select Janab" />
+                                                </SelectTrigger>
+                                            </FormControl>
+                                            <SelectContent>
+                                                {users.map((user) => (
+                                                    <SelectItem key={user.id} value={user.id}>
+                                                        {user.name} ({user.role})
+                                                    </SelectItem>
+                                                ))}
+                                            </SelectContent>
+                                        </Select>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
                         <FormField
                             control={form.control}
                             name="description"

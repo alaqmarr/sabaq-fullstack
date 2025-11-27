@@ -21,8 +21,8 @@ export function AdminQuickActions() {
             allowedRoles: ['SUPERADMIN'] // Only superadmin can create sabaqs
         },
         {
-            title: 'Add User',
-            description: 'Register new user',
+            title: 'User Management',
+            description: 'Manage all users',
             icon: Users,
             href: '/dashboard/users',
             color: 'text-green-600',
@@ -59,6 +59,14 @@ export function AdminQuickActions() {
             href: '/dashboard/locations',
             color: 'text-red-600',
             allowedRoles: ['SUPERADMIN']
+        },
+        {
+            title: 'Bulk Upload',
+            description: 'Import users/enrollments',
+            icon: FileText,
+            href: '/dashboard/enrollments?action=bulk',
+            color: 'text-teal-600',
+            allowedRoles: ['SUPERADMIN', 'ADMIN']
         },
     ];
 

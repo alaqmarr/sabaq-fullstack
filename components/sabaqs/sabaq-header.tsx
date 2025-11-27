@@ -7,10 +7,11 @@ import { SabaqDialog } from './sabaq-dialog';
 
 interface SabaqHeaderProps {
     locations: any[];
+    users: any[];
     defaultOpen?: boolean;
 }
 
-export function SabaqHeader({ locations, defaultOpen = false }: SabaqHeaderProps) {
+export function SabaqHeader({ locations, users, defaultOpen = false }: SabaqHeaderProps) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
@@ -20,7 +21,7 @@ export function SabaqHeader({ locations, defaultOpen = false }: SabaqHeaderProps
                 <Button onClick={() => setOpen(true)}>
                     <Plus className="mr-2 h-4 w-4" /> Create Sabaq
                 </Button>
-                <SabaqDialog locations={locations} open={open} onOpenChange={setOpen} />
+                <SabaqDialog locations={locations} users={users} open={open} onOpenChange={setOpen} />
             </div>
         </div>
     );

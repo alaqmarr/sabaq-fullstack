@@ -15,10 +15,16 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 interface BulkEnrollmentDialogProps {
     sabaqId: string;
     sabaqName: string;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
 }
 
-export function BulkEnrollmentDialog({ sabaqId, sabaqName }: BulkEnrollmentDialogProps) {
-    const [open, setOpen] = useState(false);
+export function BulkEnrollmentDialog({ sabaqId, sabaqName, open: controlledOpen, onOpenChange }: BulkEnrollmentDialogProps) {
+    const [internalOpen, setInternalOpen] = useState(false);
+
+    const isControlled = controlledOpen !== undefined;
+    const open = isControlled ? controlledOpen : internalOpen;
+    const setOpen = isControlled ? onOpenChange! : setInternalOpen;
     const [itsInput, setItsInput] = useState('');
     const [file, setFile] = useState<File | null>(null);
     const [processing, setProcessing] = useState(false);
@@ -78,12 +84,14 @@ export function BulkEnrollmentDialog({ sabaqId, sabaqName }: BulkEnrollmentDialo
 
     return (
         <Dialog open={open} onOpenChange={setOpen}>
-            <DialogTrigger asChild>
-                <Button variant="outline" size="sm" className="gap-2">
-                    <UserPlus className="h-4 w-4" />
-                    Bulk Enroll
-                </Button>
-            </DialogTrigger>
+            {!isControlled && (
+                <DialogTrigger asChild>
+                    <Button variant="outline" size="sm" className="gap-2">
+                        <UserPlus className="h-4 w-4" />
+                        Bulk Enroll
+                    </Button>
+                </DialogTrigger>
+            )}
             <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto glass">
                 <DialogHeader>
                     <DialogTitle>Bulk Enroll Users</DialogTitle>

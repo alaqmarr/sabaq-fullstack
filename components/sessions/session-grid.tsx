@@ -80,86 +80,155 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {sessions.map((session) => (
-                    <Card key={session.id} className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
-                        <CardHeader className="pb-3">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <CardTitle className="line-clamp-1">
-                                        <Link href={`/dashboard/sessions/${session.id}`} className="hover:underline">
-                                            {session.sabaq?.name || 'Unknown'}
-                                        </Link>
+                    <Card key={session.id} className="glass-premium group relative overflow-hidden transition-all hover:shadow-2xl hover:-translate-y-1 border-0 p-1">
+                        <Link href={`/dashboard/sessions/${session.id}`} className="absolute inset-0 z-0" />
+                        <CardHeader className="pb-3 pt-6 px-6 relative z-10 pointer-events-none">
+                            <div className="flex justify-between items-start gap-3">
+                                <div className="space-y-1.5 flex-1 min-w-0">
+                                    <CardTitle className="text-xl font-bold leading-tight line-clamp-1 pointer-events-auto text-balance">
+                                        {session.sabaq?.name || 'Unknown'}
                                     </CardTitle>
-                                    <CardDescription className="flex items-center gap-2">
-                                        <BookOpen className="h-3 w-3" />
-                                        {session.sabaq?.kitaab}
+                                    <CardDescription className="flex items-center gap-2 text-sm font-medium">
+                                        <div className="p-1 rounded-full bg-primary/10 text-primary shrink-0">
+                                            <BookOpen className="h-3 w-3" />
+                                        </div>
+                                        <span className="truncate">{session.sabaq?.kitaab}</span>
                                     </CardDescription>
                                 </div>
-                                {getStatusBadge(session)}
+                                <div className="shrink-0">
+                                    {getStatusBadge(session)}
+                                </div>
                             </div>
                         </CardHeader>
-                        <CardContent className="pb-3 space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Calendar className="h-4 w-4" />
-                                <span>{format(new Date(session.scheduledAt), 'EEE, dd MMM yyyy')}</span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Clock className="h-4 w-4" />
-                                <span>
-                                    {format(new Date(session.scheduledAt), 'HH:mm')} - Cutoff: {format(new Date(session.cutoffTime), 'HH:mm')}
+                        <CardContent className="pb-6 px-6 space-y-3 text-sm relative z-10 pointer-events-none">
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                                <div className="p-2 rounded-full bg-orange-500/10 text-orange-600 dark:text-orange-400 shrink-0">
+                                    <Calendar className="h-4 w-4" />
+                                </div>
+                                <span className="font-medium text-foreground/80">
+                                    {format(new Date(session.scheduledAt), 'EEE, dd MMM yyyy')}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Users className="h-4 w-4" />
-                                <span>{session._count?.attendances || 0} Attendees</span>
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                                <div className="p-2 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 shrink-0">
+                                    <Clock className="h-4 w-4" />
+                                </div>
+                                <span className="font-medium text-foreground/80">
+                                    {format(new Date(session.scheduledAt), 'HH:mm')}
+                                    <span className="mx-2 text-muted-foreground/50">•</span>
+                                    Cutoff: {format(new Date(session.cutoffTime), 'HH:mm')}
+                                </span>
+                            </div>
+                            <div className="flex items-center gap-3 text-muted-foreground">
+                                <div className="p-2 rounded-full bg-purple-500/10 text-purple-600 dark:text-purple-400 shrink-0">
+                                    <Users className="h-4 w-4" />
+                                </div>
+                                <span className="font-medium text-foreground/80">
+                                    {session._count?.attendances || 0} Attendees
+                                </span>
                             </div>
                         </CardContent>
-                        <CardFooter className="pt-0 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CardFooter className="pt-0 px-6 pb-6 flex flex-col gap-2 relative z-20 pointer-events-auto">
+                            <Button
+                                variant="secondary"
+                                size="sm"
+                                className="w-full"
+                                asChild
+                            >
+                                <Link href={`/dashboard/sessions/${session.id}`}>
+                                    <BookOpen className="h-4 w-4 mr-2" /> View Details
+                                </Link>
+                            </Button>
+
                             {!session.startedAt && (
-                                <>
+                                <div className="flex gap-2 w-full">
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        onClick={() => {
+                                        className="flex-1 hover:bg-background/50"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
                                             setEditingSession(session);
                                             setIsDialogOpen(true);
                                         }}
                                         disabled={loading === session.id}
                                     >
-                                        <Edit className="h-4 w-4 mr-1" /> Edit
+                                        <Edit className="h-4 w-4 mr-2" /> Edit
                                     </Button>
                                     <Button
                                         variant="ghost"
                                         size="sm"
-                                        className="text-destructive hover:text-destructive"
-                                        onClick={() => handleDelete(session.id)}
+                                        className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            handleDelete(session.id);
+                                        }}
                                         disabled={loading === session.id}
                                     >
-                                        <Trash className="h-4 w-4 mr-1" /> Delete
+                                        <Trash className="h-4 w-4 mr-2" /> Delete
                                     </Button>
-                                </>
+                                </div>
                             )}
+
                             {!session.startedAt && !session.isActive && (
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="text-green-600 border-green-200 hover:bg-green-50 hover:text-green-700"
-                                    onClick={() => handleStart(session.id)}
+                                    className="w-full glass-success border-0 hover:bg-green-500/20 text-green-700 dark:text-green-400"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleStart(session.id);
+                                    }}
                                     disabled={loading === session.id}
                                 >
-                                    <Play className="h-4 w-4 mr-1" /> Start
+                                    <Play className="h-4 w-4 mr-2" /> Start Session
                                 </Button>
                             )}
+
                             {session.isActive && (
                                 <Button
                                     variant="outline"
                                     size="sm"
-                                    className="text-orange-600 border-orange-200 hover:bg-orange-50 hover:text-orange-700"
-                                    onClick={() => handleEnd(session.id)}
+                                    className="w-full glass-warning border-0 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        handleEnd(session.id);
+                                    }}
                                     disabled={loading === session.id}
                                 >
-                                    <StopCircle className="h-4 w-4 mr-1" /> End
+                                    <StopCircle className="h-4 w-4 mr-2" /> End Session
+                                </Button>
+                            )}
+
+                            {session.endedAt && (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="w-full glass-info border-0 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                                    onClick={async (e) => {
+                                        e.stopPropagation();
+                                        e.preventDefault();
+                                        if (confirm('Are you sure you want to resume this session?')) {
+                                            setLoading(session.id);
+                                            const { resumeSession } = await import('@/actions/sessions');
+                                            const result = await resumeSession(session.id);
+                                            if (result.success) {
+                                                toast.success('Session resumed');
+                                            } else {
+                                                toast.error(result.error || 'Failed to resume session');
+                                            }
+                                            setLoading(null);
+                                        }
+                                    }}
+                                    disabled={loading === session.id}
+                                >
+                                    <Play className="h-4 w-4 mr-2" /> Resume Session
                                 </Button>
                             )}
                         </CardFooter>

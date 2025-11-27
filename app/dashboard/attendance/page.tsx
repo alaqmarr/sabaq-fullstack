@@ -68,6 +68,30 @@ export default async function AttendancePage() {
         take: 5,
     });
 
+    // Get past sessions (recently ended)
+    const pastSessions = await prisma.session.findMany({
+        where: {
+            isActive: true,
+            endedAt: { not: null },
+        },
+        include: {
+            sabaq: {
+                include: {
+                    location: true,
+                },
+            },
+            _count: {
+                select: {
+                    attendances: true,
+                },
+            },
+        },
+        orderBy: {
+            endedAt: 'desc',
+        },
+        take: 5,
+    });
+
     return (
         <div className="space-y-4 sm:space-y-6">
             <div>
@@ -81,16 +105,52 @@ export default async function AttendancePage() {
             <div>
                 <h2 className="text-lg sm:text-xl font-semibold mb-4">Active Sessions</h2>
                 {activeSessions.length === 0 ? (
-                    <Card>
-                        <CardContent className="py-8 text-center text-muted-foreground">
-                            No active sessions at the moment
-                        </CardContent>
-                    </Card>
+                    <div className="space-y-6">
+                        <Card>
+                            <CardContent className="py-8 text-center text-muted-foreground">
+                                No active sessions at the moment
+                            </CardContent>
+                        </Card>
+
+                        {/* Past Sessions Fallback */}
+                        {pastSessions.length > 0 && (
+                            <div>
+                                <h3 className="text-md font-semibold mb-3 text-muted-foreground">Recently Ended</h3>
+                                <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                                    {pastSessions.map((sess) => (
+                                        <Link key={sess.id} href={`/dashboard/sessions/${sess.id}`}>
+                                            <Card className="hover:bg-accent transition-colors cursor-pointer h-full opacity-75 hover:opacity-100">
+                                                <CardHeader>
+                                                    <CardTitle className="text-base">{sess.sabaq.name}</CardTitle>
+                                                    <CardDescription className="text-xs">
+                                                        {sess.sabaq.kitaab} - Nisaab {sess.sabaq.level}
+                                                    </CardDescription>
+                                                </CardHeader>
+                                                <CardContent className="space-y-2">
+                                                    <div className="flex items-center text-xs text-muted-foreground">
+                                                        <MapPin className="h-3 w-3 mr-1" />
+                                                        {sess.sabaq.location?.name || 'No location'}
+                                                    </div>
+                                                    <div className="flex items-center text-xs text-muted-foreground">
+                                                        <Clock className="h-3 w-3 mr-1" />
+                                                        Ended {sess.endedAt && format(new Date(sess.endedAt), 'PP p')}
+                                                    </div>
+                                                    <div className="text-sm font-medium text-primary">
+                                                        {sess._count.attendances} attendees
+                                                    </div>
+                                                </CardContent>
+                                            </Card>
+                                        </Link>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+                    </div>
                 ) : (
                     <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
                         {activeSessions.map((sess) => (
                             <Link key={sess.id} href={`/dashboard/sessions/${sess.id}`}>
-                                <Card className="hover:bg-accent transition-colors cursor-pointer h-full">
+                                <Card className="hover:bg-accent transition-colors cursor-pointer h-full border-green-500/50">
                                     <CardHeader>
                                         <CardTitle className="text-base">{sess.sabaq.name}</CardTitle>
                                         <CardDescription className="text-xs">

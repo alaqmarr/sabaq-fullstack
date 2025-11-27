@@ -24,7 +24,7 @@ export default async function DashboardLayout({
                     <div className="flex items-center gap-2 sm:gap-4">
                         {isAdminOrManager && <MobileNav />}
                         <h1 className="text-lg sm:text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                            Sabaq System
+                            ADMIN MODULE
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">

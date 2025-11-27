@@ -72,7 +72,7 @@ export function LocationGrid({ locations }: LocationGridProps) {
                                 <span>Radius: {location.radiusMeters}m</span>
                             </div>
                         </CardContent>
-                        <CardFooter className="pt-0 flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <CardFooter className="pt-0 flex justify-end gap-2">
                             <Button
                                 variant="ghost"
                                 size="sm"

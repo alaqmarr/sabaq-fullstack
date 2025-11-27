@@ -92,8 +92,9 @@ export function AttendanceTaker({ sessionId }: AttendanceTakerProps) {
 
         if (res.success) {
             toast.success(`Synced ${res?.results?.success} records successfully`);
-            if (res?.results?.failed > 0) {
-                toast.error(`Failed to sync ${res?.results?.failed} records`);
+            const failedCount = res?.results?.failed || 0;
+            if (failedCount > 0) {
+                toast.error(`Failed to sync ${failedCount} records`);
             }
             // Reload data to get fresh state (including IDs and timestamps)
             await loadData();

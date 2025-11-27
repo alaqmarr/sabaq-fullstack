@@ -20,7 +20,7 @@ export async function AdminDashboard({ user }: { user: any }) {
             </div>
 
             {/* Quick Actions */}
-            <AdminQuickActions role={user.role} />
+            <AdminQuickActions />
 
             {/* Stats Section */}
             <Suspense fallback={<DashboardStatsSkeleton />}>

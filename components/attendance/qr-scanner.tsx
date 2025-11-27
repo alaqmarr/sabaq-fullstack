@@ -37,6 +37,15 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0,
+                formatsToSupport: [
+                    0,  // QR_CODE
+                    8,  // CODE_128
+                    7,  // CODE_39
+                    13, // EAN_13
+                    14, // EAN_8
+                    16, // ITF
+                    17, // CODE_93
+                ],
             };
 
             await scannerRef.current.start(
@@ -127,7 +136,7 @@ export function QRScanner({ onScan, onError }: QRScannerProps) {
             {/* Instructions */}
             {isScanning && (
                 <p className="text-center text-sm text-muted-foreground animate-pulse">
-                    Scanning... Point camera at QR code
+                    Scanning... Point camera at QR code or barcode
                 </p>
             )}
         </div>

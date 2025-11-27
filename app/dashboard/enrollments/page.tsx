@@ -1,5 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { EnrollmentRequestsAdmin } from '@/components/enrollments/enrollment-requests-admin';
 
 export const metadata = {
     title: "Enrollments",
@@ -20,6 +22,56 @@ export default async function EnrollmentsPage() {
         );
     }
 
+    // Fetch all sabaqs for filtering
+    // Admins/Superadmins see all, Janabs see their own
+    let sabaqWhere = {};
+    if (role === 'JANAB') {
+        sabaqWhere = { janabId: session.user.id };
+    } else if (role === 'ADMIN') {
+        // Admins see assigned sabaqs
+        const assigned = await prisma.sabaqAdmin.findMany({
+            where: { userId: session.user.id },
+            select: { sabaqId: true }
+        });
+        sabaqWhere = { id: { in: assigned.map(a => a.sabaqId) } };
+    }
+
+    const sabaqs = await prisma.sabaq.findMany({
+        where: {
+            isActive: true,
+            ...sabaqWhere
+        },
+        select: { id: true, name: true, level: true, kitaab: true },
+        orderBy: { name: 'asc' }
+    });
+
+    // Fetch all pending enrollments for these sabaqs
+    const enrollments = await prisma.enrollment.findMany({
+        where: {
+            sabaqId: { in: sabaqs.map(s => s.id) },
+            status: 'PENDING'
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    itsNumber: true,
+                    email: true
+                }
+            },
+            sabaq: {
+                select: {
+                    id: true,
+                    name: true,
+                    level: true,
+                    kitaab: true
+                }
+            }
+        },
+        orderBy: { requestedAt: 'desc' }
+    });
+
     return (
         <div className="space-y-6 sm:space-y-8">
             <div>
@@ -29,9 +81,7 @@ export default async function EnrollmentsPage() {
                 <p className="text-muted-foreground mt-2">Manage user enrollment requests</p>
             </div>
 
-            <div className="glass p-8 rounded-lg text-center">
-                <p className="text-muted-foreground">Enrollment management interface - coming soon</p>
-            </div>
+            <EnrollmentRequestsAdmin enrollments={enrollments} sabaqs={sabaqs} />
         </div>
     );
 }

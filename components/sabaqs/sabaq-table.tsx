@@ -21,9 +21,10 @@ import Link from 'next/link';
 interface SabaqTableProps {
     sabaqs: any[];
     locations: any[];
+    users: any[];
 }
 
-export function SabaqTable({ sabaqs, locations }: SabaqTableProps) {
+export function SabaqTable({ sabaqs, locations, users }: SabaqTableProps) {
     const [editingSabaq, setEditingSabaq] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [managingAdminSabaq, setManagingAdminSabaq] = useState<any>(null);
@@ -126,6 +127,7 @@ export function SabaqTable({ sabaqs, locations }: SabaqTableProps) {
                 <SabaqDialog
                     sabaq={editingSabaq}
                     locations={locations}
+                    users={users}
                     open={isDialogOpen}
                     onOpenChange={(open) => {
                         setIsDialogOpen(open);
