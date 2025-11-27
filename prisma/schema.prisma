@@ -58,6 +58,7 @@ model Sabaq {
   criteria                String
   enrollmentStartsAt      DateTime
   enrollmentEndsAt        DateTime
+  whatsappGroupLink       String?
   allowLocationAttendance Boolean  @default(false)
   locationId              String?
   janabId                 String?

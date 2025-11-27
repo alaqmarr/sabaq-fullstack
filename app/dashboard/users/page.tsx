@@ -40,10 +40,10 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
         <div className="space-y-6 sm:space-y-8">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+                    <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                         Users
                     </h1>
-                    <p className="text-muted-foreground mt-2">Manage system users and roles</p>
+                    <p className="text-cred-label mt-2">Manage system users and roles</p>
                 </div>
                 <div className="flex items-center gap-4">
                     <ViewToggle defaultView={currentView} />

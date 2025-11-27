@@ -46,10 +46,10 @@ export default async function SabaqsPage({ searchParams }: { searchParams: Promi
             {/* Page Header */}
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
                 <div>
-                    <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                        Sabaqs
+                    <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 lowercase">
+                        sabaqs
                     </h1>
-                    <p className="text-muted-foreground mt-2">Manage sabaq programs</p>
+                    <p className="text-cred-label mt-2 lowercase">manage sabaq programs</p>
                 </div>
                 <div className="flex items-center gap-2">
                     <SabaqQuickActions />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { validateITSNumber } from '@/actions/public-enrollment';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,25 +11,40 @@ import { Loader2, UserCheck, AlertTriangle, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
 interface ITSValidationProps {
-    onValidated: (user: any) => void;
+    onValidated?: (user: any) => void;
+    initialIts?: string;
+    initialError?: string;
 }
 
-export function ITSValidation({ onValidated }: ITSValidationProps) {
-    const [itsNumber, setItsNumber] = useState('');
+export function ITSValidation({ onValidated, initialIts, initialError }: ITSValidationProps) {
+    const [itsNumber, setItsNumber] = useState(initialIts || '');
     const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [error, setError] = useState(initialError || '');
     const [notFound, setNotFound] = useState(false);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    // Auto-validate if initialIts is provided
+    useEffect(() => {
+        if (initialIts && initialIts.length === 8) {
+            validate(initialIts);
+        }
+    }, [initialIts]);
+
+    const validate = async (its: string) => {
         setError('');
         setNotFound(false);
         setLoading(true);
 
-        const result = await validateITSNumber(itsNumber);
+        const result = await validateITSNumber(its);
 
         if (result.success && result.user) {
-            onValidated(result.user);
+            if (onValidated) {
+                onValidated(result.user);
+            } else {
+                // If no callback, we assume this is the guest flow and set the cookie
+                // Import dynamically to avoid circular deps if any
+                const { loginAsGuest } = await import('@/actions/auth');
+                await loginAsGuest(its);
+            }
         } else {
             setError(result.error || 'Validation failed');
             if (result.notFound) {
@@ -38,6 +53,11 @@ export function ITSValidation({ onValidated }: ITSValidationProps) {
         }
 
         setLoading(false);
+    };
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        await validate(itsNumber);
     };
 
     const whatsappMessage = encodeURIComponent(

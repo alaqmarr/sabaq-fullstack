@@ -36,13 +36,14 @@ export default function ScanClient() {
         loadSessions();
     }, [initialSessionId]);
 
+    const [scanResult, setScanResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+
     const handleScan = async (decodedText: string) => {
         if (processing || !selectedSessionId) return;
 
         // Basic validation: ITS number should be 8 digits
         if (!/^\d{8}$/.test(decodedText)) {
-            playErrorSound();
-            toast.error('Invalid QR Code/Barcode: Not a valid 8-digit ITS number');
+            setScanResult({ type: 'error', message: 'Invalid ITS: Must be 8 digits' });
             return;
         }
 
@@ -53,65 +54,31 @@ export default function ScanClient() {
             const result = await markAttendanceManual(selectedSessionId, decodedText);
 
             if (result.success) {
-                playSuccessSound();
-                toast.success(`✅ Attendance marked successfully for ITS ${decodedText}`, {
-                    duration: 3000,
-                });
-                // Add a small delay before next scan to prevent double scanning
-                setTimeout(() => setProcessing(false), 2000);
+                setScanResult({ type: 'success', message: `Marked: ${decodedText}` });
             } else {
-                playErrorSound();
-                toast.error(`❌ ${result.error || 'Failed to mark attendance'}`, {
-                    duration: 4000,
-                });
-                setTimeout(() => setProcessing(false), 2000);
+                setScanResult({ type: 'error', message: result.error || 'Failed to mark' });
             }
         } catch (error) {
-            playErrorSound();
-            toast.error('❌ Something went wrong. Please try again.', {
-                duration: 4000,
-            });
-            setTimeout(() => setProcessing(false), 2000);
+            setScanResult({ type: 'error', message: 'System Error' });
+        } finally {
+            setProcessing(false);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center min-h-[400px]">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            </div>
-        );
-    }
-
-    if (sessions.length === 0) {
-        return (
-            <div className="container max-w-md mx-auto py-8">
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="text-center">No Active Sessions</CardTitle>
-                        <CardDescription className="text-center">
-                            There are no active sessions to scan attendance for.
-                        </CardDescription>
-                    </CardHeader>
-                </Card>
-            </div>
-        );
-    }
-
     return (
         <div className="container max-w-md mx-auto py-8 space-y-6">
-            <Card>
+            <Card className="glass-premium border-0">
                 <CardHeader>
-                    <CardTitle className="text-center">Scan QR Code or Barcode</CardTitle>
-                    <CardDescription className="text-center">
-                        Select a session and scan user ID cards (QR codes or barcodes)
+                    <CardTitle className="text-center text-cred-heading">Scan Attendance</CardTitle>
+                    <CardDescription className="text-center text-cred-label">
+                        Select a session and scan ID cards
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">Select Session</label>
+                        <label className="text-sm text-cred-label font-bold uppercase tracking-wider">Select Session</label>
                         <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
-                            <SelectTrigger>
+                            <SelectTrigger className="h-12 bg-white/5 border-white/10">
                                 <SelectValue placeholder="Select active session" />
                             </SelectTrigger>
                             <SelectContent>
@@ -127,6 +94,8 @@ export default function ScanClient() {
                     <div className="space-y-4">
                         <QRScanner
                             onScan={handleScan}
+                            scanResult={scanResult}
+                            onClearResult={() => setScanResult(null)}
                             onError={(err) => console.log('Scanner error:', err)}
                         />
                     </div>

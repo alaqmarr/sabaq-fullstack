@@ -23,6 +23,8 @@ export function UpcomingSessionCard({ session, userRole }: UpcomingSessionCardPr
     const canScan = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE'].includes(userRole);
 
     const handleStartSession = async () => {
+        if (!confirm('Are you sure you want to start this session?')) return;
+
         setLoading(true);
         const result = await startSession(session.id);
         if (result.success) {
@@ -35,6 +37,8 @@ export function UpcomingSessionCard({ session, userRole }: UpcomingSessionCardPr
     };
 
     const handleEndSession = async () => {
+        if (!confirm('Are you sure you want to end this session?')) return;
+
         setLoading(true);
         const result = await endSession(session.id);
         if (result.success) {
@@ -78,14 +82,14 @@ export function UpcomingSessionCard({ session, userRole }: UpcomingSessionCardPr
 
                 <div className="flex flex-wrap gap-2 pointer-events-auto">
                     {canStartStop && !hasStarted && (
-                        <Button size="sm" onClick={handleStartSession} disabled={loading} className="gap-2 flex-1">
+                        <Button size="sm" variant="frosted-green" onClick={handleStartSession} disabled={loading} className="gap-2">
                             <Play className="h-3.5 w-3.5" />
                             Start
                         </Button>
                     )}
 
                     {canStartStop && isActive && (
-                        <Button size="sm" variant="destructive" onClick={handleEndSession} disabled={loading} className="gap-2 flex-1">
+                        <Button size="sm" variant="frosted-red" onClick={handleEndSession} disabled={loading} className="gap-2">
                             <Square className="h-3.5 w-3.5" />
                             End
                         </Button>
@@ -93,13 +97,13 @@ export function UpcomingSessionCard({ session, userRole }: UpcomingSessionCardPr
 
                     {canScan && isActive && (
                         <>
-                            <Button size="sm" variant="outline" asChild className="gap-2">
+                            <Button size="sm" variant="frosted-teal" asChild className="gap-2">
                                 <Link href="/dashboard/scan">
                                     <QrCode className="h-3.5 w-3.5" />
                                     QR Scan
                                 </Link>
                             </Button>
-                            <Button size="sm" variant="outline" asChild className="gap-2">
+                            <Button size="sm" variant="frosted-blue" asChild className="gap-2">
                                 <Link href={`/dashboard/sessions/${session.id}/attendance`}>
                                     <UserPlus className="h-3.5 w-3.5" />
                                     Manual
@@ -108,7 +112,7 @@ export function UpcomingSessionCard({ session, userRole }: UpcomingSessionCardPr
                         </>
                     )}
 
-                    <Button size="sm" variant="outline" asChild className={`gap-2 ${!canStartStop && !canScan ? 'flex-1' : ''}`}>
+                    <Button size="sm" variant="frosted-teal" asChild className="gap-2">
                         <Link href={`/dashboard/sessions/${session.id}`}>
                             <Eye className="h-3.5 w-3.5" />
                             View

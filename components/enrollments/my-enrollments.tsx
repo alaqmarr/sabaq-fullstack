@@ -23,10 +23,10 @@ export function MyEnrollments({ enrollments }: MyEnrollmentsProps) {
     };
 
     const getStatusBadge = (status: string) => {
-        const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-            PENDING: 'secondary',
-            APPROVED: 'default',
-            REJECTED: 'destructive',
+        const variants: Record<string, 'frosted-amber' | 'frosted-green' | 'frosted-red' | 'outline'> = {
+            PENDING: 'frosted-amber',
+            APPROVED: 'frosted-green',
+            REJECTED: 'frosted-red',
         };
         return (
             <Badge variant={variants[status] || 'outline'} className="flex items-center gap-1">
@@ -81,7 +81,7 @@ export function MyEnrollments({ enrollments }: MyEnrollmentsProps) {
                                     <TableCell>
                                         {enrollment.status === 'APPROVED' && enrollment.approvedAt && (
                                             <span className="text-sm text-muted-foreground">
-                                                Approved on {format(new Date(enrollment.approvedAt), 'dd MMM yyyy')}
+                                                Raza granted on {format(new Date(enrollment.approvedAt), 'dd MMM yyyy')}
                                             </span>
                                         )}
                                         {enrollment.status === 'REJECTED' && enrollment.rejectionReason && (

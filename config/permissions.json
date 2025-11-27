@@ -54,7 +54,7 @@
       "sabaqs": ["read", "update"],
       "sessions": ["read"],
       "attendance": ["read"],
-      "enrollments": ["read"],
+      "enrollments": ["read", "approve", "reject", "bulk_enroll"],
       "questions": ["read"],
       "analytics": ["read", "export"],
       "emails": [],

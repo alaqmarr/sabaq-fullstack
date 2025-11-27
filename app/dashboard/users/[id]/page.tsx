@@ -7,9 +7,13 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import {
     User, Mail, Phone, Shield, BookOpen,
     CheckCircle, Clock, XCircle, Calendar,
-    Activity, Percent
+    Activity, Percent, MessageCircle
 } from 'lucide-react';
 import { auth } from '@/auth';
+import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { CircularProgress } from '@/components/ui/circular-progress';
+import { getItsImageUrl } from '@/lib/its';
+import { IDCard } from '@/components/users/id-card';
 
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
@@ -40,123 +44,90 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
             .slice(0, 2);
     };
 
-    const getRoleBadge = (role: string) => {
-        const styles: Record<string, string> = {
-            SUPERADMIN: "bg-purple-100 text-purple-700 border-purple-200",
-            ADMIN: "bg-blue-100 text-blue-700 border-blue-200",
-            MANAGER: "bg-indigo-100 text-indigo-700 border-indigo-200",
-            ATTENDANCE_INCHARGE: "bg-orange-100 text-orange-700 border-orange-200",
-            JANAB: "bg-emerald-100 text-emerald-700 border-emerald-200",
-            MUMIN: "bg-slate-100 text-slate-700 border-slate-200",
+    const getRoleBadgeVariant = (role: string) => {
+        const variants: Record<string, "frosted-purple" | "frosted-blue" | "frosted-amber" | "frosted-teal" | "frosted-green" | "frosted-slate"> = {
+            SUPERADMIN: "frosted-purple",
+            ADMIN: "frosted-blue",
+            MANAGER: "frosted-amber",
+            ATTENDANCE_INCHARGE: "frosted-teal",
+            JANAB: "frosted-green",
+            MUMIN: "frosted-slate",
         };
-        return styles[role] || styles.MUMIN;
+        return variants[role] || "frosted-slate";
     };
 
     return (
-        <div className="space-y-6 max-w-7xl mx-auto pb-10">
+        <div className="space-y-8 max-w-7xl mx-auto pb-10">
             {/* Profile Header */}
-            <Card className="glass overflow-hidden border-t-4 border-t-primary">
-                <CardContent className="p-6 sm:p-8">
-                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6">
-                        <Avatar className="h-24 w-24 sm:h-32 sm:w-32 border-4 border-background shadow-xl">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.name}`} />
-                            <AvatarFallback className="text-2xl">{getInitials(user.name)}</AvatarFallback>
-                        </Avatar>
+            <IDCard user={user} />
 
-                        <div className="space-y-2 flex-1">
-                            <div className="flex flex-wrap items-center gap-3">
-                                <h1 className="text-2xl sm:text-3xl font-bold">{user.name}</h1>
-                                <Badge variant="outline" className={`font-mono ${getRoleBadge(user.role)}`}>
-                                    {user.role}
-                                </Badge>
-                            </div>
-
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-sm text-muted-foreground mt-4">
-                                <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-md">
-                                    <Shield className="h-4 w-4 text-primary" />
-                                    <span className="font-mono">ITS: {user.itsNumber}</span>
-                                </div>
-                                {user.email && (
-                                    <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-md">
-                                        <Mail className="h-4 w-4 text-primary" />
-                                        <span>{user.email}</span>
-                                    </div>
-                                )}
-                                {user.phone && (
-                                    <div className="flex items-center gap-2 bg-muted/30 p-2 rounded-md">
-                                        <Phone className="h-4 w-4 text-primary" />
-                                        <span>{user.phone}</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Sabaq Performance Cards */}
                 <div className="lg:col-span-2 space-y-6">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                        <BookOpen className="h-5 w-5 text-primary" />
-                        Sabaq Performance
+                    <h2 className="text-xl font-bold text-cred-heading uppercase flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+                            <BookOpen className="h-5 w-5" />
+                        </div>
+                        sabaq performance
                     </h2>
 
                     {sabaqStats.length === 0 ? (
-                        <Card className="glass border-dashed">
-                            <CardContent className="py-12 text-center text-muted-foreground">
-                                <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                                <p>No active enrollments found.</p>
+                        <Card className="glass-premium border-dashed border-white/20">
+                            <CardContent className="py-16 text-center text-muted-foreground">
+                                <BookOpen className="h-16 w-16 mx-auto mb-6 opacity-20" />
+                                <p className="text-lg font-medium">No active enrollments found</p>
+                                <p className="text-sm opacity-60">Enroll in a sabaq to see performance stats</p>
                             </CardContent>
                         </Card>
                     ) : (
-                        <div className="grid gap-4">
+                        <div className="grid gap-6">
                             {sabaqStats.map(({ sabaq, stats }: any) => (
-                                <Card key={sabaq.id} className="glass hover-lift transition-all">
-                                    <CardHeader className="pb-2">
+                                <Card key={sabaq.id} className="glass-premium hover-lift transition-all border-0 overflow-hidden group">
+                                    <CardHeader className="pb-4 border-b border-white/5 bg-white/5">
                                         <div className="flex justify-between items-start">
-                                            <div>
-                                                <CardTitle className="text-lg text-primary">{sabaq.name}</CardTitle>
-                                                <CardDescription>{sabaq.kitaab} • {sabaq.level}</CardDescription>
+                                            <div className="space-y-1">
+                                                <CardTitle className="text-xl font-bold text-foreground/90 group-hover:text-primary transition-colors">{sabaq.name}</CardTitle>
+                                                <CardDescription className="lowercase font-medium opacity-70">{sabaq.kitaab} • {sabaq.level}</CardDescription>
                                             </div>
                                             <div className="text-right">
-                                                <div className="text-2xl font-bold flex items-center justify-end gap-1">
-                                                    {stats.percentage}%
-                                                    <Percent className="h-4 w-4 text-muted-foreground" />
-                                                </div>
-                                                <p className="text-xs text-muted-foreground">Attendance Rate</p>
+                                                <CircularProgress
+                                                    value={stats.percentage}
+                                                    size={70}
+                                                    strokeWidth={6}
+                                                    color={stats.percentage >= 75 ? "text-green-500" : stats.percentage >= 50 ? "text-yellow-500" : "text-red-500"}
+                                                />
                                             </div>
                                         </div>
                                     </CardHeader>
-                                    <CardContent>
-                                        <div className="grid grid-cols-4 gap-2 mt-4">
-                                            <div className="bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg text-center border border-blue-100 dark:border-blue-900">
-                                                <div className="text-xs text-blue-600 dark:text-blue-400 font-medium mb-1">Total</div>
-                                                <div className="text-xl font-bold text-blue-700 dark:text-blue-300">{stats.totalSessions}</div>
+                                    <CardContent className="pt-6">
+                                        <div className="grid grid-cols-4 gap-4 mb-6">
+                                            <div className="bg-blue-500/5 p-4 rounded-2xl text-center border border-blue-500/10 backdrop-blur-sm">
+                                                <div className="text-xs uppercase tracking-wider text-blue-600 dark:text-blue-400 font-bold mb-1">Total</div>
+                                                <div className="text-2xl font-bold text-blue-700 dark:text-blue-300">{stats.totalSessions}</div>
                                             </div>
-                                            <div className="bg-green-50 dark:bg-green-950/30 p-3 rounded-lg text-center border border-green-100 dark:border-green-900">
-                                                <div className="text-xs text-green-600 dark:text-green-400 font-medium mb-1">Present</div>
-                                                <div className="text-xl font-bold text-green-700 dark:text-green-300">{stats.present}</div>
+                                            <div className="bg-green-500/5 p-4 rounded-2xl text-center border border-green-500/10 backdrop-blur-sm">
+                                                <div className="text-xs uppercase tracking-wider text-green-600 dark:text-green-400 font-bold mb-1">Present</div>
+                                                <div className="text-2xl font-bold text-green-700 dark:text-green-300">{stats.present}</div>
                                             </div>
-                                            <div className="bg-yellow-50 dark:bg-yellow-950/30 p-3 rounded-lg text-center border border-yellow-100 dark:border-yellow-900">
-                                                <div className="text-xs text-yellow-600 dark:text-yellow-400 font-medium mb-1">Late</div>
-                                                <div className="text-xl font-bold text-yellow-700 dark:text-yellow-300">{stats.late}</div>
+                                            <div className="bg-yellow-500/5 p-4 rounded-2xl text-center border border-yellow-500/10 backdrop-blur-sm">
+                                                <div className="text-xs uppercase tracking-wider text-yellow-600 dark:text-yellow-400 font-bold mb-1">Late</div>
+                                                <div className="text-2xl font-bold text-yellow-700 dark:text-yellow-300">{stats.late}</div>
                                             </div>
-                                            <div className="bg-red-50 dark:bg-red-950/30 p-3 rounded-lg text-center border border-red-100 dark:border-red-900">
-                                                <div className="text-xs text-red-600 dark:text-red-400 font-medium mb-1">Absent</div>
-                                                <div className="text-xl font-bold text-red-700 dark:text-red-300">{stats.absent}</div>
+                                            <div className="bg-red-500/5 p-4 rounded-2xl text-center border border-red-500/10 backdrop-blur-sm">
+                                                <div className="text-xs uppercase tracking-wider text-red-600 dark:text-red-400 font-bold mb-1">Absent</div>
+                                                <div className="text-2xl font-bold text-red-700 dark:text-red-300">{stats.absent}</div>
                                             </div>
                                         </div>
 
                                         {/* Progress Bar */}
-                                        <div className="mt-4 h-2 w-full bg-secondary rounded-full overflow-hidden flex">
-                                            <div style={{ width: `${(stats.present / stats.totalSessions) * 100}%` }} className="bg-green-500 h-full" />
-                                            <div style={{ width: `${(stats.late / stats.totalSessions) * 100}%` }} className="bg-yellow-500 h-full" />
+                                        <div className="h-3 w-full bg-secondary/50 rounded-full overflow-hidden flex ring-1 ring-white/10">
+                                            <div style={{ width: `${(stats.present / stats.totalSessions) * 100}%` }} className="bg-gradient-to-r from-green-500 to-emerald-400 h-full shadow-[0_0_10px_rgba(34,197,94,0.4)]" />
+                                            <div style={{ width: `${(stats.late / stats.totalSessions) * 100}%` }} className="bg-gradient-to-r from-yellow-500 to-amber-400 h-full shadow-[0_0_10px_rgba(234,179,8,0.4)]" />
                                         </div>
-                                        <div className="flex justify-between text-[10px] text-muted-foreground mt-1 px-1">
-                                            <span>Present</span>
-                                            <span>Late</span>
-                                            <span>Absent (Remaining)</span>
+                                        <div className="flex justify-between text-[10px] uppercase tracking-wider font-bold text-muted-foreground mt-3 px-1 opacity-70">
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-green-500" />Present</div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-yellow-500" />Late</div>
+                                            <div className="flex items-center gap-1.5"><div className="w-2 h-2 rounded-full bg-secondary" />Absent</div>
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -167,37 +138,42 @@ export default async function UserProfilePage({ params }: { params: Promise<{ id
 
                 {/* Recent Activity Sidebar */}
                 <div className="space-y-6">
-                    <h2 className="text-xl font-semibold flex items-center gap-2">
-                        <Activity className="h-5 w-5 text-primary" />
-                        Recent Activity
+                    <h2 className="text-xl font-bold text-cred-heading uppercase flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-pink-500/10 text-pink-400">
+                            <Activity className="h-5 w-5" />
+                        </div>
+                        recent activity
                     </h2>
 
-                    <Card className="glass h-fit">
+                    <Card className="glass-premium border-0 h-fit overflow-hidden">
                         <CardContent className="p-0">
                             {recentActivity.length === 0 ? (
-                                <div className="p-6 text-center text-muted-foreground text-sm">
-                                    No recent activity recorded.
+                                <div className="p-8 text-center text-muted-foreground text-sm">
+                                    <Clock className="h-8 w-8 mx-auto mb-3 opacity-20" />
+                                    No recent activity recorded
                                 </div>
                             ) : (
-                                <div className="divide-y divide-border">
+                                <div className="divide-y divide-white/5">
                                     {recentActivity.map((activity: any) => (
-                                        <div key={activity.id} className="p-4 hover:bg-muted/50 transition-colors flex items-start gap-3">
-                                            <div className={`mt-1 p-1.5 rounded-full shrink-0 ${activity.isLate
-                                                ? 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30'
-                                                : 'bg-green-100 text-green-600 dark:bg-green-900/30'
+                                        <div key={activity.id} className="p-4 hover:bg-white/5 transition-colors flex items-start gap-4 group">
+                                            <div className={`mt-1 p-2 rounded-xl shrink-0 shadow-lg ${activity.isLate
+                                                ? 'bg-gradient-to-br from-yellow-500/20 to-amber-600/20 text-yellow-500 ring-1 ring-yellow-500/30'
+                                                : 'bg-gradient-to-br from-green-500/20 to-emerald-600/20 text-green-500 ring-1 ring-green-500/30'
                                                 }`}>
-                                                {activity.isLate ? <Clock className="h-3 w-3" /> : <CheckCircle className="h-3 w-3" />}
+                                                {activity.isLate ? <Clock className="h-4 w-4" /> : <CheckCircle className="h-4 w-4" />}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium truncate">{activity.session.sabaq.name}</p>
-                                                <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
-                                                    <Calendar className="h-3 w-3" />
+                                            <div className="flex-1 min-w-0 space-y-1">
+                                                <p className="text-sm font-bold truncate text-foreground/90 group-hover:text-primary transition-colors">{activity.session.sabaq.name}</p>
+                                                <p className="text-xs text-muted-foreground flex items-center gap-1.5 font-medium">
+                                                    <Calendar className="h-3 w-3 opacity-70" />
                                                     {new Date(activity.markedAt).toLocaleDateString()}
-                                                    <span className="text-muted-foreground/50">•</span>
+                                                    <span className="opacity-30">|</span>
                                                     {new Date(activity.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                 </p>
                                             </div>
-                                            <Badge variant="outline" className={`text-[10px] px-1.5 py-0 h-5 ${activity.isLate ? 'text-yellow-600 border-yellow-200' : 'text-green-600 border-green-200'
+                                            <Badge variant="outline" className={`text-[10px] px-2 py-0.5 h-6 font-bold uppercase tracking-wider ${activity.isLate
+                                                ? 'text-yellow-600 border-yellow-500/30 bg-yellow-500/5'
+                                                : 'text-green-600 border-green-500/30 bg-green-500/5'
                                                 }`}>
                                                 {activity.isLate ? 'Late' : 'On Time'}
                                             </Badge>

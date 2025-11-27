@@ -52,7 +52,18 @@ export async function getUsers() {
   try {
     await requirePermission("users", "read");
     const users = await prisma.user.findMany({
-      // Remove orderBy here as we'll sort in memory
+      include: {
+        assignedSabaqs: {
+          include: {
+            sabaq: {
+              select: { name: true },
+            },
+          },
+        },
+        managedSabaqs: {
+          select: { name: true },
+        },
+      },
     });
 
     // Define role priority (lower number = higher priority)
@@ -79,6 +90,107 @@ export async function getUsers() {
     });
 
     return { success: true, users: sortedUsers };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function promoteUser(userId: string) {
+  try {
+    const currentUser = await requirePermission("users", "update");
+
+    // Only Superadmin and Admin can promote
+    if (!["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User not found");
+
+    // Role hierarchy: MUMIN -> ATTENDANCE_INCHARGE -> MANAGER -> ADMIN -> SUPERADMIN
+    // JANAB is skipped as it must be set explicitly
+    const roleHierarchy: Role[] = [
+      "MUMIN",
+      "ATTENDANCE_INCHARGE",
+      "MANAGER",
+      "ADMIN",
+      "SUPERADMIN",
+    ];
+
+    if (user.role === "JANAB") {
+      throw new Error(
+        "Janab role cannot be changed via quick actions. Use edit instead."
+      );
+    }
+
+    const currentIndex = roleHierarchy.indexOf(user.role);
+    if (currentIndex === -1 || currentIndex === roleHierarchy.length - 1) {
+      return { success: false, error: "Cannot promote further" };
+    }
+
+    const newRole = roleHierarchy[currentIndex + 1];
+
+    // Prevent Admin from promoting to Superadmin unless they are Superadmin
+    if (newRole === "SUPERADMIN" && currentUser.role !== "SUPERADMIN") {
+      throw new Error("Only Superadmins can promote to Superadmin");
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+    });
+
+    return { success: true, newRole };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+export async function demoteUser(userId: string) {
+  try {
+    const currentUser = await requirePermission("users", "update");
+
+    // Only Superadmin and Admin can demote
+    if (!["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
+      throw new Error("Unauthorized");
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) throw new Error("User not found");
+
+    // Role hierarchy: MUMIN -> ATTENDANCE_INCHARGE -> MANAGER -> ADMIN -> SUPERADMIN
+    const roleHierarchy: Role[] = [
+      "MUMIN",
+      "ATTENDANCE_INCHARGE",
+      "MANAGER",
+      "ADMIN",
+      "SUPERADMIN",
+    ];
+
+    if (user.role === "JANAB") {
+      throw new Error(
+        "Janab role cannot be changed via quick actions. Use edit instead."
+      );
+    }
+
+    const currentIndex = roleHierarchy.indexOf(user.role);
+    if (currentIndex === -1 || currentIndex === 0) {
+      return { success: false, error: "Cannot demote further" };
+    }
+
+    const newRole = roleHierarchy[currentIndex - 1];
+
+    // Prevent Admin from demoting Superadmin
+    if (user.role === "SUPERADMIN" && currentUser.role !== "SUPERADMIN") {
+      throw new Error("Only Superadmins can demote Superadmins");
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole },
+    });
+
+    return { success: true, newRole };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

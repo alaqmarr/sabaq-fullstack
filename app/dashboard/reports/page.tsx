@@ -35,10 +35,10 @@ export default async function ReportsPage() {
     return (
         <div className="space-y-6 sm:space-y-8">
             <div>
-                <h1 className="text-3xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
+                <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
                     Reports & Analytics
                 </h1>
-                <p className="text-muted-foreground mt-2">View comprehensive attendance and performance data</p>
+                <p className="text-cred-label mt-2">View comprehensive attendance and performance data</p>
             </div>
 
             <div className="grid gap-6 md:grid-cols-2">

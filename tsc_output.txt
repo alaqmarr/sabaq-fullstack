@@ -1,3 +1,4 @@
-components/dashboard/active-sessions.tsx(48,61): error TS2339: Property 'allowLocationAttendance' does not exist on type '{ location: { id: string; latitude: Decimal; longitude: Decimal; name: string; isActive: boolean; createdAt: Date; createdBy: string; address: string; radiusMeters: number; } | null; id: string; name: string; kitaab: string; }'.
-components/users/bulk-upload-form.tsx(12,10): error TS2724: '"@/actions/users"' has no exported member named 'bulkCreateUsers'. Did you mean 'createUser'?
-lib/rbac.ts(33,39): error TS2345: Argument of type 'string' is not assignable to parameter of type 'never'.
+app/page.tsx(72,32): error TS2322: Type '{ name: string; id: string; itsNumber: string; email: string | null; role: Role; }' is not assignable to type '{ id: string; itsNumber: string; name: string; email?: string | undefined; role: string; }'.
+  Types of property 'email' are incompatible.
+    Type 'string | null' is not assignable to type 'string | undefined'.
+      Type 'null' is not assignable to type 'string | undefined'.

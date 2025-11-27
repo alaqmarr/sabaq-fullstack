@@ -4,13 +4,14 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
 import {
-    LayoutDashboard,
-    Users,
-    MapPin,
-    BookOpen,
-    Calendar,
-    ClipboardCheck,
-    MessageCircle,
+    LayoutGrid,
+    UsersRound,
+    Map,
+    BookOpenText,
+    CalendarClock,
+    CheckCircle2,
+    MessageSquareText,
+    FileSignature,
     UserCheck,
     QrCode
 } from 'lucide-react';
@@ -19,63 +20,63 @@ import { Role } from '@prisma/client';
 
 const navItems = [
     {
-        title: 'Dashboard',
+        title: 'dashboard',
         href: '/dashboard',
-        icon: LayoutDashboard,
+        icon: LayoutGrid,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
     },
     {
-        title: 'Scan QR',
+        title: 'scan qr',
         href: '/dashboard/scan',
         icon: QrCode,
         roles: [Role.MUMIN, Role.JANAB, Role.ATTENDANCE_INCHARGE, Role.MANAGER, Role.ADMIN, Role.SUPERADMIN],
     },
     {
-        title: 'Users',
+        title: 'users',
         href: '/dashboard/users',
-        icon: Users,
+        icon: UsersRound,
         roles: [Role.SUPERADMIN, Role.ADMIN],
     },
     {
-        title: 'Locations',
+        title: 'locations',
         href: '/dashboard/locations',
-        icon: MapPin,
+        icon: Map,
         roles: [Role.SUPERADMIN],
     },
     {
-        title: 'Sabaqs',
+        title: 'sabaqs',
         href: '/dashboard/sabaqs',
-        icon: BookOpen,
+        icon: BookOpenText,
         roles: [Role.SUPERADMIN, Role.ADMIN],
     },
     {
-        title: 'Enrollments',
+        title: 'enrollments',
         href: '/dashboard/enrollments',
-        icon: UserCheck,
+        icon: FileSignature,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB],
     },
     {
-        title: 'My Enrollments',
+        title: 'my enrollments',
         href: '/dashboard/my-enrollments',
-        icon: BookOpen,
+        icon: BookOpenText,
         roles: [Role.MUMIN, Role.JANAB, Role.ATTENDANCE_INCHARGE, Role.MANAGER, Role.ADMIN, Role.SUPERADMIN],
     },
     {
-        title: 'Sessions',
+        title: 'sessions',
         href: '/dashboard/sessions',
-        icon: Calendar,
+        icon: CalendarClock,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER],
     },
     {
-        title: 'Attendance',
+        title: 'attendance',
         href: '/dashboard/attendance',
-        icon: ClipboardCheck,
+        icon: CheckCircle2,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE],
     },
     {
-        title: 'Questions',
+        title: 'questions',
         href: '/dashboard/questions',
-        icon: MessageCircle,
+        icon: MessageSquareText,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
     },
 ];
@@ -102,7 +103,7 @@ export function DashboardNav() {
                     >
                         <span
                             className={cn(
-                                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors",
+                                "group flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-bold lowercase transition-colors",
                                 "hover:bg-accent hover:text-accent-foreground",
                                 isActive ? "bg-accent text-accent-foreground" : "text-muted-foreground"
                             )}

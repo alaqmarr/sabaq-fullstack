@@ -71,7 +71,7 @@ export function SessionControls({ sessionId, isActive, isEnded, hasStarted }: Se
     return (
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button variant="destructive" disabled={loading} className="w-full sm:w-auto">
+          <Button variant="frosted-red" disabled={loading} className="w-full sm:w-auto">
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />}
             End Session
           </Button>
@@ -98,7 +98,7 @@ export function SessionControls({ sessionId, isActive, isEnded, hasStarted }: Se
     return (
       <AlertDialog>
         <AlertDialogTrigger asChild>
-          <Button className="w-full sm:w-auto bg-green-600 hover:bg-green-700" disabled={loading}>
+          <Button variant="frosted-green" className="w-full sm:w-auto" disabled={loading}>
             {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Play className="mr-2 h-4 w-4" />}
             Start Session
           </Button>

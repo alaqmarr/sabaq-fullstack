@@ -10,13 +10,13 @@ import { MyQRCode } from './my-qr-code';
 export function UserQuickActions() {
     return (
         <div>
-            <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
+            <h2 className="text-xl font-semibold mb-4 lowercase">quick actions</h2>
             <div className="flex flex-wrap gap-4">
                 <Dialog>
                     <DialogTrigger asChild>
-                        <Button size="lg" className="h-auto py-4 px-6 flex flex-col items-center gap-2">
+                        <Button size="lg" variant="frosted-green" className="h-auto py-4 px-6 flex flex-col items-center gap-2">
                             <QrCode className="h-6 w-6" />
-                            <span>My ID Card</span>
+                            <span>my id card</span>
                         </Button>
                     </DialogTrigger>
                     <DialogContent className="sm:max-w-md">
@@ -24,10 +24,10 @@ export function UserQuickActions() {
                     </DialogContent>
                 </Dialog>
 
-                <Button asChild variant="outline" size="lg" className="h-auto py-4 px-6">
+                <Button asChild variant="frosted-blue" size="lg" className="h-auto py-4 px-6">
                     <Link href="/dashboard/my-enrollments" className="flex flex-col items-center gap-2">
                         <Calendar className="h-6 w-6" />
-                        <span>My Enrollments</span>
+                        <span>my enrollments</span>
                     </Link>
                 </Button>
             </div>

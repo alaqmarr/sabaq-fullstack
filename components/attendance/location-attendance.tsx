@@ -71,16 +71,17 @@ export function LocationAttendance({ sessionId, onSuccess }: LocationAttendanceP
                     disabled={loading}
                     className="w-full"
                     size="lg"
+                    variant="frosted-green"
                 >
                     {loading ? (
                         <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Getting Location...
+                            getting location...
                         </>
                     ) : (
                         <>
                             <CheckCircle className="mr-2 h-4 w-4" />
-                            Mark My Attendance
+                            mark my attendance
                         </>
                     )}
                 </Button>

@@ -13,56 +13,56 @@ export function AdminQuickActions() {
     // Define actions with role requirements
     const allActions = [
         {
-            title: 'Create Sabaq',
-            description: 'Set up a new sabaq',
+            title: 'create sabaq',
+            description: 'set up a new sabaq',
             icon: Plus,
             href: '/dashboard/sabaqs',
             color: 'text-blue-600',
             allowedRoles: ['SUPERADMIN'] // Only superadmin can create sabaqs
         },
         {
-            title: 'User Management',
-            description: 'Manage all users',
+            title: 'user management',
+            description: 'manage all users',
             icon: Users,
             href: '/dashboard/users',
             color: 'text-green-600',
             allowedRoles: ['SUPERADMIN'] // Only superadmin can add users
         },
         {
-            title: 'Manage Sessions',
-            description: 'View all sessions',
+            title: 'manage sessions',
+            description: 'view all sessions',
             icon: Calendar,
             href: '/dashboard/sessions',
             color: 'text-purple-600',
             allowedRoles: ['SUPERADMIN', 'ADMIN', 'MANAGER', 'JANAB', 'ATTENDANCE_INCHARGE']
         },
         {
-            title: 'View Reports',
-            description: 'Analytics & insights',
+            title: 'view reports',
+            description: 'analytics & insights',
             icon: BarChart3,
             href: '/dashboard/reports',
             color: 'text-orange-600',
             allowedRoles: ['SUPERADMIN', 'ADMIN', 'JANAB', 'MANAGER'] // Managers can view reports
         },
         {
-            title: 'Enrollments',
-            description: 'Manage enrollments',
+            title: 'enrollments',
+            description: 'manage enrollments',
             icon: FileText,
             href: '/dashboard/enrollments',
             color: 'text-indigo-600',
             allowedRoles: ['SUPERADMIN', 'ADMIN', 'JANAB']
         },
         {
-            title: 'Locations',
-            description: 'Manage locations',
+            title: 'locations',
+            description: 'manage locations',
             icon: MapPin,
             href: '/dashboard/locations',
             color: 'text-red-600',
             allowedRoles: ['SUPERADMIN']
         },
         {
-            title: 'Bulk Upload',
-            description: 'Import users/enrollments',
+            title: 'bulk upload',
+            description: 'import users/enrollments',
             icon: FileText,
             href: '/dashboard/enrollments?action=bulk',
             color: 'text-teal-600',
@@ -77,17 +77,17 @@ export function AdminQuickActions() {
 
     return (
         <div>
-            <h2 className="text-lg sm:text-xl font-semibold mb-3 sm:mb-4">Quick Actions</h2>
+            <h2 className="text-lg sm:text-xl text-cred-heading mb-3 sm:mb-4 lowercase">quick actions</h2>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
                 {actions.map((action) => (
                     <Link key={action.href} href={action.href}>
                         <Card className="glass hover:scale-105 transition-all duration-300 cursor-pointer h-full">
                             <CardHeader className="pb-2">
                                 <action.icon className={`h-6 w-6 ${action.color} mb-2`} />
-                                <CardTitle className="text-sm sm:text-base">{action.title}</CardTitle>
+                                <CardTitle className="text-sm sm:text-base text-cred-action">{action.title}</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-xs text-muted-foreground">{action.description}</p>
+                                <p className="text-xs text-cred-label">{action.description}</p>
                             </CardContent>
                         </Card>
                     </Link>

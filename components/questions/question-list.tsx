@@ -83,17 +83,17 @@ export function QuestionList({ sessionId, questions, userVotedIds, isAdmin = fal
                                     <div className="flex-1">
                                         <div className="flex items-center gap-2 mb-2">
                                             <span className="font-medium">{question.user.name}</span>
-                                            <span className="text-xs text-muted-foreground">
+                                            <span className="text-xs text-muted-foreground lowercase">
                                                 {format(new Date(question.createdAt), 'PPp')}
                                             </span>
                                             {question.isAnswered && (
-                                                <Badge className="bg-green-500">
+                                                <Badge className="bg-green-500 lowercase">
                                                     <CheckCircle className="h-3 w-3 mr-1" />
-                                                    Answered
+                                                    answered
                                                 </Badge>
                                             )}
                                         </div>
-                                        <p className="text-base">{question.question}</p>
+                                        <p className="text-base lowercase">{question.question}</p>
                                     </div>
 
                                     {/* Upvote Button */}
@@ -116,10 +116,10 @@ export function QuestionList({ sessionId, questions, userVotedIds, isAdmin = fal
                             {question.isAnswered && question.answer && (
                                 <CardContent className="border-t bg-muted/30">
                                     <div className="space-y-2">
-                                        <p className="text-sm font-medium">Answer:</p>
-                                        <p className="text-sm">{question.answer}</p>
-                                        <p className="text-xs text-muted-foreground">
-                                            Answered {format(new Date(question.answeredAt), 'PPp')}
+                                        <p className="text-sm font-medium lowercase">answer:</p>
+                                        <p className="text-sm lowercase">{question.answer}</p>
+                                        <p className="text-xs text-muted-foreground lowercase">
+                                            answered {format(new Date(question.answeredAt), 'PPp')}
                                         </p>
                                     </div>
                                 </CardContent>
@@ -135,7 +135,7 @@ export function QuestionList({ sessionId, questions, userVotedIds, isAdmin = fal
                                                 size="sm"
                                                 onClick={() => setAnsweringQuestion(question)}
                                             >
-                                                Answer
+                                                answer
                                             </Button>
                                         )}
                                         <Button

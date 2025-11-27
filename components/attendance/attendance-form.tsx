@@ -80,8 +80,8 @@ export function AttendanceForm({ sessionId, onSuccess }: AttendanceFormProps) {
                                     required
                                 />
                             </div>
-                            <Button type="submit" className="w-full" disabled={loading || !itsNumber}>
-                                {loading ? 'Marking...' : 'Mark Attendance'}
+                            <Button type="submit" className="w-full" disabled={loading || !itsNumber} variant="frosted-blue">
+                                {loading ? 'marking...' : 'mark attendance'}
                             </Button>
                         </form>
                     </TabsContent>

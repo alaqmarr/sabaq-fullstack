@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, BookOpen, MapPin, Calendar, Users, CheckCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
+import { EnrollmentCountdown } from './enrollment-countdown';
 
 interface EnrollmentInterfaceProps {
     user: {
@@ -33,14 +34,23 @@ export function EnrollmentInterface({ user }: EnrollmentInterfaceProps) {
     const loadSabaqs = async () => {
         const result = await getAvailableSabaqs();
         if (result.success && result.sabaqs) {
-            setSabaqs(result.sabaqs);
+            // Filter out sabaqs where user is already enrolled or has pending enrollment
+            const availableSabaqs = result.sabaqs.filter(
+                (sabaq) => !sabaq.enrollmentStatus || sabaq.enrollmentStatus === 'REJECTED'
+            );
+            setSabaqs(availableSabaqs);
         }
         setLoading(false);
     };
 
     const handleEnroll = async (sabaqId: string) => {
         setEnrolling(sabaqId);
-        const result = await createEnrollmentRequest(sabaqId);
+        // If we are in guest mode, user.id might be present but we should pass ITS just in case
+        // or rely on the fact that we are passing the user object which has the ITS.
+        // The action expects guestIts as a second arg if not authenticated.
+        // Since this component is used for both, we can pass user.itsNumber as the second arg
+        // The action will ignore it if session exists, or use it if session doesn't.
+        const result = await createEnrollmentRequest(sabaqId, user.itsNumber);
 
         if (result.success) {
             toast.success('Enrollment request submitted successfully!');
@@ -60,7 +70,7 @@ export function EnrollmentInterface({ user }: EnrollmentInterfaceProps) {
     }
 
     return (
-        <div className="max-w-6xl mx-auto space-y-6">
+        <div className="space-y-6">
             {/* Welcome Header */}
             <Card className="glass">
                 <CardHeader>
@@ -108,44 +118,90 @@ export function EnrollmentInterface({ user }: EnrollmentInterfaceProps) {
                                 </CardHeader>
                                 <CardContent className="space-y-4">
                                     <div className="space-y-2 text-sm">
-                                        <div className="flex items-center text-muted-foreground">
-                                            <MapPin className="h-4 w-4 mr-2" />
-                                            {sabaq.location?.name || 'No location'}
-                                        </div>
-                                        <div className="flex items-center text-muted-foreground">
-                                            <Calendar className="h-4 w-4 mr-2" />
-                                            Enrollment closes: {format(new Date(sabaq.enrollmentEndsAt), 'PP')}
+                                        {sabaq.janab && (
+                                            <div className="flex items-center text-muted-foreground">
+                                                <Users className="h-4 w-4 mr-2 shrink-0" />
+                                                <div>
+                                                    <span className="font-medium text-foreground">Padhawnar: </span>
+                                                    {sabaq.janab.name}
+                                                </div>
+                                            </div>
+                                        )}
+                                        {sabaq.location && (
+                                            <div className="flex items-start text-muted-foreground">
+                                                <MapPin className="h-4 w-4 mr-2 shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <div className="font-medium text-foreground">{sabaq.location.name}</div>
+                                                    {sabaq.location.address && (
+                                                        <div className="text-xs mt-0.5">{sabaq.location.address}</div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+                                        <div className="flex items-start justify-between text-muted-foreground">
+                                            <div className="flex items-center">
+                                                <Calendar className="h-4 w-4 mr-2" />
+                                                Closes: {format(new Date(sabaq.enrollmentEndsAt), 'PP')}
+                                            </div>
+                                            <EnrollmentCountdown
+                                                enrollmentEndsAt={sabaq.enrollmentEndsAt}
+                                                className="text-primary"
+                                            />
                                         </div>
                                         <div className="flex items-center text-muted-foreground">
                                             <Users className="h-4 w-4 mr-2" />
-                                            {sabaq._count.enrollments} students enrolled
+                                            {sabaq._count.enrollments} mumineen enrolled
                                         </div>
                                     </div>
+
+                                    {sabaq.description && (
+                                        <div className="pt-2 border-t">
+                                            <p className="text-xs text-muted-foreground line-clamp-2">{sabaq.description}</p>
+                                        </div>
+                                    )}
+
+                                    {(sabaq.requirements || sabaq.notes) && (
+                                        <div className="pt-2 border-t space-y-1">
+                                            {sabaq.requirements && (
+                                                <div className="text-xs">
+                                                    <span className="font-medium text-foreground">Requirements: </span>
+                                                    <span className="text-muted-foreground">{sabaq.requirements}</span>
+                                                </div>
+                                            )}
+                                            {sabaq.notes && (
+                                                <div className="text-xs">
+                                                    <span className="font-medium text-foreground">Notes: </span>
+                                                    <span className="text-muted-foreground">{sabaq.notes}</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
 
                                     {/* Show status badge if enrolled, otherwise show enroll button */}
                                     {sabaq.enrollmentStatus ? (
                                         <div className="flex items-center justify-center gap-2 py-2">
                                             {sabaq.enrollmentStatus === 'APPROVED' && (
-                                                <Badge className="bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30 px-4 py-2 text-sm">
+                                                <Badge variant="frosted-green" className="px-4 py-2 text-sm">
                                                     <CheckCircle className="h-4 w-4 mr-2" />
-                                                    Enrolled
+                                                    Raza Granted!
                                                 </Badge>
                                             )}
                                             {sabaq.enrollmentStatus === 'PENDING' && (
-                                                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30 px-4 py-2 text-sm">
+                                                <Badge variant="frosted-amber" className="px-4 py-2 text-sm">
                                                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                                                     Pending Approval
                                                 </Badge>
                                             )}
                                             {sabaq.enrollmentStatus === 'REJECTED' && (
-                                                <Badge variant="outline" className="bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30 px-4 py-2 text-sm">
+                                                <Badge variant="frosted-red" className="px-4 py-2 text-sm">
                                                     <span className="mr-2">✕</span>
-                                                    Rejected
+                                                    Does not meet criteria at the moment
                                                 </Badge>
                                             )}
                                         </div>
                                     ) : (
                                         <Button
+                                            variant="frosted-green"
                                             onClick={() => handleEnroll(sabaq.id)}
                                             disabled={enrolling === sabaq.id}
                                             className="w-full"

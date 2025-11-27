@@ -22,8 +22,9 @@ import { ArrowLeft, Calendar, Clock, MapPin } from 'lucide-react';
 import { ExportButton } from '@/components/exports/export-button';
 import { SessionControls } from '@/components/sessions/session-controls';
 
-export default async function SessionDetailPage({ params }: { params: Promise<{ sessionId: string }> }) {
+export default async function SessionDetailPage({ params, searchParams }: { params: Promise<{ sessionId: string }>, searchParams: Promise<{ tab?: string }> }) {
     const { sessionId } = await params;
+    const { tab } = await searchParams;
     const session = await auth();
 
     if (!session?.user) redirect('/login');
@@ -77,7 +78,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                 <div className="space-y-1">
                     <div className="flex items-center gap-4">
                         <Link href="/dashboard/sessions">
-                            <Button variant="ghost" size="icon">
+                            <Button variant="frosted-blue" size="icon">
                                 <ArrowLeft className="h-4 w-4" />
                             </Button>
                         </Link>
@@ -154,7 +155,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
             </div>
 
             {/* Tabs for Attendance and Questions */}
-            <Tabs defaultValue="attendance" className="space-y-6">
+            <Tabs defaultValue={tab || "attendance"} className="space-y-6">
                 <TabsList>
                     <TabsTrigger value="attendance">Attendance</TabsTrigger>
                     <TabsTrigger value="questions">

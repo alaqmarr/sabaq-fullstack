@@ -63,6 +63,8 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
     });
 
     async function onSubmit(data: UserFormValues) {
+        if (!confirm('Are you sure you want to save these changes?')) return;
+
         setLoading(true);
         try {
             if (user) {

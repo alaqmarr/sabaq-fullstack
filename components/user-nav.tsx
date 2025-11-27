@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { logout } from '@/actions/auth';
+import { getItsImageUrl } from '@/lib/its';
 
 export function UserNav({ user }: { user: any }) {
     return (
@@ -19,7 +20,7 @@ export function UserNav({ user }: { user: any }) {
             <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="relative h-9 w-9 rounded-full">
                     <Avatar className="h-9 w-9">
-                        <AvatarImage src={user.image} alt={user.name} />
+                        <AvatarImage src={getItsImageUrl(user.itsNumber) || user.image} alt={user.name} />
                         <AvatarFallback>{user.name?.charAt(0)}</AvatarFallback>
                     </Avatar>
                 </Button>

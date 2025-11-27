@@ -44,33 +44,33 @@ export function QuestionForm({ sessionId, onSuccess }: QuestionFormProps) {
     return (
         <Card>
             <CardHeader>
-                <CardTitle className="flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 lowercase">
                     <MessageSquarePlus className="h-5 w-5" />
-                    Ask a Question
+                    ask a question
                 </CardTitle>
-                <CardDescription>
-                    Submit your question for this session. You can upvote other questions too.
+                <CardDescription className="lowercase">
+                    submit your question for this session. you can upvote other questions too.
                 </CardDescription>
             </CardHeader>
             <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <div className="space-y-2">
-                        <Label htmlFor="question">Your Question</Label>
+                        <Label htmlFor="question" className="lowercase">your question</Label>
                         <Textarea
                             id="question"
-                            placeholder="What would you like to ask?"
+                            placeholder="what would you like to ask?"
                             value={questionText}
                             onChange={(e) => setQuestionText(e.target.value)}
                             maxLength={500}
                             rows={4}
                             disabled={loading}
                         />
-                        <p className="text-xs text-muted-foreground text-right">
+                        <p className="text-xs text-muted-foreground text-right lowercase">
                             {remainingChars} characters remaining
                         </p>
                     </div>
-                    <Button type="submit" disabled={loading || !questionText.trim()} className="w-full">
-                        {loading ? 'Submitting...' : 'Submit Question'}
+                    <Button type="submit" disabled={loading || !questionText.trim()} className="w-full lowercase">
+                        {loading ? 'submitting...' : 'submit question'}
                     </Button>
                 </form>
             </CardContent>

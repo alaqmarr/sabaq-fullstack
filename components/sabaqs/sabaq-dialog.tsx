@@ -42,6 +42,7 @@ const sabaqSchema = z.object({
     criteria: z.string().min(1, 'Criteria is required'),
     enrollmentStartsAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
     enrollmentEndsAt: z.string().refine((val) => !isNaN(Date.parse(val)), 'Invalid date'),
+    whatsappGroupLink: z.string().optional(),
     allowLocationAttendance: z.boolean().default(false),
     locationId: z.string().optional(),
     janabId: z.string().optional(),
@@ -69,6 +70,7 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
             criteria: sabaq?.criteria || '',
             enrollmentStartsAt: sabaq?.enrollmentStartsAt ? new Date(sabaq.enrollmentStartsAt).toISOString().slice(0, 16) : '',
             enrollmentEndsAt: sabaq?.enrollmentEndsAt ? new Date(sabaq.enrollmentEndsAt).toISOString().slice(0, 16) : '',
+            whatsappGroupLink: sabaq?.whatsappGroupLink || '',
             allowLocationAttendance: sabaq?.allowLocationAttendance || false,
             locationId: sabaq?.locationId || undefined,
             janabId: sabaq?.janabId || undefined,
@@ -76,6 +78,8 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
     });
 
     async function onSubmit(data: SabaqFormValues) {
+        if (!confirm('Are you sure you want to save these changes?')) return;
+
         setLoading(true);
         try {
             const formattedData = {
@@ -139,6 +143,19 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
                                 )}
                             />
                         </div>
+                        <FormField
+                            control={form.control}
+                            name="whatsappGroupLink"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>WhatsApp Group Link (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="https://chat.whatsapp.com/..." {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
                         <div className="grid grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}

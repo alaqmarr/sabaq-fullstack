@@ -43,11 +43,11 @@ export function LocationGrid({ locations }: LocationGridProps) {
         <>
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 {locations.map((location) => (
-                    <Card key={location.id} className="group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1">
+                    <Card key={location.id} className="glass group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 border-white/20 dark:border-white/10">
                         <CardHeader className="pb-3">
                             <div className="flex justify-between items-start">
                                 <div className="space-y-1">
-                                    <CardTitle className="line-clamp-1 flex items-center gap-2">
+                                    <CardTitle className="line-clamp-1 flex items-center gap-2 text-lg font-semibold">
                                         <MapPin className="h-4 w-4 text-primary" />
                                         {location.name}
                                     </CardTitle>
@@ -55,8 +55,8 @@ export function LocationGrid({ locations }: LocationGridProps) {
                                         {location.address}
                                     </CardDescription>
                                 </div>
-                                <Badge variant={location.isActive ? "default" : "secondary"}>
-                                    {location.isActive ? "Active" : "Inactive"}
+                                <Badge variant={location.isActive ? "frosted-green" : "frosted-slate"}>
+                                    {location.isActive ? "active" : "inactive"}
                                 </Badge>
                             </div>
                         </CardHeader>
@@ -67,14 +67,14 @@ export function LocationGrid({ locations }: LocationGridProps) {
                                     {Number(location.latitude).toFixed(6)}, {Number(location.longitude).toFixed(6)}
                                 </span>
                             </div>
-                            <div className="flex items-center gap-2 text-muted-foreground">
+                            <div className="flex items-center gap-2 text-muted-foreground lowercase">
                                 <Map className="h-4 w-4" />
-                                <span>Radius: {location.radiusMeters}m</span>
+                                <span>radius: {location.radiusMeters}m</span>
                             </div>
                         </CardContent>
                         <CardFooter className="pt-0 flex justify-end gap-2">
                             <Button
-                                variant="ghost"
+                                variant="frosted-blue"
                                 size="sm"
                                 onClick={() => {
                                     setEditingLocation(location);
@@ -85,9 +85,8 @@ export function LocationGrid({ locations }: LocationGridProps) {
                                 <Edit className="h-4 w-4 mr-1" /> Edit
                             </Button>
                             <Button
-                                variant="ghost"
+                                variant="frosted-red"
                                 size="sm"
-                                className="text-destructive hover:text-destructive"
                                 onClick={() => handleDelete(location.id)}
                                 disabled={loading === location.id}
                             >

@@ -23,6 +23,7 @@ export async function createSabaq(data: any) {
         criteria: validatedData.criteria,
         enrollmentStartsAt: validatedData.enrollmentStartsAt,
         enrollmentEndsAt: validatedData.enrollmentEndsAt,
+        whatsappGroupLink: validatedData.whatsappGroupLink,
         allowLocationAttendance: validatedData.allowLocationAttendance,
         ...(validatedData.locationId
           ? { location: { connect: { id: validatedData.locationId } } }

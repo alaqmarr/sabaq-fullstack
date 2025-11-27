@@ -96,20 +96,7 @@ export function EnrollmentRequestsAdmin({ enrollments, sabaqs }: EnrollmentReque
                 Let's use a key to force re-render or just render it when needed.
             */}
 
-            {selectedSabaq !== 'all' && currentSabaq && (
-                <div className="hidden">
-                    {/* Hidden because we trigger via state, but we need the component mounted? 
-                         Actually, the existing component has a button trigger. 
-                         I'll modify the existing component to accept `open` prop or just use a custom one here.
-                         
-                         Easier: Just render the dialog here and control it.
-                         But I can't easily control the internal state of the imported component if it doesn't export control props.
-                         
-                         Let's check BulkEnrollmentDialog again. It has internal `open` state.
-                         I should modify BulkEnrollmentDialog to accept `open` and `onOpenChange` props.
-                     */}
-                </div>
-            )}
+
 
             {/* 
                 Since I can't easily modify the imported component's internal state without changing it,
