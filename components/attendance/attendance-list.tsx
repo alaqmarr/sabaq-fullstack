@@ -120,25 +120,34 @@ export function AttendanceList({ sessionId }: AttendanceListProps) {
                                         </div>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <Badge
-                                            variant={isLate ? 'destructive' : 'default'}
-                                            className={cn(
-                                                !isLate && "bg-green-600"
-                                            )}
-                                        >
-                                            {isLate ? (
-                                                <>
-                                                    <Clock className="h-3 w-3 mr-1" />
-                                                    Late
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="h-3 w-3 mr-1" />
-                                                    On Time
-                                                </>
-                                            )}
-                                        </Badge>
-                                        <span className="text-xs text-muted-foreground shrink-0">
+                                        <div className="flex flex-col items-end">
+                                            <Badge
+                                                variant={isLate ? 'destructive' : 'default'}
+                                                className={cn(
+                                                    !isLate && "bg-green-600"
+                                                )}
+                                            >
+                                                {isLate ? (
+                                                    <>
+                                                        <Clock className="h-3 w-3 mr-1" />
+                                                        Late
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="h-3 w-3 mr-1" />
+                                                        On Time
+                                                    </>
+                                                )}
+                                            </Badge>
+                                            <span className="text-xs text-muted-foreground mt-1">
+                                                {record.method === 'LOCATION_BASED_SELF' || record.method === 'QR_SCAN' ? (
+                                                    'Self'
+                                                ) : (
+                                                    record.marker?.name ? `by ${record.marker.name}` : 'Manual'
+                                                )}
+                                            </span>
+                                        </div>
+                                        <span className="text-xs text-muted-foreground shrink-0 w-16 text-right">
                                             {new Date(record.markedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                         </span>
                                     </div>

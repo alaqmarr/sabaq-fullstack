@@ -84,3 +84,155 @@ export function UpcomingSessionsSkeleton() {
         </div>
     );
 }
+
+export function SabaqSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-10 w-[200px] mb-2" />
+                    <Skeleton className="h-4 w-[150px]" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="h-10 w-[100px]" />
+                    <Skeleton className="h-10 w-[80px]" />
+                </div>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="h-full">
+                        <CardHeader className="pb-2">
+                            <div className="flex justify-between items-start">
+                                <Skeleton className="h-6 w-[140px]" />
+                                <Skeleton className="h-5 w-[60px]" />
+                            </div>
+                            <Skeleton className="h-4 w-[100px]" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-[80%]" />
+                                </div>
+                                <div className="flex justify-between items-center pt-2">
+                                    <Skeleton className="h-4 w-[60px]" />
+                                    <Skeleton className="h-4 w-[40px]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function SessionListSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-10 w-[200px] mb-2" />
+                    <Skeleton className="h-4 w-[150px]" />
+                </div>
+                <Skeleton className="h-10 w-[100px]" />
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="h-full">
+                        <CardHeader className="pb-2">
+                            <Skeleton className="h-6 w-[140px] mb-2" />
+                            <Skeleton className="h-4 w-[100px]" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-[80%]" />
+                                </div>
+                                <div className="flex justify-between items-center pt-2">
+                                    <Skeleton className="h-8 w-[80px]" />
+                                    <Skeleton className="h-8 w-[80px]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function UserListSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-10 w-[200px] mb-2" />
+                    <Skeleton className="h-4 w-[150px]" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="h-10 w-[100px]" />
+                    <Skeleton className="h-10 w-[100px]" />
+                </div>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="h-full">
+                        <CardHeader className="flex flex-row items-center gap-4 pb-2">
+                            <Skeleton className="h-12 w-12 rounded-full" />
+                            <div className="space-y-2">
+                                <Skeleton className="h-4 w-[120px]" />
+                                <Skeleton className="h-3 w-[80px]" />
+                            </div>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2 mt-2">
+                                <Skeleton className="h-3 w-full" />
+                                <Skeleton className="h-3 w-[60%]" />
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+export function LocationListSkeleton() {
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <div>
+                    <Skeleton className="h-10 w-[200px] mb-2" />
+                    <Skeleton className="h-4 w-[150px]" />
+                </div>
+                <div className="flex gap-2">
+                    <Skeleton className="h-10 w-[100px]" />
+                    <Skeleton className="h-10 w-[100px]" />
+                </div>
+            </div>
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {[...Array(8)].map((_, i) => (
+                    <Card key={i} className="h-full">
+                        <CardHeader className="pb-2">
+                            <Skeleton className="h-6 w-[140px] mb-2" />
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-4">
+                                <div className="space-y-2">
+                                    <Skeleton className="h-4 w-full" />
+                                    <Skeleton className="h-4 w-[80%]" />
+                                </div>
+                                <div className="flex justify-between items-center pt-2">
+                                    <Skeleton className="h-4 w-[60px]" />
+                                    <Skeleton className="h-4 w-[40px]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}

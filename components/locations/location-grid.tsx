@@ -8,6 +8,7 @@ import { Edit, Trash, MapPin, Navigation, Map } from 'lucide-react';
 import { LocationDialog } from './location-dialog';
 import { deleteLocation } from '@/actions/locations';
 import { toast } from 'sonner';
+import { MotionList, MotionItem } from '@/components/ui/motion-list';
 
 interface LocationGridProps {
     locations: any[];
@@ -41,61 +42,65 @@ export function LocationGrid({ locations }: LocationGridProps) {
 
     return (
         <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            <MotionList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {locations.map((location) => (
-                    <Card key={location.id} className="glass group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 border-white/20 dark:border-white/10">
-                        <CardHeader className="pb-3">
-                            <div className="flex justify-between items-start">
-                                <div className="space-y-1">
-                                    <CardTitle className="line-clamp-1 flex items-center gap-2 text-lg font-semibold">
-                                        <MapPin className="h-4 w-4 text-primary" />
-                                        {location.name}
-                                    </CardTitle>
-                                    <CardDescription className="line-clamp-1">
-                                        {location.address}
-                                    </CardDescription>
+                    <MotionItem key={location.id}>
+                        <Card className="glass-premium group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 border-white/20 dark:border-white/10 h-full">
+                            <CardHeader className="pb-3 pt-4 sm:pt-5 px-4 sm:px-5">
+                                <div className="flex justify-between items-start gap-2">
+                                    <div className="space-y-1 min-w-0">
+                                        <CardTitle className="line-clamp-1 flex items-center gap-2 text-base sm:text-lg font-semibold">
+                                            <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary shrink-0" />
+                                            <span className="truncate">{location.name}</span>
+                                        </CardTitle>
+                                        <CardDescription className="line-clamp-1 text-xs sm:text-sm">
+                                            {location.address}
+                                        </CardDescription>
+                                    </div>
+                                    <Badge variant={location.isActive ? "frosted-green" : "frosted-slate"} className="text-[10px] sm:text-xs shrink-0">
+                                        {location.isActive ? "active" : "inactive"}
+                                    </Badge>
                                 </div>
-                                <Badge variant={location.isActive ? "frosted-green" : "frosted-slate"}>
-                                    {location.isActive ? "active" : "inactive"}
-                                </Badge>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="pb-3 space-y-2 text-sm">
-                            <div className="flex items-center gap-2 text-muted-foreground">
-                                <Navigation className="h-4 w-4" />
-                                <span>
-                                    {Number(location.latitude).toFixed(6)}, {Number(location.longitude).toFixed(6)}
-                                </span>
-                            </div>
-                            <div className="flex items-center gap-2 text-muted-foreground lowercase">
-                                <Map className="h-4 w-4" />
-                                <span>radius: {location.radiusMeters}m</span>
-                            </div>
-                        </CardContent>
-                        <CardFooter className="pt-0 flex justify-end gap-2">
-                            <Button
-                                variant="frosted-blue"
-                                size="sm"
-                                onClick={() => {
-                                    setEditingLocation(location);
-                                    setIsDialogOpen(true);
-                                }}
-                                disabled={loading === location.id}
-                            >
-                                <Edit className="h-4 w-4 mr-1" /> Edit
-                            </Button>
-                            <Button
-                                variant="frosted-red"
-                                size="sm"
-                                onClick={() => handleDelete(location.id)}
-                                disabled={loading === location.id}
-                            >
-                                <Trash className="h-4 w-4 mr-1" /> Delete
-                            </Button>
-                        </CardFooter>
-                    </Card>
+                            </CardHeader>
+                            <CardContent className="pb-4 sm:pb-5 px-4 sm:px-5 space-y-2 text-sm">
+                                <div className="flex items-center gap-2 text-muted-foreground">
+                                    <Navigation className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                                    <span className="text-xs sm:text-sm truncate">
+                                        {Number(location.latitude).toFixed(6)}, {Number(location.longitude).toFixed(6)}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-2 text-muted-foreground lowercase">
+                                    <Map className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
+                                    <span className="text-xs sm:text-sm">radius: {location.radiusMeters}m</span>
+                                </div>
+                            </CardContent>
+                            <CardFooter className="pt-0 px-4 sm:px-5 pb-4 sm:pb-5 flex justify-end gap-2">
+                                <Button
+                                    variant="frosted-blue"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs sm:text-sm"
+                                    onClick={() => {
+                                        setEditingLocation(location);
+                                        setIsDialogOpen(true);
+                                    }}
+                                    disabled={loading === location.id}
+                                >
+                                    <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" /> Edit
+                                </Button>
+                                <Button
+                                    variant="frosted-red"
+                                    size="sm"
+                                    className="h-8 px-3 text-xs sm:text-sm"
+                                    onClick={() => handleDelete(location.id)}
+                                    disabled={loading === location.id}
+                                >
+                                    <Trash className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1.5" /> Delete
+                                </Button>
+                            </CardFooter>
+                        </Card>
+                    </MotionItem>
                 ))}
-            </div>
+            </MotionList>
 
             {editingLocation && (
                 <LocationDialog

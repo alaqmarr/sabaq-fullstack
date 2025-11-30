@@ -15,14 +15,13 @@ export function SabaqHeader({ locations, users, defaultOpen = false }: SabaqHead
     const [open, setOpen] = useState(defaultOpen);
 
     return (
-        <div className="flex items-center justify-between space-y-2">
-            <h2 className="text-3xl text-cred-heading tracking-tight">Sabaqs</h2>
-            <div className="flex items-center space-x-2">
-                <Button onClick={() => setOpen(true)}>
-                    <Plus className="mr-2 h-4 w-4" /> Create Sabaq
-                </Button>
-                <SabaqDialog locations={locations} users={users} open={open} onOpenChange={setOpen} />
-            </div>
-        </div>
+        <>
+            <Button onClick={() => setOpen(true)} size="sm" className="sm:h-10">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Create Sabaq</span>
+                <span className="inline sm:hidden">Create</span>
+            </Button>
+            <SabaqDialog locations={locations} users={users} open={open} onOpenChange={setOpen} />
+        </>
     );
 }

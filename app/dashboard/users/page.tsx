@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getUsers } from '@/actions/users';
-import { UserTable } from '@/components/users/user-table';
-import { UserGrid } from '@/components/users/user-grid';
+import { UsersClientWrapper } from '@/components/users/users-client-wrapper';
 import { UserDialogManager } from '@/components/users/user-dialog-manager';
 import { BulkUserDialogManager } from '@/components/users/bulk-user-dialog-manager';
 import { ViewToggle } from '@/components/ui/view-toggle';
@@ -62,11 +61,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 </div>
             </div>
 
-            {currentView === 'grid' ? (
-                <UserGrid users={users} />
-            ) : (
-                <UserTable users={users} />
-            )}
+            <UsersClientWrapper users={users} currentView={currentView} />
 
             <UserDialogManager isOpen={isDialogOpen} />
             <BulkUserDialogManager isOpen={isBulkOpen} />

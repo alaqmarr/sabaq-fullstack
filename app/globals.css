@@ -157,6 +157,11 @@
 
 @layer utilities {
 
+  /* ====== LAYOUT STABILITY ====== */
+  .scrollbar-gutter-stable {
+    scrollbar-gutter: stable;
+  }
+
   /* ====== GLASSMORPHISM & FROST EFFECTS ====== */
   .glass {
     background: rgba(255, 255, 255, 0.7);
@@ -417,20 +422,6 @@
   }
   /* CRED Typography System */
   .text-cred-heading {
-    @apply uppercase tracking-wider font-bold;
-  }
-
-  .text-cred-label {
-    @apply lowercase tracking-wide font-medium text-muted-foreground;
-  }
-
-  .text-cred-action {
-    @apply lowercase font-medium tracking-wide;
-  }
-}
-
-@layer base {
-  h1, h2, h3 {
     @apply uppercase tracking-wider font-bold;
   }
   

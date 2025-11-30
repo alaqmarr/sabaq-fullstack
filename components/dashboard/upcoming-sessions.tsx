@@ -1,7 +1,7 @@
 import { getUpcomingSessions } from '@/actions/sessions';
 import { auth } from '@/auth';
 import { Calendar } from 'lucide-react';
-import { UpcomingSessionCard } from './upcoming-session-card';
+import { SessionCard } from './session-card';
 
 export async function UpcomingSessionsSection() {
     const session = await auth();
@@ -18,9 +18,9 @@ export async function UpcomingSessionsSection() {
                 <Calendar className="h-4 w-4 sm:h-5 sm:w-5" />
                 upcoming sessions
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex flex-col gap-4">
                 {sessions.map((sess: any) => (
-                    <UpcomingSessionCard key={sess.id} session={sess} userRole={session?.user?.role || 'MUMIN'} />
+                    <SessionCard key={sess.id} session={sess} userRole={session?.user?.role || 'MUMIN'} variant="upcoming" />
                 ))}
             </div>
         </div>

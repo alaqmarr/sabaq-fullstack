@@ -9,14 +9,13 @@ export function LocationHeader() {
     const [open, setOpen] = useState(false);
 
     return (
-        <div className="flex items-center justify-between">
-            <h2 className="text-3xl text-cred-heading tracking-tight lowercase">locations</h2>
-            <div className="flex items-center space-x-2">
-                <Button onClick={() => setOpen(true)} variant="frosted-green">
-                    <Plus className="mr-2 h-4 w-4" /> add location
-                </Button>
-                <LocationDialog open={open} onOpenChange={setOpen} />
-            </div>
-        </div>
+        <>
+            <Button onClick={() => setOpen(true)} variant="frosted-green" size="sm" className="sm:h-10">
+                <Plus className="h-4 w-4 sm:mr-2" />
+                <span className="hidden sm:inline">Add Location</span>
+                <span className="inline sm:hidden">Add</span>
+            </Button>
+            <LocationDialog open={open} onOpenChange={setOpen} />
+        </>
     );
 }

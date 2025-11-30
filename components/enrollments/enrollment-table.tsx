@@ -19,6 +19,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
+import { SearchInput } from '../ui/search-input';
 import { approveEnrollment, rejectEnrollment, bulkApproveEnrollments, bulkRejectEnrollments } from '@/actions/enrollments';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -34,14 +35,29 @@ interface EnrollmentTableProps {
 export function EnrollmentTable({ enrollments, sabaqId }: EnrollmentTableProps) {
     const [selectedIds, setSelectedIds] = useState<string[]>([]);
     const [statusFilter, setStatusFilter] = useState<string>('all');
+    const [searchQuery, setSearchQuery] = useState('');
     const [loading, setLoading] = useState(false);
     const [rejectionDialogOpen, setRejectionDialogOpen] = useState(false);
     const [rejectingId, setRejectingId] = useState<string | null>(null);
     const [isBulkReject, setIsBulkReject] = useState(false);
 
     const filteredEnrollments = enrollments.filter((enrollment) => {
-        if (statusFilter === 'all') return true;
-        return enrollment.status === statusFilter;
+        // Status filter
+        if (statusFilter !== 'all' && enrollment.status !== statusFilter) {
+            return false;
+        }
+
+        // Search filter
+        if (searchQuery) {
+            const query = searchQuery.toLowerCase();
+            const name = enrollment.user.name?.toLowerCase() || '';
+            const itsNumber = enrollment.user.itsNumber?.toLowerCase() || '';
+            const email = enrollment.user.email?.toLowerCase() || '';
+
+            return name.includes(query) || itsNumber.includes(query) || email.includes(query);
+        }
+
+        return true;
     });
 
     const handleSelectAll = (checked: boolean) => {
@@ -142,128 +158,136 @@ export function EnrollmentTable({ enrollments, sabaqId }: EnrollmentTableProps) 
     return (
         <>
             <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <Select value={statusFilter} onValueChange={setStatusFilter}>
-                        <SelectTrigger className="w-[180px]">
-                            <SelectValue placeholder="Filter by status" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Status</SelectItem>
-                            <SelectItem value="PENDING">Pending</SelectItem>
-                            <SelectItem value="APPROVED">Approved</SelectItem>
-                            <SelectItem value="REJECTED">Rejected</SelectItem>
-                        </SelectContent>
-                    </Select>
-                    {selectedIds.length > 0 && (
-                        <div className="flex gap-2">
-                            <Button
-                                onClick={handleBulkApprove}
-                                disabled={loading}
-                                size="sm"
-                                variant="default"
-                            >
-                                <Check className="mr-2 h-4 w-4" />
-                                Approve ({selectedIds.length})
-                            </Button>
-                            <Button
-                                onClick={handleBulkReject}
-                                disabled={loading}
-                                size="sm"
-                                variant="destructive"
-                            >
-                                <X className="mr-2 h-4 w-4" />
-                                Reject ({selectedIds.length})
-                            </Button>
-                        </div>
-                    )}
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <SearchInput
+                        value={searchQuery}
+                        onChange={setSearchQuery}
+                        placeholder="Search by name, ITS, or email..."
+                        className="w-full sm:max-w-sm"
+                    />
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                        <Select value={statusFilter} onValueChange={setStatusFilter}>
+                            <SelectTrigger className="w-full sm:w-[180px]">
+                                <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="PENDING">Pending</SelectItem>
+                                <SelectItem value="APPROVED">Approved</SelectItem>
+                                <SelectItem value="REJECTED">Rejected</SelectItem>
+                            </SelectContent>
+                        </Select>
+                        {selectedIds.length > 0 && (
+                            <div className="flex gap-2">
+                                <Button
+                                    onClick={handleBulkApprove}
+                                    disabled={loading}
+                                    size="sm"
+                                    variant="default"
+                                >
+                                    <Check className="mr-2 h-4 w-4" />
+                                    Approve ({selectedIds.length})
+                                </Button>
+                                <Button
+                                    onClick={handleBulkReject}
+                                    disabled={loading}
+                                    size="sm"
+                                    variant="destructive"
+                                >
+                                    <X className="mr-2 h-4 w-4" />
+                                    Reject ({selectedIds.length})
+                                </Button>
+                            </div>
+                        )}
+                    </div>
                 </div>
+            </div>
 
-                <div className="rounded-md border">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead className="w-12">
+            <div className="rounded-md border">
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead className="w-12">
+                                <Checkbox
+                                    checked={
+                                        selectedIds.length > 0 &&
+                                        selectedIds.length ===
+                                        filteredEnrollments.filter((e) => e.status === 'PENDING').length
+                                    }
+                                    onCheckedChange={handleSelectAll}
+                                />
+                            </TableHead>
+                            <TableHead>ITS Number</TableHead>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Requested At</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredEnrollments.map((enrollment) => (
+                            <TableRow key={enrollment.id}>
+                                <TableCell>
                                     <Checkbox
-                                        checked={
-                                            selectedIds.length > 0 &&
-                                            selectedIds.length ===
-                                            filteredEnrollments.filter((e) => e.status === 'PENDING').length
+                                        checked={selectedIds.includes(enrollment.id)}
+                                        onCheckedChange={(checked) =>
+                                            handleSelectOne(enrollment.id, checked as boolean)
                                         }
-                                        onCheckedChange={handleSelectAll}
+                                        disabled={enrollment.status !== 'PENDING'}
                                     />
-                                </TableHead>
-                                <TableHead>ITS Number</TableHead>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Requested At</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                                </TableCell>
+                                <TableCell className="font-medium">
+                                    {enrollment.user.itsNumber}
+                                </TableCell>
+                                <TableCell>{enrollment.user.name}</TableCell>
+                                <TableCell>{enrollment.user.email || 'N/A'}</TableCell>
+                                <TableCell>
+                                    {format(new Date(enrollment.requestedAt), 'dd/MM/yy HH:mm')}
+                                </TableCell>
+                                <TableCell>
+                                    <Badge className={statusColors[enrollment.status as keyof typeof statusColors]}>
+                                        {enrollment.status}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right">
+                                    {enrollment.status === 'PENDING' && (
+                                        <div className="flex justify-end gap-2">
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleApprove(enrollment.id)}
+                                                disabled={loading}
+                                            >
+                                                <Check className="h-4 w-4 text-green-600" />
+                                            </Button>
+                                            <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                onClick={() => handleReject(enrollment.id)}
+                                                disabled={loading}
+                                            >
+                                                <X className="h-4 w-4 text-red-600" />
+                                            </Button>
+                                        </div>
+                                    )}
+                                    {enrollment.status === 'REJECTED' && enrollment.rejectionReason && (
+                                        <span className="text-xs text-muted-foreground">
+                                            {enrollment.rejectionReason}
+                                        </span>
+                                    )}
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredEnrollments.map((enrollment) => (
-                                <TableRow key={enrollment.id}>
-                                    <TableCell>
-                                        <Checkbox
-                                            checked={selectedIds.includes(enrollment.id)}
-                                            onCheckedChange={(checked) =>
-                                                handleSelectOne(enrollment.id, checked as boolean)
-                                            }
-                                            disabled={enrollment.status !== 'PENDING'}
-                                        />
-                                    </TableCell>
-                                    <TableCell className="font-medium">
-                                        {enrollment.user.itsNumber}
-                                    </TableCell>
-                                    <TableCell>{enrollment.user.name}</TableCell>
-                                    <TableCell>{enrollment.user.email || 'N/A'}</TableCell>
-                                    <TableCell>
-                                        {format(new Date(enrollment.requestedAt), 'dd/MM/yy HH:mm')}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Badge className={statusColors[enrollment.status as keyof typeof statusColors]}>
-                                            {enrollment.status}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right">
-                                        {enrollment.status === 'PENDING' && (
-                                            <div className="flex justify-end gap-2">
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleApprove(enrollment.id)}
-                                                    disabled={loading}
-                                                >
-                                                    <Check className="h-4 w-4 text-green-600" />
-                                                </Button>
-                                                <Button
-                                                    size="sm"
-                                                    variant="ghost"
-                                                    onClick={() => handleReject(enrollment.id)}
-                                                    disabled={loading}
-                                                >
-                                                    <X className="h-4 w-4 text-red-600" />
-                                                </Button>
-                                            </div>
-                                        )}
-                                        {enrollment.status === 'REJECTED' && enrollment.rejectionReason && (
-                                            <span className="text-xs text-muted-foreground">
-                                                {enrollment.rejectionReason}
-                                            </span>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                            {filteredEnrollments.length === 0 && (
-                                <TableRow>
-                                    <TableCell colSpan={7} className="text-center">
-                                        No enrollments found.
-                                    </TableCell>
-                                </TableRow>
-                            )}
-                        </TableBody>
-                    </Table>
-                </div>
+                        ))}
+                        {filteredEnrollments.length === 0 && (
+                            <TableRow>
+                                <TableCell colSpan={7} className="text-center">
+                                    No enrollments found.
+                                </TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </div>
 
             <RejectionDialog

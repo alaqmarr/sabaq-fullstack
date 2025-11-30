@@ -1,8 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { getLocations } from '@/actions/locations';
-import { LocationTable } from '@/components/locations/location-table';
-import { LocationGrid } from '@/components/locations/location-grid';
+import { LocationsClientWrapper } from '@/components/locations/locations-client-wrapper';
 import { LocationHeader } from '@/components/locations/location-header';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { requirePermission } from '@/lib/rbac';
@@ -27,15 +26,19 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
     return (
         <div className="space-y-4 sm:space-y-6">
             <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <LocationHeader />
-                <ViewToggle defaultView={currentView} />
+                <div>
+                    <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 lowercase">
+                        locations
+                    </h1>
+                    <p className="text-cred-label mt-2 lowercase">manage attendance locations</p>
+                </div>
+                <div className="flex items-center gap-2">
+                    <LocationHeader />
+                    <ViewToggle defaultView={currentView} />
+                </div>
             </div>
 
-            {currentView === 'grid' ? (
-                <LocationGrid locations={locations} />
-            ) : (
-                <LocationTable locations={locations} />
-            )}
+            <LocationsClientWrapper locations={locations} currentView={currentView} />
         </div>
     );
 }

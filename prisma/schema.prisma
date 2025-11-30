@@ -21,13 +21,20 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  enrollments    Enrollment[]
-  attendances    Attendance[]
-  questions      Question[]
-  votes          QuestionVote[]
-  assignedSabaqs SabaqAdmin[]
-  managedSabaqs  Sabaq[]        @relation("SabaqJanab")
-  SecurityLog    SecurityLog[]
+  enrollments       Enrollment[]
+  attendances       Attendance[]
+  questions         Question[]
+  votes             QuestionVote[]
+  assignedSabaqs    SabaqAdmin[]
+  managedSabaqs     Sabaq[]        @relation("SabaqJanab")
+  markedAttendances Attendance[]   @relation("AttendanceMarker")
+  SecurityLog       SecurityLog[]
+
+  managedSabaqsCount Int @default(0)
+  questionsCount     Int @default(0)
+  attendedCount      Int @default(0)
+  enrollmentCount    Int @default(0)
+  lateCount          Int @default(0)
 
   @@index([role])
   @@index([itsNumber])
@@ -43,6 +50,8 @@ model Location {
   isActive     Boolean  @default(true)
   createdBy    String
   createdAt    DateTime @default(now())
+
+  sabaqsCount Int @default(0)
 
   sabaqs Sabaq[]
 
@@ -66,11 +75,16 @@ model Sabaq {
   createdBy               String
   createdAt               DateTime @default(now())
 
-  location    Location?    @relation(fields: [locationId], references: [id])
-  janab       User?        @relation("SabaqJanab", fields: [janabId], references: [id])
-  admins      SabaqAdmin[]
-  enrollments Enrollment[]
-  sessions    Session[]
+  location        Location?    @relation(fields: [locationId], references: [id])
+  janab           User?        @relation("SabaqJanab", fields: [janabId], references: [id])
+  admins          SabaqAdmin[]
+  enrollments     Enrollment[]
+  sessions        Session[]
+  activeSessionId String?      @unique
+  activeSession   Session?     @relation("ActiveSession", fields: [activeSessionId], references: [id])
+  
+  conductedSessionsCount Int @default(0)
+  enrollmentCount        Int @default(0)
 
   @@index([isActive])
   @@index([enrollmentStartsAt, enrollmentEndsAt])
@@ -124,9 +138,13 @@ model Session {
   createdBy   String
   createdAt   DateTime  @default(now())
 
-  sabaq       Sabaq        @relation(fields: [sabaqId], references: [id])
-  attendances Attendance[]
-  questions   Question[]
+  attendanceCount Int @default(0)
+  questionsCount  Int @default(0)
+
+  sabaq          Sabaq        @relation(fields: [sabaqId], references: [id])
+  activeForSabaq Sabaq?       @relation("ActiveSession")
+  attendances    Attendance[]
+  questions      Question[]
 
   @@index([sabaqId])
   @@index([isActive])
@@ -142,6 +160,7 @@ model Attendance {
   itsNumber      String
   markedAt       DateTime         @default(now())
   markedBy       String
+  marker         User             @relation("AttendanceMarker", fields: [markedBy], references: [id])
   method         AttendanceMethod
   latitude       Decimal?         @db.Decimal(10, 8)
   longitude      Decimal?         @db.Decimal(11, 8)
@@ -156,6 +175,7 @@ model Attendance {
   @@unique([sessionId, userId])
   @@index([sessionId])
   @@index([userId])
+  @@index([markedBy])
   @@index([markedAt])
   @@index([isLate])
 }

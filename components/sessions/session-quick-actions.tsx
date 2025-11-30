@@ -1,30 +1,199 @@
-'use client';
+"use client";
 
-import { Button } from '@/components/ui/button';
-import { Plus, FileDown } from 'lucide-react';
-import { useSearchParams, useRouter, usePathname } from 'next/navigation';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { startSession, endSession, resumeSession } from "@/actions/sessions";
+import { toast } from "sonner";
+import { Play, Square, RotateCcw, Loader2 } from "lucide-react";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useRouter } from "next/navigation";
 
-export function SessionQuickActions() {
-    const searchParams = useSearchParams();
+interface SessionQuickActionsProps {
+    sessionId: string;
+    isActive: boolean;
+    isEnded: boolean;
+    hasStarted: boolean;
+    isAdmin: boolean;
+}
+
+export function SessionQuickActions({
+    sessionId,
+    isActive,
+    isEnded,
+    hasStarted,
+    isAdmin,
+}: SessionQuickActionsProps) {
+    const [loading, setLoading] = useState(false);
     const router = useRouter();
-    const pathname = usePathname();
 
-    const handleAction = (action: string) => {
-        const params = new URLSearchParams(searchParams);
-        params.set('action', action);
-        router.push(`${pathname}?${params.toString()}`);
+    if (!isAdmin) return null;
+
+    const handleStart = async () => {
+        setLoading(true);
+        try {
+            const result = await startSession(sessionId);
+            if (result.success) {
+                toast.success("Session started successfully");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to start session");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleEnd = async () => {
+        setLoading(true);
+        try {
+            const result = await endSession(sessionId);
+            if (result.success) {
+                toast.success("Session ended successfully");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to end session");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResume = async () => {
+        setLoading(true);
+        try {
+            const result = await resumeSession(sessionId);
+            if (result.success) {
+                toast.success("Session resumed successfully");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to resume session");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => handleAction('export')}>
-                <FileDown className="mr-2 h-4 w-4" />
-                Export
-            </Button>
-            <Button size="sm" onClick={() => handleAction('new')}>
-                <Plus className="mr-2 h-4 w-4" />
-                Create Session
-            </Button>
-        </div>
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-lg">Quick Actions</CardTitle>
+            </CardHeader>
+            <CardContent className="flex flex-row flex-wrap gap-3">
+                {!hasStarted && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button className="w-full sm:w-auto justify-start" disabled={loading}>
+                                {loading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Play className="mr-2 h-4 w-4 fill-current" />
+                                )}
+                                Start Session
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Start Session?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will enable attendance marking and notify enrolled users.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleStart}>
+                                    Start Session
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+
+                {isActive && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                variant="destructive"
+                                className="w-full sm:w-auto justify-start"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <Square className="mr-2 h-4 w-4 fill-current" />
+                                )}
+                                End Session
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>End Session?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will stop attendance marking. You can resume it later if needed.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction
+                                    onClick={handleEnd}
+                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                >
+                                    End Session
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+
+                {isEnded && (
+                    <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                            <Button
+                                variant="outline"
+                                className="w-full sm:w-auto justify-start"
+                                disabled={loading}
+                            >
+                                {loading ? (
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                ) : (
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                )}
+                                Resume Session
+                            </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                            <AlertDialogHeader>
+                                <AlertDialogTitle>Resume Session?</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                    This will re-enable attendance marking.
+                                </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                <AlertDialogAction onClick={handleResume}>
+                                    Resume Session
+                                </AlertDialogAction>
+                            </AlertDialogFooter>
+                        </AlertDialogContent>
+                    </AlertDialog>
+                )}
+            </CardContent>
+        </Card>
     );
 }

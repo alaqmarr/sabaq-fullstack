@@ -8,6 +8,7 @@ import { markAttendanceManual } from '@/actions/attendance';
 import { toast } from 'sonner';
 import { ScanLine, User } from 'lucide-react';
 import { ITSInput } from '@/components/ui/its-input';
+import { QRScanner } from '@/components/attendance/qr-scanner';
 
 interface AttendanceFormProps {
     sessionId: string;
@@ -58,11 +59,26 @@ export function AttendanceForm({ sessionId, onSuccess }: AttendanceFormProps) {
                     </TabsList>
 
                     <TabsContent value="qr" className="space-y-4">
-                        <div className="flex flex-col items-center justify-center py-8 border-2 border-dashed rounded-lg">
-                            <ScanLine className="h-16 w-16 text-muted-foreground mb-4" />
-                            <p className="text-sm text-muted-foreground">QR Scanner coming soon</p>
-                            <p className="text-xs text-muted-foreground mt-2">Use manual entry for now</p>
-                        </div>
+                        <QRScanner
+                            onScan={async (decodedText) => {
+                                if (!/^\d{8}$/.test(decodedText)) {
+                                    toast.error('Invalid ITS: Must be 8 digits');
+                                    return;
+                                }
+                                setLoading(true);
+                                const result = await markAttendanceManual(sessionId, decodedText);
+                                if (result.success) {
+                                    toast.success(`Marked: ${decodedText}`);
+                                    onSuccess?.();
+                                } else {
+                                    toast.error(result.error || 'Failed to mark');
+                                }
+                                setLoading(false);
+                            }}
+                            scanResult={null}
+                            onClearResult={() => { }}
+                            onError={(err) => console.log('Scanner error:', err)}
+                        />
                     </TabsContent>
 
                     <TabsContent value="manual" className="space-y-4">

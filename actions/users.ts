@@ -229,13 +229,35 @@ export async function createUser(data: any) {
 
 export async function updateUser(id: string, data: any) {
   try {
-    await requirePermission("users", "update");
+    const actor = await requirePermission("users", "update");
 
-    // Fetch current user to check for role change
-    const currentUser = await prisma.user.findUnique({
+    // Fetch target user to check for role change
+    const targetUser = await prisma.user.findUnique({
       where: { id },
       select: { role: true, email: true, name: true },
     });
+
+    if (!targetUser) {
+      return { success: false, error: "User not found" };
+    }
+
+    // Hierarchy checks
+    if (data.role && data.role !== targetUser.role) {
+      // Prevent non-Superadmin from assigning Superadmin role
+      if (data.role === "SUPERADMIN" && actor.role !== "SUPERADMIN") {
+        return {
+          success: false,
+          error: "Only Superadmins can assign Superadmin role",
+        };
+      }
+      // Prevent non-Superadmin from modifying a Superadmin's role
+      if (targetUser.role === "SUPERADMIN" && actor.role !== "SUPERADMIN") {
+        return {
+          success: false,
+          error: "Only Superadmins can modify Superadmin users",
+        };
+      }
+    }
 
     if (data.password) {
       data.password = await hash(data.password, 10);
@@ -247,10 +269,10 @@ export async function updateUser(id: string, data: any) {
     });
 
     // Check if role changed
-    if (currentUser && data.role && data.role !== currentUser.role) {
-      if (currentUser.email) {
-        await queueEmail(currentUser.email, "Role Updated", "role-updated", {
-          userName: currentUser.name,
+    if (data.role && data.role !== targetUser.role) {
+      if (targetUser.email) {
+        await queueEmail(targetUser.email, "Role Updated", "role-updated", {
+          userName: targetUser.name,
           newRole: data.role,
         });
         // Trigger processing immediately
@@ -391,17 +413,23 @@ export async function getUserProfile(userId: string) {
         });
 
         // 2. Get user's attendance records for this sabaq
-        const attendances = await prisma.attendance.findMany({
-          where: {
-            userId: user.id,
-            session: { sabaqId: sabaqId },
-          },
-          select: { isLate: true },
-        });
+        const [totalAttended, late] = await Promise.all([
+          prisma.attendance.count({
+            where: {
+              userId: user.id,
+              session: { sabaqId: sabaqId },
+            },
+          }),
+          prisma.attendance.count({
+            where: {
+              userId: user.id,
+              session: { sabaqId: sabaqId },
+              isLate: true,
+            },
+          }),
+        ]);
 
-        const present = attendances.filter((a) => !a.isLate).length;
-        const late = attendances.filter((a) => a.isLate).length;
-        const totalAttended = present + late;
+        const present = totalAttended - late;
 
         const absent = Math.max(0, totalSessions - totalAttended);
 

@@ -1,7 +1,7 @@
 import { getActiveSessions } from '@/actions/sessions';
 import { auth } from '@/auth';
 import { prisma } from '@/lib/prisma';
-import { ActiveSessionCard } from './active-session-card';
+import { SessionCard } from './session-card';
 
 export async function ActiveSessionsSection() {
     const session = await auth();
@@ -34,13 +34,14 @@ export async function ActiveSessionsSection() {
                 </span>
                 Active Sessions
             </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="flex flex-col gap-4">
                 {sessions.map((sess: any) => (
-                    <ActiveSessionCard
+                    <SessionCard
                         key={sess.id}
                         session={sess}
                         userRole={session?.user?.role || 'MUMIN'}
                         isAttended={attendedSessionIds.has(sess.id)}
+                        variant="active"
                     />
                 ))}
             </div>

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { requirePermission } from "@/lib/rbac";
 import { processEmailQueue } from "./email-queue";
+import { generateEnrollmentId } from "@/lib/id-generators";
 
 export async function createEnrollmentRequest(
   sabaqId: string,
@@ -62,9 +63,12 @@ export async function createEnrollmentRequest(
       return { success: false, error: "Already enrolled or request pending" };
     }
 
-    // Create enrollment request
+    // Create enrollment request with human-readable ID
+    const enrollmentId = generateEnrollmentId(userIts!, sabaqId);
+
     const enrollment = await prisma.enrollment.create({
       data: {
+        id: enrollmentId,
         userId: userId!,
         sabaqId: sabaqId,
         status: "PENDING",
@@ -85,6 +89,101 @@ export async function createEnrollmentRequest(
   }
 }
 
+// Create enrollment request (Public access via ITS)
+export async function createPublicEnrollmentRequest(
+  sabaqId: string,
+  itsNumber: string
+) {
+  try {
+    // Find user by ITS
+    const user = await prisma.user.findUnique({
+      where: { itsNumber },
+    });
+
+    if (!user) {
+      return {
+        success: false,
+        error: "User with this ITS not found. Please register first.",
+      };
+    }
+
+    // Check existing enrollment
+    const existingEnrollment = await prisma.enrollment.findFirst({
+      where: {
+        userId: user.id,
+        sabaqId: sabaqId,
+        status: {
+          in: ["PENDING", "APPROVED"],
+        },
+      },
+    });
+
+    if (existingEnrollment) {
+      return { success: false, error: "Already enrolled or request pending" };
+    }
+
+    // Create enrollment request with human-readable ID
+    const enrollmentId = generateEnrollmentId(user.itsNumber, sabaqId);
+
+    const enrollment = await prisma.enrollment.create({
+      data: {
+        id: enrollmentId,
+        userId: user.id,
+        sabaqId: sabaqId,
+        status: "PENDING",
+      },
+    });
+
+    return { success: true, enrollment };
+  } catch (error: any) {
+    console.error("Error creating public enrollment request:", error);
+    return { success: false, error: "Failed to create enrollment request" };
+  }
+}
+
+// Get enrollment status (Public access via ITS or session)
+export async function getPublicEnrollmentStatus(
+  sabaqId: string,
+  itsNumber?: string
+) {
+  try {
+    const session = await auth();
+    let userId: string | undefined;
+
+    if (session?.user) {
+      // Logged-in user
+      userId = session.user.id;
+    } else if (itsNumber) {
+      // Guest user - find by ITS
+      const user = await prisma.user.findUnique({
+        where: { itsNumber },
+      });
+
+      if (!user) {
+        return { success: true, enrollment: null };
+      }
+
+      userId = user.id;
+    } else {
+      return { success: true, enrollment: null };
+    }
+
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        sabaqId_userId: {
+          sabaqId,
+          userId,
+        },
+      },
+    });
+
+    return { success: true, enrollment };
+  } catch (error: any) {
+    console.error("Error fetching public enrollment status:", error);
+    return { success: false, error: "Failed to fetch enrollment status" };
+  }
+}
+
 export async function getEnrollmentsBySabaq(sabaqId: string) {
   try {
     const currentUser = await requirePermission("enrollments", "read");
@@ -97,8 +196,12 @@ export async function getEnrollmentsBySabaq(sabaqId: string) {
       const isJanab = await prisma.sabaq.findFirst({
         where: { id: sabaqId, janabId: currentUser.id },
       });
+
       if (!isAssigned && !isJanab) {
-        return { success: false, error: "Unauthorized access to this sabaq" };
+        return {
+          success: false,
+          error: "Unauthorized to view enrollments for this sabaq",
+        };
       }
     }
 
@@ -111,25 +214,25 @@ export async function getEnrollmentsBySabaq(sabaqId: string) {
             name: true,
             itsNumber: true,
             email: true,
+            phone: true,
           },
         },
       },
       orderBy: { requestedAt: "desc" },
     });
+
     return { success: true, enrollments };
   } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || "Failed to fetch enrollments",
-    };
+    console.error("Failed to fetch enrollments:", error);
+    return { success: false, error: "Failed to fetch enrollments" };
   }
 }
 
 export async function getMyEnrollments() {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return { success: false, error: "Not authenticated" };
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
     }
 
     const enrollments = await prisma.enrollment.findMany({
@@ -139,42 +242,53 @@ export async function getMyEnrollments() {
           select: {
             id: true,
             name: true,
-            kitaab: true,
-            level: true,
-            whatsappGroupLink: true,
+            description: true,
+            enrollmentStartsAt: true,
+            enrollmentEndsAt: true,
+            criteria: true,
+            location: true,
+            janabId: true,
+          },
+          include: {
+            janab: true,
+            location: true,
           },
         },
       },
       orderBy: { requestedAt: "desc" },
     });
+
     return { success: true, enrollments };
   } catch (error: any) {
-    return {
-      success: false,
-      error: error.message || "Failed to fetch enrollments",
-    };
+    console.error("Failed to fetch my enrollments:", error);
+    return { success: false, error: "Failed to fetch enrollments" };
   }
 }
 
 export async function getEnrollmentStatus(sabaqId: string) {
   try {
-    const currentUser = await requirePermission("enrollments", "read_self");
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: true, enrollment: null, status: null };
+    }
 
     const enrollment = await prisma.enrollment.findUnique({
       where: {
         sabaqId_userId: {
           sabaqId,
-          userId: currentUser.id,
+          userId: session.user.id,
         },
       },
     });
 
-    return { success: true, enrollment };
-  } catch (error: any) {
     return {
-      success: false,
-      error: error.message || "Failed to fetch enrollment status",
+      success: true,
+      enrollment,
+      status: enrollment?.status || null,
     };
+  } catch (error: any) {
+    console.error("Failed to fetch enrollment status:", error);
+    return { success: false, error: "Failed to fetch enrollment status" };
   }
 }
 
@@ -184,10 +298,11 @@ export async function approveEnrollment(enrollmentId: string) {
 
     const enrollmentToCheck = await prisma.enrollment.findUnique({
       where: { id: enrollmentId },
-      select: { sabaqId: true },
     });
-    if (!enrollmentToCheck)
-      return { success: false, error: "Enrollment not found" };
+
+    if (!enrollmentToCheck) {
+      return { success: false, error: "Enrollment request not found" };
+    }
 
     // Verify access
     if (currentUser.role !== "SUPERADMIN") {
@@ -254,10 +369,11 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
 
     const enrollmentToCheck = await prisma.enrollment.findUnique({
       where: { id: enrollmentId },
-      select: { sabaqId: true },
     });
-    if (!enrollmentToCheck)
-      return { success: false, error: "Enrollment not found" };
+
+    if (!enrollmentToCheck) {
+      return { success: false, error: "Enrollment request not found" };
+    }
 
     // Verify access
     if (currentUser.role !== "SUPERADMIN") {
@@ -467,7 +583,7 @@ async function queueEnrollmentEmail(
  */
 export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
   try {
-    const currentUser = await requirePermission("enrollments", "bulk_enroll");
+    const currentUser = await requirePermission("enrollments", "create");
 
     // Verify sabaq exists
     const sabaq = await prisma.sabaq.findUnique({
@@ -539,6 +655,7 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
     if (usersToEnroll.length > 0) {
       await prisma.enrollment.createMany({
         data: usersToEnroll.map((user) => ({
+          id: generateEnrollmentId(user.itsNumber, sabaqId), // Generate ID here
           sabaqId,
           userId: user.id,
           status: "APPROVED",
@@ -571,5 +688,75 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
       success: false,
       error: error.message || "Failed to bulk enroll users",
     };
+  }
+}
+
+export async function getEnrollmentRequests() {
+  try {
+    const currentUser = await requirePermission("enrollments", "approve");
+
+    // If superadmin, get all pending
+    if (currentUser.role === "SUPERADMIN") {
+      const enrollments = await prisma.enrollment.findMany({
+        where: { status: "PENDING" },
+        include: {
+          user: true,
+          sabaq: true,
+        },
+        orderBy: { requestedAt: "desc" },
+      });
+
+      const sabaqs = await prisma.sabaq.findMany({
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      });
+
+      return { success: true, enrollments, sabaqs };
+    }
+
+    // Otherwise get pending for assigned sabaqs
+    // 1. Get sabaqs where user is admin
+    const adminSabaqs = await prisma.sabaqAdmin.findMany({
+      where: { userId: currentUser.id },
+      select: { sabaqId: true },
+    });
+
+    // 2. Get sabaqs where user is Janab
+    const janabSabaqs = await prisma.sabaq.findMany({
+      where: { janabId: currentUser.id },
+      select: { id: true },
+    });
+
+    const sabaqIds = [
+      ...adminSabaqs.map((s) => s.sabaqId),
+      ...janabSabaqs.map((s) => s.id),
+    ];
+
+    if (sabaqIds.length === 0) {
+      return { success: true, enrollments: [], sabaqs: [] };
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        status: "PENDING",
+        sabaqId: { in: sabaqIds },
+      },
+      include: {
+        user: true,
+        sabaq: true,
+      },
+      orderBy: { requestedAt: "desc" },
+    });
+
+    const sabaqs = await prisma.sabaq.findMany({
+      where: { id: { in: sabaqIds } },
+      select: { id: true, name: true },
+      orderBy: { name: "asc" },
+    });
+
+    return { success: true, enrollments, sabaqs };
+  } catch (error: any) {
+    console.error("Failed to fetch enrollment requests:", error);
+    return { success: false, error: "Failed to fetch enrollment requests" };
   }
 }

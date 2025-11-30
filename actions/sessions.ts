@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { requirePermission } from "@/lib/rbac";
 import { SessionSchema } from "@/schemas";
+import { generateSessionId } from "@/lib/id-generators";
 
 export async function createSession(data: {
   sabaqId: string;
@@ -17,8 +18,15 @@ export async function createSession(data: {
 
     const validatedData = SessionSchema.parse(data);
 
+    // Generate human-readable session ID (falls back to cuid() if not provided)
+    const sessionId = generateSessionId(
+      validatedData.sabaqId,
+      validatedData.scheduledAt
+    );
+
     const newSession = await prisma.session.create({
       data: {
+        id: sessionId,
         sabaqId: validatedData.sabaqId,
         scheduledAt: validatedData.scheduledAt,
         cutoffTime: validatedData.cutoffTime,
@@ -648,5 +656,33 @@ export async function getUpcomingSessions(days: number = 7) {
       success: false,
       error: error.message || "Failed to fetch upcoming sessions",
     };
+  }
+}
+
+export async function getPublicSessionInfo(sessionId: string) {
+  try {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      include: {
+        sabaq: {
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            kitaab: true,
+            level: true,
+          },
+        },
+      },
+    });
+
+    if (!session) {
+      return { success: false, error: "Session not found" };
+    }
+
+    return { success: true, session };
+  } catch (error: any) {
+    console.error("Failed to fetch public session info:", error);
+    return { success: false, error: "Failed to fetch session info" };
   }
 }

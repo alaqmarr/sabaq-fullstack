@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { requirePermission } from "@/lib/rbac";
 import { SabaqSchema } from "@/schemas";
 import { queueEmail } from "./email-queue";
+import { z } from "zod";
 
 export async function createSabaq(data: any) {
   try {
@@ -35,8 +36,20 @@ export async function createSabaq(data: any) {
       },
     });
 
-    // Notify Janab if assigned
+    // Increment counters
+    if (validatedData.locationId) {
+      await prisma.location.update({
+        where: { id: validatedData.locationId },
+        data: { sabaqsCount: { increment: 1 } },
+      });
+    }
+
     if (validatedData.janabId) {
+      await prisma.user.update({
+        where: { id: validatedData.janabId },
+        data: { managedSabaqsCount: { increment: 1 } },
+      });
+
       const janab = await prisma.user.findUnique({
         where: { id: validatedData.janabId },
         select: { email: true, name: true },
@@ -60,8 +73,11 @@ export async function createSabaq(data: any) {
     revalidatePath("/dashboard/sabaqs");
     return { success: true, sabaq };
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0].message };
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || "Validation failed",
+      };
     }
     return { success: false, error: error.message || "Failed to create sabaq" };
   }
@@ -103,8 +119,11 @@ export async function updateSabaq(id: string, data: any) {
     revalidatePath("/dashboard/sabaqs");
     return { success: true, sabaq };
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0].message };
+    if (error instanceof z.ZodError) {
+      return {
+        success: false,
+        error: error.issues[0]?.message || "Validation failed",
+      };
     }
     return { success: false, error: error.message || "Failed to update sabaq" };
   }
@@ -113,6 +132,26 @@ export async function updateSabaq(id: string, data: any) {
 export async function deleteSabaq(id: string) {
   try {
     await requirePermission("sabaqs", "delete");
+
+    const sabaq = await prisma.sabaq.findUnique({
+      where: { id },
+      select: { locationId: true, janabId: true },
+    });
+
+    if (sabaq) {
+      if (sabaq.locationId) {
+        await prisma.location.update({
+          where: { id: sabaq.locationId },
+          data: { sabaqsCount: { decrement: 1 } },
+        });
+      }
+      if (sabaq.janabId) {
+        await prisma.user.update({
+          where: { id: sabaq.janabId },
+          data: { managedSabaqsCount: { decrement: 1 } },
+        });
+      }
+    }
 
     await prisma.sabaq.delete({
       where: { id },
@@ -182,15 +221,58 @@ export async function getSabaqs() {
             itsNumber: true,
           },
         },
+        activeSession: true,
         _count: {
           select: {
-            enrollments: true,
             sessions: true,
           },
         },
+        enrollments: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
+        sessions: {
+          where: {
+            scheduledAt: { gte: new Date() },
+            isActive: false,
+          },
+          orderBy: { scheduledAt: "asc" },
+          take: 1, // Just need the next upcoming one
+        },
       } as any,
     });
-    return { success: true, sabaqs };
+
+    const serializedSabaqs = sabaqs.map((sabaq: any) => ({
+      ...sabaq,
+      // Count enrollments by status
+      _count: {
+        ...sabaq._count,
+        enrollments: sabaq.enrollments.filter(
+          (e: any) => e.status === "APPROVED"
+        ).length,
+      },
+      pendingEnrollments: sabaq.enrollments.filter(
+        (e: any) => e.status === "PENDING"
+      ),
+      // Remove the full enrollments array from the response
+      enrollments: undefined,
+      // If we have an active session, put it in the sessions array for the UI to pick up
+      sessions: sabaq.activeSession
+        ? [sabaq.activeSession, ...(sabaq.sessions || [])]
+        : sabaq.sessions,
+      location: sabaq.location
+        ? {
+            ...sabaq.location,
+            latitude: Number(sabaq.location.latitude),
+            longitude: Number(sabaq.location.longitude),
+            radiusMeters: Number(sabaq.location.radiusMeters),
+          }
+        : null,
+    }));
+
+    return { success: true, sabaqs: serializedSabaqs };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch sabaqs" };
   }
@@ -198,7 +280,38 @@ export async function getSabaqs() {
 
 export async function getSabaqById(id: string) {
   try {
-    await requirePermission("sabaqs", "read");
+    const currentUser = await requirePermission("sabaqs", "read");
+
+    // Verify access
+    if (currentUser.role !== "SUPERADMIN") {
+      if (
+        ["ADMIN", "MANAGER", "JANAB", "ATTENDANCE_INCHARGE"].includes(
+          currentUser.role
+        )
+      ) {
+        const isAssigned = await prisma.sabaqAdmin.findUnique({
+          where: { sabaqId_userId: { sabaqId: id, userId: currentUser.id } },
+        });
+        const isJanab = await prisma.sabaq.findFirst({
+          where: { id, janabId: currentUser.id },
+        });
+
+        if (!isAssigned && !isJanab) {
+          return { success: false, error: "Unauthorized access to this sabaq" };
+        }
+      } else {
+        // Mumin check
+        const isEnrolled = await prisma.enrollment.findUnique({
+          where: {
+            sabaqId_userId: { sabaqId: id, userId: currentUser.id },
+            status: "APPROVED",
+          },
+        });
+        if (!isEnrolled) {
+          return { success: false, error: "Unauthorized access to this sabaq" };
+        }
+      }
+    }
 
     const sabaq = await prisma.sabaq.findUnique({
       where: { id },
@@ -211,10 +324,74 @@ export async function getSabaqById(id: string) {
             itsNumber: true,
           },
         },
+        activeSession: true,
+        _count: {
+          select: {
+            enrollments: true,
+            sessions: true,
+          },
+        },
       },
     });
-    return { success: true, sabaq };
+
+    if (!sabaq) return { success: false, error: "Sabaq not found" };
+
+    const serializedSabaq = {
+      ...sabaq,
+      location: sabaq.location
+        ? {
+            ...sabaq.location,
+            latitude: Number(sabaq.location.latitude),
+            longitude: Number(sabaq.location.longitude),
+            radiusMeters: Number(sabaq.location.radiusMeters),
+          }
+        : null,
+    };
+
+    return { success: true, sabaq: serializedSabaq };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch sabaq" };
+  }
+}
+
+export async function getPublicSabaqInfo(sabaqId: string) {
+  try {
+    const sabaq = await prisma.sabaq.findUnique({
+      where: { id: sabaqId },
+      select: {
+        id: true,
+        name: true,
+        kitaab: true,
+        level: true,
+        description: true,
+        criteria: true,
+        enrollmentStartsAt: true,
+        enrollmentEndsAt: true,
+        allowLocationAttendance: true,
+        janab: {
+          select: {
+            name: true,
+          },
+        },
+        location: {
+          select: {
+            name: true,
+            latitude: true,
+            longitude: true,
+          },
+        },
+      },
+    });
+
+    if (!sabaq) {
+      return { success: false, error: "Sabaq not found" };
+    }
+
+    return { success: true, sabaq };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to fetch sabaq info",
+    };
   }
 }

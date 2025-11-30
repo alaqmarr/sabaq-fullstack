@@ -1,5 +1,4 @@
 "use server";
-"use server";
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
@@ -7,6 +6,7 @@ import { auth } from "@/auth";
 import { getDistance } from "geolib";
 import { requirePermission } from "@/lib/rbac";
 import { queueEmail, processEmailQueue } from "./email-queue";
+import { generateAttendanceId } from "@/lib/id-generators";
 
 // Helper function to calculate lateness
 function calculateLateness(markedAt: Date, cutoffTime: Date) {
@@ -143,9 +143,12 @@ export async function markAttendanceManual(
       sessionData.cutoffTime
     );
 
-    // Create attendance record
+    // Create attendance record with human-readable ID
+    const attendanceId = generateAttendanceId(user.itsNumber, sessionId);
+
     const attendance = await prisma.attendance.create({
       data: {
+        id: attendanceId,
         sessionId,
         userId: user.id,
         itsNumber: user.itsNumber,
@@ -281,9 +284,12 @@ export async function markAttendanceLocation(
       sessionData.cutoffTime
     );
 
-    // Create attendance record
+    // Create attendance record with human-readable ID
+    const attendanceId = generateAttendanceId(currentUser.itsNumber, sessionId);
+
     const attendance = await prisma.attendance.create({
       data: {
+        id: attendanceId,
         sessionId,
         userId: currentUser.id,
         itsNumber: currentUser.itsNumber,
@@ -383,9 +389,12 @@ export async function markAttendanceQR(sessionId: string) {
       sessionData.cutoffTime
     );
 
-    // Create attendance record
+    // Create attendance record with human-readable ID
+    const attendanceId = generateAttendanceId(currentUser.itsNumber, sessionId);
+
     const attendance = await prisma.attendance.create({
       data: {
+        id: attendanceId,
         sessionId,
         userId: currentUser.id,
         itsNumber: currentUser.itsNumber,
@@ -449,6 +458,11 @@ export async function getSessionAttendance(sessionId: string) {
             id: true,
             name: true,
             itsNumber: true,
+          },
+        },
+        marker: {
+          select: {
+            name: true,
           },
         },
       },
@@ -729,16 +743,19 @@ export async function bulkMarkAttendance(
             // The Incharge explicitly selected "LATE" or "PRESENT".
             // So we trust `isLate`.
 
+            // Create attendance record with human-readable ID
+            // We need ITS number for ID generation
+            const userIts =
+              (await prisma.user.findUnique({ where: { id: update.userId } }))
+                ?.itsNumber || "";
+            const attendanceId = generateAttendanceId(userIts, sessionId);
+
             attendance = await prisma.attendance.create({
               data: {
+                id: attendanceId,
                 sessionId,
                 userId: update.userId,
-                itsNumber:
-                  (
-                    await prisma.user.findUnique({
-                      where: { id: update.userId },
-                    })
-                  )?.itsNumber || "",
+                itsNumber: userIts,
                 markedAt,
                 markedBy: currentUser.id,
                 method: "MANUAL_ENTRY",

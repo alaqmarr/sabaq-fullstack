@@ -75,14 +75,23 @@ export function PublicQuestionForm({ sessionId, sabaqName }: PublicQuestionFormP
             <Card className="glass-premium w-full max-w-md mx-auto">
                 <CardHeader>
                     <CardTitle className="text-center">Verify Identity</CardTitle>
-                </div>
-                <Button type="submit" className="w-full" disabled={itsNumber.length !== 8}>
-                    <ShieldCheck className="mr-2 h-4 w-4" />
-                    Verify & Continue
-                </Button>
-            </form>
-                </CardContent >
-            </Card >
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleVerify} className="space-y-4">
+                        <Input
+                            placeholder="Enter 8-digit ITS Number"
+                            value={itsNumber}
+                            onChange={(e) => setItsNumber(e.target.value)}
+                            maxLength={8}
+                            inputMode="numeric"
+                        />
+                        <Button type="submit" className="w-full" disabled={itsNumber.length !== 8}>
+                            <ShieldCheck className="mr-2 h-4 w-4" />
+                            Verify & Continue
+                        </Button>
+                    </form>
+                </CardContent>
+            </Card>
         );
     }
 

@@ -5,11 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Clock, Calendar, BookOpen, Users } from 'lucide-react';
-import { ActiveSessionsSection } from '@/components/dashboard/active-sessions';
-import { UpcomingSessionsSection } from '@/components/dashboard/upcoming-sessions';
-import { ActiveSessionsSkeleton, UpcomingSessionsSkeleton } from '@/components/dashboard/skeletons';
 import { UserQuickActions } from './user-quick-actions';
-import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { WhatsAppLink } from './whatsapp-link';
 
 interface EnrollmentWithSabaq {
     id: string;
@@ -126,16 +123,7 @@ export async function UserDashboard({ user }: { user: any }) {
                                             </div>
                                             {enrollment.sabaq.whatsappGroupLink && (
                                                 <div className="pt-2">
-                                                    <a
-                                                        href={enrollment.sabaq.whatsappGroupLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        onClick={(e) => e.stopPropagation()}
-                                                        className="inline-flex items-center justify-center rounded-md text-xs font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-8 px-3 py-1 bg-green-500/10 text-green-600 hover:bg-green-500/20 border border-green-500/20 backdrop-blur-sm gap-1.5 w-full"
-                                                    >
-                                                        <WhatsAppIcon className="h-3.5 w-3.5" />
-                                                        Join WhatsApp Group
-                                                    </a>
+                                                    <WhatsAppLink href={enrollment.sabaq.whatsappGroupLink} />
                                                 </div>
                                             )}
                                         </CardContent>
@@ -174,15 +162,8 @@ export async function UserDashboard({ user }: { user: any }) {
                 )}
             </div>
 
-            {/* Active Sessions */}
-            <Suspense fallback={<ActiveSessionsSkeleton />}>
-                <ActiveSessionsSection />
-            </Suspense>
-
-            {/* Upcoming Sessions */}
-            <Suspense fallback={<UpcomingSessionsSkeleton />}>
-                <UpcomingSessionsSection />
-            </Suspense>
+            {/* Quick Actions */}
+            <UserQuickActions />
 
             {/* Quick Actions */}
             <UserQuickActions />

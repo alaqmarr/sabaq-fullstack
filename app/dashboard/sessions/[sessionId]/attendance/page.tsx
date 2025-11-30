@@ -1,73 +1,128 @@
+
 import { auth } from '@/auth';
-import { QuickAttendanceForm } from '@/components/attendance/quick-attendance-form';
+import { redirect, notFound } from 'next/navigation';
+import { requirePermission } from '@/lib/rbac';
+import { getSessionById } from '@/actions/sessions';
+import { getSessionAttendance, getAttendanceStats } from '@/actions/attendance';
+import { AttendanceForm } from '@/components/attendance/attendance-form';
+import { LocationAttendance } from '@/components/attendance/location-attendance';
 import { AttendanceList } from '@/components/attendance/attendance-list';
-import { notFound, redirect } from 'next/navigation';
-import { prisma } from '@/lib/prisma';
+import { AttendanceStats } from '@/components/attendance/attendance-stats';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import Link from 'next/link';
+import { ChevronLeft } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
-interface AttendancePageProps {
-    params: Promise<{
-        sessionId: string;
-    }>;
-}
-
-export default async function AttendancePage({ params }: AttendancePageProps) {
+export default async function SessionAttendancePage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
     const session = await auth();
+    if (!session?.user) redirect('/login');
 
-    if (!session?.user) {
-        redirect('/login');
+    try {
+        await requirePermission('sessions', 'read');
+    } catch (error) {
+        redirect('/unauthorized');
     }
 
-    // Check permissions
-    const userRole = session.user.role;
-    const allowedRoles = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'];
+    const sessionResult = await getSessionById(sessionId);
+    const attendanceResult = await getSessionAttendance(sessionId);
+    const statsResult = await getAttendanceStats(sessionId);
 
-    if (!allowedRoles.includes(userRole)) {
-        return <div className="p-8 text-center text-red-500">Unauthorized: You do not have permission to take attendance.</div>;
-    }
-
-    // Verify session exists and get start time
-    const sessionData = await prisma.session.findUnique({
-        where: { id: sessionId },
-        select: {
-            id: true,
-            scheduledAt: true,
-            startedAt: true,
-            sabaq: {
-                select: {
-                    name: true
-                }
-            }
-        }
-    });
-
-    if (!sessionData) {
+    if (!sessionResult.success || !sessionResult.session) {
         notFound();
     }
 
-    const startTime = sessionData.startedAt || sessionData.scheduledAt;
+    const sessionData = sessionResult.session;
+    const attendances = attendanceResult.success ? attendanceResult.attendances : [];
+    const stats = statsResult.success ? statsResult.stats : null;
+
+    const isAdmin = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(session.user.role);
+    const isActive = sessionData.isActive;
+    const isEnded = !!sessionData.endedAt;
+    const hasStarted = !!sessionData.startedAt;
+    const allowLocationAttendance = sessionData.sabaq.allowLocationAttendance;
+
+    // Check if user has already marked attendance
+    const userAttendance = attendances?.find((a) => a.userId === session.user.id);
+
+    // RBAC Logic for taking attendance
+    // "only superadmins and admins can take attendance is session is not started or ended"
+    // This implies:
+    // 1. If Active: Admins can mark, Users can mark (if location allowed).
+    // 2. If Not Active (Scheduled or Ended): Only Admins can mark (Manual Override).
+    const canAdminMark = isAdmin;
+    const canUserMark = !isAdmin && isActive && allowLocationAttendance && !userAttendance;
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">{sessionData.sabaq.name}</h1>
-                <p className="text-muted-foreground">Quick attendance entry with auto-detection</p>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Quick Entry Form */}
-                <div className="lg:col-span-1">
-                    <QuickAttendanceForm
-                        sessionId={sessionId}
-                        sessionStartTime={startTime}
-                    />
-                </div>
-
-                {/* Real-time Attendance List */}
-                <div className="lg:col-span-2">
-                    <AttendanceList sessionId={sessionId} />
+        <div className="flex-1 space-y-6 p-8 pt-6">
+            <div className="flex items-center gap-4">
+                <Link href={`/dashboard/sessions/${sessionId}`}>
+                    <Button variant="ghost" size="icon">
+                        <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                </Link>
+                <div>
+                    <h2 className="text-3xl font-bold tracking-tight">Attendance</h2>
+                    <p className="text-muted-foreground">
+                        Manage attendance for {sessionData.sabaq.name}
+                    </p>
                 </div>
             </div>
+
+            {stats && <AttendanceStats stats={stats} />}
+
+            <div className="grid gap-4 md:grid-cols-2">
+                {/* Admin Attendance Form */}
+                {canAdminMark && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Mark Attendance</CardTitle>
+                            <CardDescription>
+                                {isActive ? "Session is active." : "Manual override for inactive session."}
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <AttendanceForm sessionId={sessionId} />
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* User Location Attendance */}
+                {canUserMark && (
+                    <LocationAttendance sessionId={sessionId} />
+                )}
+
+                {/* Already Marked */}
+                {!isAdmin && userAttendance && (
+                    <Card>
+                        <CardHeader>
+                            <CardTitle>Attendance Confirmed</CardTitle>
+                            <CardDescription>You have already marked your attendance</CardDescription>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="space-y-2">
+                                <p className="text-sm">
+                                    <span className="font-medium">Time:</span>{' '}
+                                    {format(new Date(userAttendance.markedAt), 'PPp')}
+                                </p>
+                                <p className="text-sm">
+                                    <span className="font-medium">Method:</span>{' '}
+                                    {userAttendance.method.replace('_', ' ')}
+                                </p>
+                                {userAttendance.isLate && (
+                                    <Badge variant="destructive">
+                                        Late by {userAttendance.minutesLate} minutes
+                                    </Badge>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+            </div>
+
+            <AttendanceList sessionId={sessionId} />
         </div>
     );
 }

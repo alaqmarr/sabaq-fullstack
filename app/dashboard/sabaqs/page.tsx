@@ -3,11 +3,9 @@ import { redirect } from 'next/navigation';
 import { getSabaqs } from '@/actions/sabaqs';
 import { getLocations } from '@/actions/locations';
 import { getUsers } from '@/actions/users';
-import { SabaqGrid } from '@/components/sabaqs/sabaq-grid';
-import { SabaqTable } from '@/components/sabaqs/sabaq-table';
 import { SabaqHeader } from '@/components/sabaqs/sabaq-header';
+import { SabaqsClientWrapper } from '@/components/sabaqs/sabaqs-client-wrapper';
 import { ViewToggle } from '@/components/ui/view-toggle';
-import { SabaqQuickActions } from '@/components/sabaqs/sabaq-quick-actions';
 import { requirePermission } from '@/lib/rbac';
 
 export const metadata = {
@@ -52,18 +50,17 @@ export default async function SabaqsPage({ searchParams }: { searchParams: Promi
                     <p className="text-cred-label mt-2 lowercase">manage sabaq programs</p>
                 </div>
                 <div className="flex items-center gap-2">
-                    <SabaqQuickActions />
+                    <SabaqHeader locations={locations} users={potentialJanabs} defaultOpen={action === 'new'} />
                     <ViewToggle defaultView={currentView} />
                 </div>
             </div>
 
-            <SabaqHeader locations={locations} users={potentialJanabs} defaultOpen={action === 'new'} />
-
-            {currentView === 'grid' ? (
-                <SabaqGrid sabaqs={sabaqs} locations={locations} users={potentialJanabs} />
-            ) : (
-                <SabaqTable sabaqs={sabaqs} locations={locations} users={potentialJanabs} />
-            )}
+            <SabaqsClientWrapper
+                sabaqs={sabaqs}
+                locations={locations}
+                users={potentialJanabs}
+                currentView={currentView}
+            />
         </div>
     );
 }

@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
-import { Check, X, Mail, Calendar, User, CheckSquare, Square } from 'lucide-react';
+import { Check, X, Mail, Calendar, User, CheckSquare, Square, BookOpen } from 'lucide-react';
 import { approveEnrollment, rejectEnrollment, bulkApproveEnrollments, bulkRejectEnrollments } from '@/actions/enrollments';
 import { toast } from 'sonner';
 import { RejectionDialog } from './rejection-dialog';
@@ -222,6 +222,19 @@ export function EnrollmentGrid({ enrollments, sabaqId }: EnrollmentGridProps) {
                                     </div>
                                 </CardHeader>
                                 <CardContent className="space-y-3 text-sm">
+                                    {/* Sabaq Information */}
+                                    {enrollment.sabaq && (
+                                        <div className="bg-primary/5 border border-primary/20 rounded-md p-2.5 space-y-1">
+                                            <div className="flex items-center gap-2 text-primary font-semibold">
+                                                <BookOpen className="h-4 w-4 shrink-0" />
+                                                <span className="line-clamp-1 lowercase">{enrollment.sabaq.name}</span>
+                                            </div>
+                                            <div className="text-xs text-muted-foreground pl-6 lowercase">
+                                                {enrollment.sabaq.kitaab} • nisaab {enrollment.sabaq.level}
+                                            </div>
+                                        </div>
+                                    )}
+
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <Mail className="h-3.5 w-3.5 shrink-0" />
                                         <span className="truncate" title={enrollment.user.email || 'No email'}>

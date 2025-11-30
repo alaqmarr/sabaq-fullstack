@@ -34,6 +34,8 @@ import {
 import { createSabaq, updateSabaq } from '@/actions/sabaqs';
 import { toast } from 'sonner';
 
+import { useRouter } from 'next/navigation';
+
 const sabaqSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     kitaab: z.string().min(2, 'Kitaab must be at least 2 characters'),
@@ -59,6 +61,7 @@ interface SabaqDialogProps {
 }
 
 export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: SabaqDialogProps) {
+    const router = useRouter();
     const [loading, setLoading] = useState(false);
     const form = useForm<SabaqFormValues>({
         resolver: zodResolver(sabaqSchema) as any,
@@ -91,12 +94,19 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
             if (sabaq) {
                 await updateSabaq(sabaq.id, formattedData);
                 toast.success('Sabaq updated successfully');
+                onOpenChange(false);
+                form.reset();
             } else {
-                await createSabaq(formattedData);
-                toast.success('Sabaq created successfully');
+                const result = await createSabaq(formattedData);
+                if (result.success && result.sabaq) {
+                    toast.success('Sabaq created successfully');
+                    onOpenChange(false);
+                    form.reset();
+                    router.push(`/dashboard/sabaqs/${result.sabaq.id}`);
+                } else {
+                    toast.error(result.error || 'Failed to create sabaq');
+                }
             }
-            onOpenChange(false);
-            form.reset();
         } catch (error) {
             toast.error('Something went wrong');
         } finally {
@@ -115,7 +125,7 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
                 </DialogHeader>
                 <Form {...form}>
                     <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
                                 name="name"
@@ -156,7 +166,7 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
                                 </FormItem>
                             )}
                         />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
                                 name="level"
@@ -221,7 +231,7 @@ export function SabaqDialog({ sabaq, locations, users, open, onOpenChange }: Sab
                                 </FormItem>
                             )}
                         />
-                        <div className="grid grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <FormField
                                 control={form.control}
                                 name="enrollmentStartsAt"
