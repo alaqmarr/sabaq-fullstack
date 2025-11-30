@@ -148,4 +148,3 @@ export function CalendarView({ initialDate = new Date() }: CalendarViewProps) {
         </div>
     );
 }
-
