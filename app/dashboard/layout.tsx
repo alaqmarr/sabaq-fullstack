@@ -2,6 +2,7 @@ import { ProcessEmailsButton } from '@/components/admin/process-emails-button';
 import { MobileNav } from '@/components/mobile-nav';
 import { UserNav } from '@/components/user-nav';
 import { DashboardNav } from '@/components/dashboard-nav';
+import { NotificationBell } from '@/components/notifications/notification-bell';
 
 // ...
 
@@ -29,6 +30,7 @@ export default async function DashboardLayout({
                         </h1>
                     </div>
                     <div className="flex items-center gap-2">
+                        <NotificationBell />
                         {(role === 'SUPERADMIN' || role === 'ADMIN') && <ProcessEmailsButton />}
                         {session?.user && <UserNav user={session.user} />}
                     </div>

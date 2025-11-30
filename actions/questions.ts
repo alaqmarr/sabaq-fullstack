@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/rbac";
 import { QuestionSchema, AnswerSchema } from "@/schemas";
 import { generateQuestionId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
+import { createNotification } from "@/actions/notifications";
 
 // Validate user attended session
 async function validateAttendance(sessionId: string, userId: string) {
@@ -363,6 +364,15 @@ export async function answerQuestion(questionId: string, answerText: string) {
       // Trigger processing immediately
       void processEmailQueue();
     }
+
+    // In-app notification
+    await createNotification({
+      userId: question.userId,
+      type: "QUESTION_ANSWERED",
+      title: "Question Answered",
+      message: `Your question in ${question.session.sabaq.name} has been answered.`,
+      data: { sessionId: question.sessionId, questionId: question.id },
+    });
 
     return { success: true, question };
   } catch (error: any) {

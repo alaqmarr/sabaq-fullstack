@@ -36,9 +36,38 @@ model User {
   enrollmentCount    Int        @default(0)
   lateCount          Int        @default(0)
   AdminOTP           AdminOTP[]
+  notifications      Notification[]
+  feedback           Feedback[]
 
   @@index([role])
   @@index([itsNumber])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String   // "SESSION_START", "ENROLLMENT_UPDATE", "QUESTION_ANSWERED", "ANNOUNCEMENT"
+  title     String
+  message   String
+  data      Json?    // Store related IDs (sessionId, sabaqId, etc.)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  sessionId String
+  session   Session  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating    Int      // 1-5
+  comment   String?  @db.Text
+  createdAt DateTime @default(now())
+
+  @@unique([sessionId, userId]) // One feedback per session per user
 }
 
 model Location {
@@ -146,6 +175,7 @@ model Session {
   activeForSabaq Sabaq?       @relation("ActiveSession")
   attendances    Attendance[]
   questions      Question[]
+  feedback       Feedback[]
 
   @@index([sabaqId])
   @@index([isActive])

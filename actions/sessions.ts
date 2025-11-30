@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/rbac";
 import { SessionSchema } from "@/schemas";
 import { generateSessionId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
+import { createNotification } from "@/actions/notifications";
 
 export async function createSession(data: {
   sabaqId: string;
@@ -187,7 +188,6 @@ export async function startSession(id: string) {
       }),
     ]);
 
-    // Fetch enrolled users
     const enrollments = await prisma.enrollment.findMany({
       where: {
         sabaqId: session.sabaqId,
@@ -196,12 +196,30 @@ export async function startSession(id: string) {
       include: {
         user: {
           select: {
+            id: true,
             email: true,
             name: true,
           },
         },
       },
     });
+
+    // Notify users
+    await Promise.all(
+      enrollments.map((enrollment) =>
+        createNotification({
+          userId: enrollment.user.id,
+          type: "SESSION_START",
+          title: "Session Started",
+          message: `${session.sabaq.name} has started. Join now!`,
+          data: { sessionId: session.id, sabaqId: session.sabaqId },
+        })
+      )
+    );
+
+    // Queue emails for session start (optional, but good for engagement)
+    // We'll skip email for now to avoid spam, relying on push/in-app notification.
+
     return { success: true, session };
   } catch (error: any) {
     return {
@@ -300,6 +318,7 @@ export async function endSession(id: string) {
             status: attendance.isLate ? "Late" : "Present",
             minutesLate: attendance.minutesLate,
             sessionId: id,
+            feedbackLink: `${process.env.NEXT_PUBLIC_APP_URL}/sessions/${id}/feedback`,
           }
         );
       } else {

@@ -14,7 +14,8 @@ import {
     FileSignature,
     UserCheck,
     QrCode,
-    ShieldAlert
+    ShieldAlert,
+    CalendarDays
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Role } from '@prisma/client';
@@ -79,6 +80,12 @@ const navItems = [
         href: '/dashboard/questions',
         icon: MessageSquareText,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
+    },
+    {
+        title: 'calendar',
+        href: '/dashboard/calendar',
+        icon: CalendarDays,
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
     },
     {
         title: 'logs',

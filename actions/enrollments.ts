@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/rbac";
 import { processEmailQueue } from "./email-queue";
 import { generateEnrollmentId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
+import { createNotification } from "@/actions/notifications";
 
 export async function createEnrollmentRequest(
   sabaqId: string,
@@ -365,6 +366,15 @@ export async function approveEnrollment(enrollmentId: string) {
       void processEmailQueue();
     }
 
+    // In-app notification
+    await createNotification({
+      userId: enrollment.userId,
+      type: "ENROLLMENT_UPDATE",
+      title: "Enrollment Approved",
+      message: `Your enrollment for ${enrollment.sabaq.name} has been approved.`,
+      data: { sabaqId: enrollment.sabaqId },
+    });
+
     revalidatePath(`/dashboard/sabaqs/${enrollment.sabaqId}`);
     return { success: true, enrollment };
   } catch (error: any) {
@@ -452,6 +462,15 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
       void processEmailQueue();
     }
 
+    // In-app notification
+    await createNotification({
+      userId: enrollment.userId,
+      type: "ENROLLMENT_UPDATE",
+      title: "Enrollment Rejected",
+      message: `Your enrollment for ${enrollment.sabaq.name} was rejected: ${reason}`,
+      data: { sabaqId: enrollment.sabaqId },
+    });
+
     revalidatePath(`/dashboard/sabaqs/${enrollment.sabaqId}`);
     return { success: true, enrollment };
   } catch (error: any) {
@@ -513,6 +532,15 @@ export async function bulkApproveEnrollments(enrollmentIds: string[]) {
           formatDate(new Date())
         );
       }
+
+      // In-app notification
+      await createNotification({
+        userId: enrollment.userId,
+        type: "ENROLLMENT_UPDATE",
+        title: "Enrollment Approved",
+        message: `Your enrollment for ${enrollment.sabaq.name} has been approved.`,
+        data: { sabaqId: enrollment.sabaqId },
+      });
     }
 
     // Trigger processing immediately
@@ -586,6 +614,15 @@ export async function bulkRejectEnrollments(
           reason
         );
       }
+
+      // In-app notification
+      await createNotification({
+        userId: enrollment.userId,
+        type: "ENROLLMENT_UPDATE",
+        title: "Enrollment Rejected",
+        message: `Your enrollment for ${enrollment.sabaq.name} was rejected: ${reason}`,
+        data: { sabaqId: enrollment.sabaqId },
+      });
     }
 
     // Trigger processing immediately
