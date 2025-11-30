@@ -34,7 +34,7 @@
       "questions": ["read"],
       "analytics": ["read", "export"],
       "emails": [],
-      "scan": []
+      "scan": ["read"]
     },
     "ATTENDANCE_INCHARGE": {
       "users": [],
@@ -58,7 +58,7 @@
       "questions": ["read"],
       "analytics": ["read", "export"],
       "emails": [],
-      "scan": []
+      "scan": ["read"]
     },
     "MUMIN": {
       "users": [],

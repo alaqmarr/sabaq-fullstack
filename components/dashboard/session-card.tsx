@@ -27,7 +27,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
     const router = useRouter();
 
     const canStartStop = ['SUPERADMIN', 'ADMIN'].includes(userRole);
-    const canScan = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE'].includes(userRole);
+    const canScan = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(userRole);
     const allowLocation = session.sabaq.allowLocationAttendance;
     const isMumin = userRole === 'MUMIN';
     const isActive = session.isActive;
@@ -164,20 +164,11 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                         )}
 
                         {canScan && isActive && (
-                            <>
-                                <Button size="sm" variant="frosted-teal" asChild className="w-full justify-start">
-                                    <Link href={`/dashboard/scan?sessionId=${session.id}`}>
-                                        <QrCode className="h-3.5 w-3.5 mr-2" /> Scan QR
-                                    </Link>
-                                </Button>
-                                {!isAttended && (
-                                    <Button size="sm" variant="frosted-blue" asChild className="w-full justify-start">
-                                        <Link href={`/dashboard/sessions/${session.id}/attendance`}>
-                                            <UserPlus className="h-3.5 w-3.5 mr-2" /> Manual
-                                        </Link>
-                                    </Button>
-                                )}
-                            </>
+                            <Button size="sm" variant="frosted-teal" asChild className="w-full justify-start">
+                                <Link href={`/dashboard/sessions/${session.id}/scan`}>
+                                    <QrCode className="h-3.5 w-3.5 mr-2" /> Take Attendance
+                                </Link>
+                            </Button>
                         )}
 
                         {/* Mumin Controls */}
