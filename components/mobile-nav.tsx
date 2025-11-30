@@ -14,7 +14,8 @@ import {
     FileSignature,
     UserCheck,
     Menu,
-    X
+    X,
+    ShieldAlert
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Role } from '@prisma/client';
@@ -76,6 +77,12 @@ const navItems = [
         href: '/dashboard/questions',
         icon: MessageSquareText,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
+    },
+    {
+        title: 'logs',
+        href: '/dashboard/logs',
+        icon: ShieldAlert,
+        roles: [Role.SUPERADMIN],
     },
 ];
 

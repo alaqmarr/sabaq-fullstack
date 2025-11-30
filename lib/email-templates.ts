@@ -3,338 +3,604 @@
  *
  * These templates follow email best practices:
  * - Responsive design (works on all devices)
- * - Professional styling with brand colors
+ * - Premium aesthetics (gradients, soft shadows, refined typography)
  * - Clear call-to-action buttons
- * - Proper spacing and typography
+ * - Brand alignment (Logo + Ilm Quote)
  */
 
 const emailStyles = `
   <style>
-    body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; color: #1a1a1a; }
-    .container { max-width: 600px; margin: 40px auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.05); border: 1px solid #e2e8f0; }
-    .header { background-color: #ffffff; padding: 40px 40px 20px; text-align: center; border-bottom: 1px solid #f1f5f9; }
-    .logo { width: 80px; height: auto; margin-bottom: 20px; border-radius: 12px; }
-    .content { padding: 40px; }
-    .frosted-card { background-color: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 24px; margin: 24px 0; }
-    .button { display: inline-block; padding: 14px 32px; background-color: #000000; color: #ffffff !important; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 14px; text-transform: lowercase; letter-spacing: 0.5px; margin: 20px 0; }
-    .button-whatsapp { background-color: #25D366; color: #ffffff !important; }
-    .footer { background-color: #f8fafc; padding: 30px; text-align: center; color: #64748b; font-size: 12px; border-top: 1px solid #e2e8f0; }
-    h1 { font-size: 24px; font-weight: 700; margin: 0; color: #0f172a; letter-spacing: -0.5px; text-transform: lowercase; }
-    h2 { font-size: 18px; font-weight: 600; margin: 0 0 16px; color: #334155; }
-    p { line-height: 1.6; margin: 0 0 16px; color: #475569; }
-    .label { font-size: 11px; text-transform: lowercase; letter-spacing: 0.5px; color: #94a3b8; font-weight: 600; margin-bottom: 4px; display: block; }
-    .value { font-size: 16px; font-weight: 500; color: #0f172a; margin-bottom: 16px; display: block; }
-    .divider { height: 1px; background-color: #e2e8f0; margin: 30px 0; }
-    .badge { display: inline-block; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; text-transform: lowercase; letter-spacing: 0.5px; }
-    .badge-success { background-color: #dcfce7; color: #166534; }
-    .badge-warning { background-color: #fef9c3; color: #854d0e; }
-    .badge-danger { background-color: #fee2e2; color: #991b1b; }
-    .badge-info { background-color: #e0f2fe; color: #0369a1; }
+    @font-face {
+      font-family: 'KanzAlMarjaan';
+      src: url('https://db.onlinewebfonts.com/t/056353a27c68233bc7a6200e574e746f.woff2') format('woff2');
+    }
+    body {
+      font-family: 'Segoe UI', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: #4a5568;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+      background-color: #f7fafc;
+    }
+    .container {
+      max-width: 600px;
+      margin: 40px auto;
+      background-color: #ffffff;
+      border-radius: 16px;
+      overflow: hidden;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+      border: 1px solid #edf2f7;
+    }
+    .header {
+      background: linear-gradient(135deg, #1a202c 0%, #2d3748 100%);
+      padding: 40px 30px;
+      text-align: center;
+      position: relative;
+    }
+    .header::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, #d4af37, #f6e05e, #d4af37);
+    }
+    .logo {
+      max-width: 120px;
+      height: auto;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+    }
+    .ilm-quote {
+      font-family: 'KanzAlMarjaan', 'Traditional Arabic', serif;
+      font-size: 26px;
+      color: #f6e05e;
+      margin-top: 15px;
+      text-align: center;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      line-height: 1.4;
+    }
+    .quote-translation {
+      font-size: 12px;
+      color: #a0aec0;
+      margin-top: 5px;
+      font-style: italic;
+    }
+    .content {
+      padding: 50px 40px;
+      background-color: #ffffff;
+    }
+    .greeting {
+      font-size: 22px;
+      font-weight: 700;
+      color: #2d3748;
+      margin-bottom: 20px;
+      letter-spacing: -0.5px;
+    }
+    .message {
+      font-size: 16px;
+      color: #4a5568;
+      margin-bottom: 30px;
+      line-height: 1.7;
+    }
+    .info-box {
+      background-color: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 30px 0;
+    }
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #edf2f7;
+    }
+    .info-row:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
+    .info-label {
+      font-weight: 600;
+      color: #718096;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .info-value {
+      color: #2d3748;
+      font-weight: 600;
+      text-align: right;
+      font-size: 15px;
+    }
+    .button-container {
+      text-align: center;
+      margin: 40px 0 20px;
+    }
+    .button {
+      display: inline-block;
+      padding: 16px 36px;
+      background: linear-gradient(135deg, #d4af37 0%, #b7950b 100%);
+      color: #ffffff !important;
+      text-decoration: none;
+      border-radius: 50px;
+      font-weight: 700;
+      font-size: 16px;
+      box-shadow: 0 4px 15px rgba(212, 175, 55, 0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(212, 175, 55, 0.6);
+    }
+    .footer {
+      background-color: #f7fafc;
+      padding: 30px;
+      text-align: center;
+      font-size: 13px;
+      color: #a0aec0;
+      border-top: 1px solid #edf2f7;
+    }
+    .footer-links a {
+      color: #718096;
+      text-decoration: none;
+      margin: 0 8px;
+      transition: color 0.2s;
+    }
+    .footer-links a:hover {
+      color: #4a5568;
+      text-decoration: underline;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .status-success { background-color: #c6f6d5; color: #22543d; }
+    .status-warning { background-color: #fefcbf; color: #744210; }
+    .status-error { background-color: #fed7d7; color: #822727; }
+    .status-info { background-color: #bee3f8; color: #2a4365; }
+    
+    @media only screen and (max-width: 600px) {
+      .container { width: 100% !important; margin: 0; border-radius: 0; border: none; }
+      .content { padding: 30px 20px; }
+      .info-row { flex-direction: column; align-items: flex-start; }
+      .info-value { text-align: left; margin-top: 6px; }
+      .button { width: 80%; text-align: center; }
+    }
   </style>
 `;
 
-// Helper to get logo URL - assuming it's hosted at the app's base URL
-// In production, this should be an absolute URL to a CDN or public asset
-const logoUrl = "https://sabaq-app.vercel.app/logo.jpg"; // Placeholder, user should update base URL
+const logoUrl = `${process.env.NEXT_PUBLIC_APP_URL}/logo.jpg`;
+const ilmQuote = "طَلَبُ العِلْمُ فَرِيضَةٌ عَلَىٰ كُلِّ مُسْلِمٍ وَمُسْلِمَةٍ";
+const quoteTranslation =
+  "Seeking knowledge is an obligation upon every Muslim and Muslimah";
 
-const footerContent = `
-    <div class="footer">
-      <p><strong>Umoor Taalimiyah Secunderabad</strong></p>
-      <p>Asbaaq Management System</p>
-    </div>
-`;
+interface BaseTemplateProps {
+  title: string;
+  content: string;
+  previewText?: string;
+}
 
-export const enrollmentApprovedTemplate = (data: {
-  userName: string;
-  sabaqName: string;
-  kitaab?: string;
-  nisaab?: string;
-  janabName?: string;
-  dashboardUrl: string;
-  whatsappGroupLink?: string;
-}) => `
+const baseEmailTemplate = ({
+  title,
+  content,
+  previewText,
+}: BaseTemplateProps) => `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enrollment Approved</title>
+  <title>${title}</title>
   ${emailStyles}
 </head>
 <body>
+  <div style="display:none;font-size:1px;color:#333333;line-height:1px;max-height:0px;max-width:0px;opacity:0;overflow:hidden;">
+    ${previewText || title}
+  </div>
   <div class="container">
     <div class="header">
-      <img src="${logoUrl}" alt="Logo" class="logo">
-      <h1>enrollment approved</h1>
+      <img src="${logoUrl}" alt="Sabaq Logo" class="logo">
+      <div class="ilm-quote">${ilmQuote}</div>
+      <div class="quote-translation">${quoteTranslation}</div>
     </div>
-    
     <div class="content">
-      <h2>Salaam ${data.userName},</h2>
-      
-      <p>Your enrollment request has been approved. You are now officially enrolled in the following sabaq:</p>
-      
-      <div class="frosted-card">
-        <span class="label">sabaq</span>
-        <span class="value">${data.sabaqName}</span>
-        
-        ${
-          data.kitaab
-            ? `
-          <span class="label">kitaab</span>
-          <span class="value">${data.kitaab}</span>
-        `
-            : ""
-        }
-        
-        ${
-          data.janabName
-            ? `
-          <span class="label">conducted by</span>
-          <span class="value">${data.janabName}</span>
-        `
-            : ""
-        }
-      </div>
-      
-      <p>You can now access session information, mark attendance, and view your progress.</p>
-      
-      <div style="text-align: center;">
-        <a href="${data.dashboardUrl}" class="button">view dashboard</a>
-        ${
-          data.whatsappGroupLink
-            ? `
-          <br>
-          <a href="${data.whatsappGroupLink}" class="button button-whatsapp">join whatsapp group</a>
-        `
-            : ""
-        }
-      </div>
-      
-      <div class="divider"></div>
-      
-      <p style="font-size: 14px; text-align: center; color: #94a3b8;">
-        May Allah grant you barakah in your studies.
-      </p>
+      ${content}
     </div>
-    
-    ${footerContent}
+    <div class="footer">
+      <p>&copy; ${new Date().getFullYear()} Sabaq Management System. All rights reserved.</p>
+      <div class="footer-links">
+        <a href="#">Privacy Policy</a> • <a href="#">Terms of Service</a> • <a href="#">Support</a>
+      </div>
+    </div>
   </div>
 </body>
 </html>
 `;
 
+// 1. Enrollment Approved
+export const enrollmentApprovedTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  approvedAt: string;
+  whatsappGroupLink?: string;
+}) => {
+  const content = `
+    <div class="greeting">Mubarak, ${data.userName}!</div>
+    <div class="message">
+      We are delighted to inform you that your enrollment request has been approved. You are now officially a member of <strong>${
+        data.sabaqName
+      }</strong>.
+    </div>
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq Name</span>
+        <span class="info-value">${data.sabaqName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value"><span class="status-badge status-success">Approved</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date Approved</span>
+        <span class="info-value">${data.approvedAt}</span>
+      </div>
+    </div>
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">Access Dashboard</a>
+      ${
+        data.whatsappGroupLink
+          ? `<br/><br/><a href="${data.whatsappGroupLink}" style="color: #25D366; text-decoration: none; font-weight: 600; font-size: 14px;">Join WhatsApp Group &rarr;</a>`
+          : ""
+      }
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Enrollment Approved",
+    previewText: `Your enrollment in ${data.sabaqName} has been approved.`,
+    content,
+  });
+};
+
+// 2. Enrollment Rejected
 export const enrollmentRejectedTemplate = (data: {
   userName: string;
   sabaqName: string;
   reason?: string;
-  contactEmail: string;
-}) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Enrollment Update</title>
-  ${emailStyles}
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="${logoUrl}" alt="Logo" class="logo">
-      <h1>enrollment update</h1>
+  rejectedAt: string;
+}) => {
+  const content = `
+    <div class="greeting">Dear ${data.userName},</div>
+    <div class="message">
+      Thank you for your interest. We regret to inform you that your enrollment request for <strong>${
+        data.sabaqName
+      }</strong> could not be approved at this time.
     </div>
-    
-    <div class="content">
-      <h2>Salaam ${data.userName},</h2>
-      
-      <p>Thank you for your interest in <strong>${data.sabaqName}</strong>.</p>
-      
-      <p>Unfortunately, we are unable to approve your enrollment request at this time.</p>
-      
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq Name</span>
+        <span class="info-value">${data.sabaqName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value"><span class="status-badge status-error">Declined</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date</span>
+        <span class="info-value">${data.rejectedAt}</span>
+      </div>
       ${
         data.reason
           ? `
-        <div class="frosted-card">
-          <span class="label">reason</span>
-          <span class="value" style="margin-bottom: 0;">${data.reason}</span>
-        </div>
-      `
+      <div class="info-row">
+        <span class="info-label">Reason</span>
+        <span class="info-value">${data.reason}</span>
+      </div>`
           : ""
       }
-      
-      <p>If you have any questions, please contact us at <a href="mailto:${
-        data.contactEmail
-      }" style="color: #0f172a; font-weight: 600;">${data.contactEmail}</a>.</p>
     </div>
-    
-    ${footerContent}
-  </div>
-</body>
-</html>
-`;
+    <div class="message">
+      If you have any questions or believe this decision was made in error, please contact the administration.
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Enrollment Update",
+    previewText: `Update regarding your enrollment in ${data.sabaqName}.`,
+    content,
+  });
+};
 
+// 3. Session Reminder
 export const sessionReminderTemplate = (data: {
   userName: string;
   sabaqName: string;
-  sessionDate: string;
-  sessionTime: string;
+  scheduledAt: string;
   location?: string;
-}) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Session Reminder</title>
-  ${emailStyles}
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="${logoUrl}" alt="Logo" class="logo">
-      <h1>session reminder</h1>
+}) => {
+  const content = `
+    <div class="greeting">Upcoming Session Reminder</div>
+    <div class="message">
+      Dear ${
+        data.userName
+      }, this is a gentle reminder for your upcoming sabaq session. We look forward to seeing you.
     </div>
-    
-    <div class="content">
-      <h2>Salaam ${data.userName},</h2>
-      
-      <p>This is a reminder for your upcoming sabaq session:</p>
-      
-      <div class="frosted-card">
-        <span class="label">sabaq</span>
-        <span class="value">${data.sabaqName}</span>
-        
-        <div style="display: flex; gap: 20px;">
-          <div>
-            <span class="label">date</span>
-            <span class="value">${data.sessionDate}</span>
-          </div>
-          <div>
-            <span class="label">time</span>
-            <span class="value">${data.sessionTime}</span>
-          </div>
-        </div>
-        
-        ${
-          data.location
-            ? `
-          <span class="label">location</span>
-          <span class="value" style="margin-bottom: 0;">${data.location}</span>
-        `
-            : ""
-        }
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq</span>
+        <span class="info-value">${data.sabaqName}</span>
       </div>
-      
-      <p>Please arrive on time and bring any required materials.</p>
+      <div class="info-row">
+        <span class="info-label">Time</span>
+        <span class="info-value">${data.scheduledAt}</span>
+      </div>
+      ${
+        data.location
+          ? `
+      <div class="info-row">
+        <span class="info-label">Location</span>
+        <span class="info-value">${data.location}</span>
+      </div>`
+          : ""
+      }
     </div>
-    
-    ${footerContent}
-  </div>
-</body>
-</html>
-`;
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View Session Details</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Session Reminder",
+    previewText: `Upcoming session for ${data.sabaqName} at ${data.scheduledAt}.`,
+    content,
+  });
+};
 
+// 4. Attendance Marked
 export const attendanceMarkedTemplate = (data: {
   userName: string;
   sabaqName: string;
-  sessionDate: string;
-  status: "ON_TIME" | "LATE";
+  status: string;
   markedAt: string;
-}) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Attendance Confirmed</title>
-  ${emailStyles}
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="${logoUrl}" alt="Logo" class="logo">
-      <h1>attendance confirmed</h1>
-    </div>
-    
-    <div class="content">
-      <h2>Salaam ${data.userName},</h2>
-      
-      <p>Your attendance has been successfully recorded.</p>
-      
-      <div class="frosted-card">
-        <span class="label">session</span>
-        <span class="value">${data.sabaqName}</span>
-        
-        <span class="label">date</span>
-        <span class="value">${data.sessionDate}</span>
-        
-        <span class="label">status</span>
-        <div style="margin-top: 4px;">
-          <span class="badge ${
-            data.status === "ON_TIME" ? "badge-success" : "badge-warning"
-          }">
-            ${data.status === "ON_TIME" ? "on time" : "late"}
-          </span>
-        </div>
-      </div>
-      
-      <p>Keep up the good work!</p>
-    </div>
-    
-    ${footerContent}
-  </div>
-</body>
-</html>
-`;
+  sessionDate: string;
+}) => {
+  const isLate = data.status.toLowerCase() === "late";
+  const statusClass = isLate ? "status-warning" : "status-success";
 
+  const content = `
+    <div class="greeting">Attendance Recorded</div>
+    <div class="message">
+      Your attendance has been successfully recorded for the session on <strong>${data.sessionDate}</strong>.
+    </div>
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq</span>
+        <span class="info-value">${data.sabaqName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value"><span class="status-badge ${statusClass}">${data.status}</span></span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Marked At</span>
+        <span class="info-value">${data.markedAt}</span>
+      </div>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Attendance Marked",
+    previewText: `Attendance marked as ${data.status} for ${data.sabaqName}.`,
+    content,
+  });
+};
+
+// 5. Login Alert
 export const loginAlertTemplate = (data: {
   userName: string;
   time: string;
-  device: string;
-  location?: string;
-}) => `
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>New Login Alert</title>
-  ${emailStyles}
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <img src="${logoUrl}" alt="Logo" class="logo">
-      <h1>new login alert</h1>
+  ip?: string;
+  device?: string;
+}) => {
+  const content = `
+    <div class="greeting">Security Alert</div>
+    <div class="message">
+      We detected a new login to your account <strong>${data.userName}</strong>.
     </div>
-    
-    <div class="content">
-      <h2>Salaam ${data.userName},</h2>
-      
-      <p>We detected a new login to your Asbaaq account.</p>
-      
-      <div class="frosted-card">
-        <span class="label">time</span>
-        <span class="value">${data.time}</span>
-        
-        <span class="label">device</span>
-        <span class="value">${data.device}</span>
-        
-        ${
-          data.location
-            ? `
-          <span class="label">location</span>
-          <span class="value" style="margin-bottom: 0;">${data.location}</span>
-        `
-            : ""
-        }
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Time</span>
+        <span class="info-value">${data.time}</span>
       </div>
-      
-      <p>If this was you, you can ignore this email. If you don't recognize this activity, please contact your administrator immediately.</p>
+      ${
+        data.ip
+          ? `
+      <div class="info-row">
+        <span class="info-label">IP Address</span>
+        <span class="info-value">${data.ip}</span>
+      </div>`
+          : ""
+      }
+      ${
+        data.device
+          ? `
+      <div class="info-row">
+        <span class="info-label">Device</span>
+        <span class="info-value">${data.device}</span>
+      </div>`
+          : ""
+      }
     </div>
-    
-    ${footerContent}
-  </div>
-</body>
-</html>
-`;
+    <div class="message">
+      If this was you, no action is needed. If you did not authorize this login, please secure your account immediately.
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "New Login Detected",
+    previewText: `New login detected for your account at ${data.time}.`,
+    content,
+  });
+};
+
+// 6. Admin OTP
+export const adminOtpTemplate = (data: {
+  otp: string;
+  expiryMinutes: number;
+}) => {
+  const content = `
+    <div class="greeting">Verification Required</div>
+    <div class="message">
+      Please use the One-Time Password (OTP) below to verify your identity. This code is valid for ${data.expiryMinutes} minutes.
+    </div>
+    <div style="text-align: center; margin: 40px 0;">
+      <div style="font-family: monospace; font-size: 36px; font-weight: 700; letter-spacing: 8px; color: #2d3748; background: #edf2f7; padding: 24px 40px; display: inline-block; border-radius: 12px; border: 2px dashed #cbd5e0;">
+        ${data.otp}
+      </div>
+    </div>
+    <div class="message" style="text-align: center; font-size: 14px; color: #718096;">
+      Do not share this code with anyone.
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Your Verification Code",
+    previewText: `Your admin verification code is ${data.otp}.`,
+    content,
+  });
+};
+
+// 7. Session Summary (Present/Late)
+export const sessionSummaryTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  scheduledAt: string;
+  status: string;
+  minutesLate?: number;
+}) => {
+  const isLate = data.status.toLowerCase() === "late";
+  const statusClass = isLate ? "status-warning" : "status-success";
+
+  const content = `
+    <div class="greeting">Session Summary</div>
+    <div class="message">
+      Thank you for attending. Here is the summary for your recent session.
+    </div>
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq</span>
+        <span class="info-value">${data.sabaqName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date & Time</span>
+        <span class="info-value">${data.scheduledAt}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Attendance</span>
+        <span class="info-value"><span class="status-badge ${statusClass}">${
+    data.status
+  }</span></span>
+      </div>
+      ${
+        isLate && data.minutesLate
+          ? `
+      <div class="info-row">
+        <span class="info-label">Minutes Late</span>
+        <span class="info-value">${data.minutesLate} mins</span>
+      </div>`
+          : ""
+      }
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `Session Summary: ${data.sabaqName}`,
+    previewText: `You were marked ${data.status} for ${data.sabaqName}.`,
+    content,
+  });
+};
+
+// 8. Session Absent
+export const sessionAbsentTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  scheduledAt: string;
+}) => {
+  const content = `
+    <div class="greeting">Missed Session</div>
+    <div class="message">
+      We noticed you missed the recent sabaq session. Consistent attendance is key to progress.
+    </div>
+    <div class="info-box">
+      <div class="info-row">
+        <span class="info-label">Sabaq</span>
+        <span class="info-value">${data.sabaqName}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Date & Time</span>
+        <span class="info-value">${data.scheduledAt}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Status</span>
+        <span class="info-value"><span class="status-badge status-error">Absent</span></span>
+      </div>
+    </div>
+    <div class="message">
+      Please try to attend the next session on time.
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `Missed Session: ${data.sabaqName}`,
+    previewText: `You were marked absent for ${data.sabaqName}.`,
+    content,
+  });
+};
+
+// 9. Question Answered
+export const questionAnsweredTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  questionText: string;
+  answerText: string;
+  answeredAt: string;
+}) => {
+  const content = `
+    <div class="greeting">Question Answered</div>
+    <div class="message">
+      Great news! Your question in <strong>${data.sabaqName}</strong> has received an answer.
+    </div>
+    <div class="info-box">
+      <div class="info-row" style="flex-direction: column; align-items: flex-start; border-bottom: none;">
+        <span class="info-label" style="margin-bottom: 8px;">Your Question</span>
+        <span class="info-value" style="text-align: left; font-style: italic; color: #718096; font-weight: 400;">"${data.questionText}"</span>
+      </div>
+    </div>
+    <div class="info-box" style="background-color: #f0fff4; border-color: #c6f6d5; margin-top: -10px;">
+      <div class="info-row" style="flex-direction: column; align-items: flex-start; border-bottom: 1px solid #c6f6d5;">
+        <span class="info-label" style="margin-bottom: 8px; color: #2f855a;">Answer</span>
+        <span class="info-value" style="text-align: left; color: #22543d;">${data.answerText}</span>
+      </div>
+      <div class="info-row" style="margin-top: 15px; padding-top: 10px; border-bottom: none;">
+        <span class="info-label" style="color: #2f855a;">Answered At</span>
+        <span class="info-value" style="color: #22543d;">${data.answeredAt}</span>
+      </div>
+    </div>
+    <div class="button-container">
+      <a href="${process.env.NEXT_PUBLIC_APP_URL}/dashboard/questions" class="button">View Discussion</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Your Question Has Been Answered",
+    previewText: `An answer has been posted to your question in ${data.sabaqName}.`,
+    content,
+  });
+};

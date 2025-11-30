@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { SessionProvider } from "next-auth/react";
@@ -14,6 +15,19 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+
+
+const arabicFont = localFont({
+  src: [
+    {
+      path: "../fonts/kanz-al-marjaan-webfont.woff2",
+      weight: "400",
+      style: "normal",
+    },
+  ],
+  variable: "--font-arabic",
 });
 
 export const metadata: Metadata = {
@@ -55,7 +69,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} font-sans antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${arabicFont.variable} font-sans antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
         <SessionProvider>
           <SmoothScrollProvider>
             <AppHeader />

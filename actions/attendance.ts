@@ -7,6 +7,7 @@ import { getDistance } from "geolib";
 import { requirePermission } from "@/lib/rbac";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { generateAttendanceId } from "@/lib/id-generators";
+import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 
 // Helper function to calculate lateness
 function calculateLateness(markedAt: Date, cutoffTime: Date) {
@@ -172,15 +173,19 @@ export async function markAttendanceManual(
 
     // Queue email notification
     if (attendance.user.email) {
+      // ... existing imports
+
+      // ... inside markAttendanceManual
       await queueEmail(
         attendance.user.email,
-        `Attendance Marked - ${sessionData.sabaq.name}`,
+        `Attendance: ${sessionData.sabaq.name}`,
         "attendance-marked",
         {
           userName: attendance.user.name,
           sabaqName: sessionData.sabaq.name,
-          status: isLate ? "Late" : "Present",
-          markedAt: markedAt.toLocaleString(),
+          status: isLate ? "Late" : "On Time",
+          markedAt: formatDateTime(markedAt),
+          sessionDate: formatDate(sessionData.scheduledAt),
           sessionId: sessionId,
         }
       );
@@ -318,7 +323,7 @@ export async function markAttendanceLocation(
     if (attendance.user.email) {
       await queueEmail(
         attendance.user.email,
-        `Attendance Marked - ${sessionData.sabaq.name}`,
+        `attendance: ${sessionData.sabaq.name}`,
         "attendance-marked",
         {
           userName: attendance.user.name,
@@ -420,7 +425,7 @@ export async function markAttendanceQR(sessionId: string) {
     if (attendance.user.email) {
       await queueEmail(
         attendance.user.email,
-        `Attendance Marked - ${sessionData.sabaq.name}`,
+        `attendance: ${sessionData.sabaq.name}`,
         "attendance-marked",
         {
           userName: attendance.user.name,
@@ -772,7 +777,7 @@ export async function bulkMarkAttendance(
           if (attendance.user.email) {
             await queueEmail(
               attendance.user.email,
-              `Attendance Marked - ${sessionData.sabaq.name}`,
+              `attendance: ${sessionData.sabaq.name}`,
               "attendance-marked",
               {
                 userName: attendance.user.name,

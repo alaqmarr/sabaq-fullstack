@@ -1,6 +1,9 @@
 import { getPublicSessionInfo } from '@/actions/sessions';
+import { getSessionQuestions, getUserVotes } from '@/actions/questions';
 import { PublicQuestionForm } from '@/components/questions/public-question-form';
+import { QuestionsList } from '@/components/questions/questions-list';
 import { notFound } from 'next/navigation';
+import { auth } from '@/auth';
 
 export const metadata = {
     title: "Ask a Question",
@@ -8,34 +11,50 @@ export const metadata = {
 
 export default async function PublicQuestionPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
-    const result = await getPublicSessionInfo(sessionId);
+    const session = await auth();
 
-    if (!result.success || !result.session) {
+    const [sessionResult, questionsResult, userVotesResult] = await Promise.all([
+        getPublicSessionInfo(sessionId),
+        getSessionQuestions(sessionId),
+        getUserVotes(sessionId)
+    ]);
+
+    if (!sessionResult.success || !sessionResult.session) {
         notFound();
     }
 
-    const { session } = result;
+    const sessionData = sessionResult.session;
+    const questions = questionsResult.success && questionsResult.questions ? questionsResult.questions : [];
+    const userVotes = userVotesResult.success && userVotesResult.votedQuestionIds ? userVotesResult.votedQuestionIds : [];
 
     return (
-        <div className="min-h-screen flex flex-col items-center justify-center p-4 bg-background relative overflow-hidden">
+        <div className="min-h-screen flex flex-col items-center p-4 bg-background relative overflow-y-auto">
             {/* Background Elements */}
-            <div className="absolute inset-0 bg-grid-white/[0.02] bg-[size:60px_60px]" />
-            <div className="absolute h-full w-full bg-background [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
+            <div className="fixed inset-0 bg-grid-white/[0.02] bg-[size:60px_60px] pointer-events-none" />
+            <div className="fixed inset-0 bg-background [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)] pointer-events-none" />
 
-            <div className="relative z-10 w-full max-w-md space-y-8">
+            <div className="relative z-10 w-full max-w-md space-y-8 pt-8 pb-12">
                 <div className="text-center space-y-2">
                     <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                        {session.sabaq.name}
+                        {sessionData.sabaq.name}
                     </h1>
                     <p className="text-muted-foreground">
-                        {session.sabaq.kitaab} • {session.sabaq.level}
+                        {sessionData.sabaq.kitaab} • {sessionData.sabaq.level}
                     </p>
                 </div>
 
                 <PublicQuestionForm
                     sessionId={sessionId}
-                    sabaqName={session.sabaq.name}
+                    sabaqName={sessionData.sabaq.name}
                 />
+
+                <div className="pt-8 border-t border-border/40">
+                    <QuestionsList
+                        questions={questions}
+                        userVotes={userVotes}
+                        currentUserId={session?.user?.id}
+                    />
+                </div>
             </div>
         </div>
     );

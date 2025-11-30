@@ -30,11 +30,12 @@ model User {
   markedAttendances Attendance[]   @relation("AttendanceMarker")
   SecurityLog       SecurityLog[]
 
-  managedSabaqsCount Int @default(0)
-  questionsCount     Int @default(0)
-  attendedCount      Int @default(0)
-  enrollmentCount    Int @default(0)
-  lateCount          Int @default(0)
+  managedSabaqsCount Int        @default(0)
+  questionsCount     Int        @default(0)
+  attendedCount      Int        @default(0)
+  enrollmentCount    Int        @default(0)
+  lateCount          Int        @default(0)
+  AdminOTP           AdminOTP[]
 
   @@index([role])
   @@index([itsNumber])
@@ -82,7 +83,7 @@ model Sabaq {
   sessions        Session[]
   activeSessionId String?      @unique
   activeSession   Session?     @relation("ActiveSession", fields: [activeSessionId], references: [id])
-  
+
   conductedSessionsCount Int @default(0)
   enrollmentCount        Int @default(0)
 
@@ -271,4 +272,17 @@ model SecurityLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action])
+}
+
+model AdminOTP {
+  id        String   @id @default(cuid())
+  userId    String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([code])
 }

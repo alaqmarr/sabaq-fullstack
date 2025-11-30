@@ -7,6 +7,7 @@ import { queueEmail, processEmailQueue } from "./email-queue";
 import { requirePermission } from "@/lib/rbac";
 import { QuestionSchema, AnswerSchema } from "@/schemas";
 import { generateQuestionId } from "@/lib/id-generators";
+import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 
 // Validate user attended session
 async function validateAttendance(sessionId: string, userId: string) {
@@ -362,6 +363,7 @@ export async function answerQuestion(questionId: string, answerText: string) {
           answerText: validatedData.answer,
           sabaqName: question.session.sabaq.name,
           sessionId: question.sessionId,
+          answeredAt: formatDateTime(new Date()),
         }
       );
       // Trigger processing immediately

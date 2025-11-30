@@ -7,6 +7,7 @@ import { queueEmail, processEmailQueue } from "./email-queue";
 import { requirePermission } from "@/lib/rbac";
 import { SessionSchema } from "@/schemas";
 import { generateSessionId } from "@/lib/id-generators";
+import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 
 export async function createSession(data: {
   sabaqId: string;
@@ -195,30 +196,6 @@ export async function startSession(id: string) {
         },
       },
     });
-
-    // Queue emails for enrolled users
-    for (const enrollment of enrollments) {
-      if (enrollment.user.email) {
-        await queueEmail(
-          enrollment.user.email,
-          `Session Started - ${session.sabaq.name}`,
-          "session-started",
-          {
-            userName: enrollment.user.name,
-            sabaqName: session.sabaq.name,
-            kitaab: session.sabaq.kitaab,
-            scheduledAt: session.scheduledAt.toLocaleString(),
-            sessionId: session.id,
-          }
-        );
-      }
-    }
-
-    // Trigger processing immediately
-    void processEmailQueue();
-
-    revalidatePath("/dashboard/sessions");
-    revalidatePath(`/dashboard/sessions/${id}`);
     return { success: true, session };
   } catch (error: any) {
     return {
@@ -299,12 +276,12 @@ export async function endSession(id: string) {
         // Present or Late
         await queueEmail(
           enrollment.user.email,
-          `Session Summary - ${existingSession.sabaq.name}`,
+          `Session Summary: ${existingSession.sabaq.name}`,
           "session-summary",
           {
             userName: enrollment.user.name,
             sabaqName: existingSession.sabaq.name,
-            scheduledAt: existingSession.scheduledAt.toLocaleString(),
+            scheduledAt: formatDateTime(existingSession.scheduledAt),
             status: attendance.isLate ? "Late" : "Present",
             minutesLate: attendance.minutesLate,
             sessionId: id,
@@ -314,12 +291,12 @@ export async function endSession(id: string) {
         // Absent
         await queueEmail(
           enrollment.user.email,
-          `Absent for Session - ${existingSession.sabaq.name}`,
+          `Session Absence: ${existingSession.sabaq.name}`,
           "session-absent",
           {
             userName: enrollment.user.name,
             sabaqName: existingSession.sabaq.name,
-            scheduledAt: existingSession.scheduledAt.toLocaleString(),
+            scheduledAt: formatDateTime(existingSession.scheduledAt),
             sessionId: id,
           }
         );
@@ -340,7 +317,7 @@ export async function endSession(id: string) {
 
 export async function resumeSession(id: string) {
   try {
-    await requirePermission("sessions", "end"); // Re-using 'end' permission as it's a similar level of control
+    await requirePermission("sessions", "end");
 
     const existingSession = await prisma.session.findUnique({
       where: { id },
@@ -362,7 +339,7 @@ export async function resumeSession(id: string) {
       where: { id },
       data: {
         isActive: true,
-        endedAt: null, // Clear endedAt
+        endedAt: null,
       },
     });
 
@@ -419,6 +396,17 @@ export async function getSessionsBySabaq(sabaqId: string) {
             name: true,
             kitaab: true,
             level: true,
+            allowLocationAttendance: true,
+            locationId: true,
+            location: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radiusMeters: true,
+              },
+            },
           },
         },
         _count: {
@@ -580,6 +568,17 @@ export async function getActiveSessions() {
             id: true,
             name: true,
             kitaab: true,
+            allowLocationAttendance: true,
+            locationId: true,
+            location: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radiusMeters: true,
+              },
+            },
           },
         },
         _count: {
@@ -645,6 +644,17 @@ export async function getUpcomingSessions(days: number = 7) {
             name: true,
             kitaab: true,
             level: true,
+            allowLocationAttendance: true,
+            locationId: true,
+            location: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radiusMeters: true,
+              },
+            },
           },
         },
       },

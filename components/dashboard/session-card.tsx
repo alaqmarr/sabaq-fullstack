@@ -60,7 +60,6 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
     };
 
     const handleLocationAttendance = async () => {
-        if (!confirm('Are you sure you want to mark attendance at your current location?')) return;
         if (!navigator.geolocation) {
             playErrorSound();
             toast.error('Geolocation is not supported by your browser');
@@ -68,6 +67,8 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
         }
 
         setLoading(true);
+        const toastId = toast.loading("Fetching location...");
+
         navigator.geolocation.getCurrentPosition(
             async (position) => {
                 const result = await markAttendanceLocation(
@@ -77,23 +78,23 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                 );
                 if (result.success) {
                     playSuccessSound();
-                    toast.success('Attendance marked successfully!');
+                    toast.success('Attendance marked successfully!', { id: toastId });
                     router.refresh();
                 } else {
                     playErrorSound();
-                    toast.error(result.error || 'Failed to mark attendance');
+                    toast.error(result.error || 'Failed to mark attendance', { id: toastId });
                 }
                 setLoading(false);
             },
             (error) => {
                 playErrorSound();
-                toast.error('Failed to get your location. Please enable location services.');
+                toast.error('Failed to get your location. Please enable location services.', { id: toastId });
                 setLoading(false);
             }
         );
     };
 
-    const attendanceCount = session._count?.attendance || 0;
+    const attendanceCount = session._count?.attendances || 0;
 
     return (
         <Card className={cn(
@@ -171,15 +172,15 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                             </Button>
                         )}
 
-                        {/* Mumin Controls */}
-                        {isMumin && isActive && !isAttended && (
+                        {/* Attendance Controls (All Roles) */}
+                        {isActive && !isAttended && (
                             <>
                                 <Button size="sm" variant="frosted-green" onClick={() => setShowQR(true)} className="w-full justify-start">
                                     <QrCode className="h-3.5 w-3.5 mr-2" /> My QR
                                 </Button>
                                 {allowLocation && (
                                     <Button size="sm" variant="frosted-green" onClick={handleLocationAttendance} disabled={loading} className="w-full justify-start">
-                                        <Navigation className="h-3.5 w-3.5 mr-2" /> Mark Here
+                                        <Navigation className="h-3.5 w-3.5 mr-2" /> Mark Present
                                     </Button>
                                 )}
                             </>
@@ -187,7 +188,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
 
                         {isAttended && (
                             <Button size="sm" variant="frosted-amber" asChild className="w-full justify-start">
-                                <Link href={`/dashboard/sessions/${session.id}?tab=questions`}>
+                                <Link href={`/sessions/${session.id}/ask`}>
                                     <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
                                 </Link>
                             </Button>

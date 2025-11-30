@@ -42,43 +42,47 @@ export default async function QuestionsPage() {
 
     const isAdmin = ['SUPERADMIN', 'ADMIN', 'JANAB'].includes(session.user.role);
 
-    // Get recent sessions with questions
-    const sessionsWithQuestions = await prisma.session.findMany({
-        where: {
-            questions: {
-                some: {},
-            },
-        },
-        include: {
-            sabaq: {
-                select: {
-                    name: true,
-                    kitaab: true,
-                    level: true,
+    // Get recent sessions with questions (only for admins)
+    let sessionsWithQuestions: any[] = [];
+
+    if (isAdmin) {
+        sessionsWithQuestions = await prisma.session.findMany({
+            where: {
+                questions: {
+                    some: {},
                 },
             },
-            _count: {
-                select: {
-                    questions: true,
+            include: {
+                sabaq: {
+                    select: {
+                        name: true,
+                        kitaab: true,
+                        level: true,
+                    },
+                },
+                _count: {
+                    select: {
+                        questions: true,
+                    },
+                },
+                questions: {
+                    select: {
+                        id: true,
+                        isAnswered: true,
+                    },
                 },
             },
-            questions: {
-                select: {
-                    id: true,
-                    isAnswered: true,
-                },
+            orderBy: {
+                scheduledAt: 'desc',
             },
-        },
-        orderBy: {
-            scheduledAt: 'desc',
-        },
-        take: 20,
-    });
+            take: 20,
+        });
+    }
 
     const sessionsWithData = sessionsWithQuestions.map((sess) => ({
         ...sess,
-        unansweredCount: sess.questions.filter((q) => !q.isAnswered).length,
-        answeredCount: sess.questions.filter((q) => q.isAnswered).length,
+        unansweredCount: sess.questions.filter((q: any) => !q.isAnswered).length,
+        answeredCount: sess.questions.filter((q: any) => q.isAnswered).length,
     }));
 
     // Filter sessions
@@ -99,14 +103,14 @@ export default async function QuestionsPage() {
             </div>
 
             <Tabs defaultValue={isAdmin ? "unanswered" : "my-questions"} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3">
                     {isAdmin && (
                         <TabsTrigger value="unanswered">
                             Unanswered ({unansweredSessions.length})
                         </TabsTrigger>
                     )}
                     <TabsTrigger value="my-questions">My Questions</TabsTrigger>
-                    <TabsTrigger value="all">All Sessions</TabsTrigger>
+                    {isAdmin && <TabsTrigger value="all">All Sessions</TabsTrigger>}
                 </TabsList>
 
                 {isAdmin && (

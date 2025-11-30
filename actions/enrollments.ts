@@ -6,6 +6,7 @@ import { auth } from "@/auth";
 import { requirePermission } from "@/lib/rbac";
 import { processEmailQueue } from "./email-queue";
 import { generateEnrollmentId } from "@/lib/id-generators";
+import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 
 export async function createEnrollmentRequest(
   sabaqId: string,
@@ -246,10 +247,7 @@ export async function getMyEnrollments() {
             enrollmentStartsAt: true,
             enrollmentEndsAt: true,
             criteria: true,
-            location: true,
             janabId: true,
-          },
-          include: {
             janab: true,
             location: true,
           },
@@ -345,6 +343,7 @@ export async function approveEnrollment(enrollmentId: string) {
         "approved",
         enrollment.sabaq.name,
         enrollment.user.name,
+        formatDate(new Date()),
         undefined,
         enrollment.sabaq.whatsappGroupLink || undefined
       );
@@ -417,6 +416,7 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
         "rejected",
         enrollment.sabaq.name,
         enrollment.user.name,
+        formatDate(new Date()),
         reason
       );
       // Trigger processing immediately
@@ -462,7 +462,8 @@ export async function bulkApproveEnrollments(enrollmentIds: string[]) {
           enrollment.user.email,
           "approved",
           enrollment.sabaq.name,
-          enrollment.user.name
+          enrollment.user.name,
+          formatDate(new Date())
         );
       }
     }
@@ -517,6 +518,7 @@ export async function bulkRejectEnrollments(
           "rejected",
           enrollment.sabaq.name,
           enrollment.user.name,
+          formatDate(new Date()),
           reason
         );
       }
@@ -544,30 +546,39 @@ async function queueEnrollmentEmail(
   status: "approved" | "rejected",
   sabaqName: string,
   userName: string,
+  dateStr: string,
   reason?: string,
   whatsappGroupLink?: string
 ) {
   try {
     const subject =
       status === "approved"
-        ? `Enrollment Approved - ${sabaqName}`
-        : `Enrollment Rejected - ${sabaqName}`;
+        ? `Enrollment Approved: ${sabaqName}`
+        : `Enrollment Update: ${sabaqName}`;
 
     const template =
       status === "approved" ? `enrollment-approved` : `enrollment-rejected`;
+
+    const data: any = {
+      userName,
+      sabaqName,
+    };
+
+    if (status === "approved") {
+      data.approvedAt = dateStr;
+      data.whatsappGroupLink = whatsappGroupLink || "";
+    } else {
+      data.rejectedAt = dateStr;
+      data.reason = reason || "";
+    }
 
     await prisma.emailLog.create({
       data: {
         to,
         subject,
         template: JSON.stringify({
-          template,
-          data: {
-            userName,
-            sabaqName,
-            reason: reason || "",
-            whatsappGroupLink: whatsappGroupLink || "",
-          },
+          templateName: template,
+          data,
         }),
         status: "PENDING",
       },

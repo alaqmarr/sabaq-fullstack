@@ -5,12 +5,28 @@
       "locations": ["create", "read", "update", "delete"],
       "sabaqs": ["create", "read", "update", "delete", "assign_admin"],
       "sessions": ["create", "read", "update", "delete", "start", "end"],
-      "attendance": ["create", "read", "update", "delete", "verify"],
-      "enrollments": ["read", "approve", "reject", "bulk_enroll"],
-      "questions": ["read", "delete", "answer"],
+      "attendance": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "verify",
+        "read_self",
+        "mark_self"
+      ],
+      "enrollments": [
+        "read",
+        "approve",
+        "reject",
+        "bulk_enroll",
+        "create",
+        "read_self"
+      ],
+      "questions": ["read", "delete", "answer", "create", "upvote"],
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
-      "scan": ["read"]
+      "scan": ["read"],
+      "logs": ["read"]
     },
     "ADMIN": {
       "users": [],
