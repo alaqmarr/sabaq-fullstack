@@ -15,7 +15,9 @@ import {
     UserCheck,
     Menu,
     X,
-    ShieldAlert
+    ShieldAlert,
+    CalendarDays,
+    QrCode
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Role } from '@prisma/client';
@@ -29,6 +31,12 @@ const navItems = [
         href: '/dashboard',
         icon: LayoutGrid,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
+    },
+    {
+        title: 'scan qr',
+        href: '/dashboard/scan',
+        icon: QrCode,
+        roles: [Role.MUMIN, Role.JANAB, Role.ATTENDANCE_INCHARGE, Role.MANAGER, Role.ADMIN, Role.SUPERADMIN],
     },
     {
         title: 'users',
@@ -77,6 +85,12 @@ const navItems = [
         href: '/dashboard/questions',
         icon: MessageSquareText,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
+    },
+    {
+        title: 'calendar',
+        href: '/dashboard/calendar',
+        icon: CalendarDays,
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
     },
     {
         title: 'logs',

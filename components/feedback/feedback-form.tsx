@@ -60,6 +60,7 @@ export function FeedbackForm({ sessionId, user }: FeedbackFormProps) {
             });
 
             if (result.success) {
+                form.reset(); // Clear form inputs
                 setIsSubmitted(true);
                 toast.success("Feedback submitted successfully!");
             } else {

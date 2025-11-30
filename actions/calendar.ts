@@ -47,6 +47,15 @@ export async function getCalendarSessions(start: Date, end: Date) {
             name: true,
             kitaab: true,
             level: true,
+            location: {
+              select: {
+                id: true,
+                name: true,
+                latitude: true,
+                longitude: true,
+                radiusMeters: true,
+              },
+            },
           },
         },
         _count: {
@@ -56,7 +65,22 @@ export async function getCalendarSessions(start: Date, end: Date) {
       orderBy: { scheduledAt: "asc" },
     });
 
-    return { success: true, sessions };
+    // Serialize Decimal types to Number for client components
+    const serializedSessions = sessions.map((session) => ({
+      ...session,
+      sabaq: {
+        ...session.sabaq,
+        location: session.sabaq.location
+          ? {
+              ...session.sabaq.location,
+              latitude: Number(session.sabaq.location.latitude),
+              longitude: Number(session.sabaq.location.longitude),
+            }
+          : null,
+      },
+    }));
+
+    return { success: true, sessions: serializedSessions };
   } catch (error: any) {
     console.error("Failed to fetch calendar sessions:", error);
     return {

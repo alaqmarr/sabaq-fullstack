@@ -55,6 +55,8 @@ export default async function FeedbackPage({ params }: FeedbackPageProps) {
 
   // If user is logged in, check if they have already submitted feedback
   let existingFeedback = null;
+  let hasAttended = false;
+
   if (user?.id) {
     existingFeedback = await prisma.feedback.findUnique({
       where: {
@@ -64,6 +66,18 @@ export default async function FeedbackPage({ params }: FeedbackPageProps) {
         },
       },
     });
+
+    // Check if user attended this session
+    const attendance = await prisma.attendance.findUnique({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId: user.id,
+        },
+      },
+    });
+
+    hasAttended = !!attendance;
   }
 
   return (
@@ -84,6 +98,13 @@ export default async function FeedbackPage({ params }: FeedbackPageProps) {
               <h3 className="font-semibold text-lg">Feedback Submitted</h3>
               <p className="text-muted-foreground">
                 You have already provided feedback for this session. Thank you!
+              </p>
+            </div>
+          ) : user?.id && !hasAttended ? (
+            <div className="text-center p-6 space-y-2 bg-muted/30 rounded-lg border">
+              <h3 className="font-semibold text-lg">Attendance Required</h3>
+              <p className="text-muted-foreground">
+                You must have attended this session to provide feedback.
               </p>
             </div>
           ) : (
