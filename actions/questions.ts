@@ -105,35 +105,32 @@ export async function submitQuestionPublic({
     const questionId = await generateQuestionId(sessionId);
 
     // 5. Create Question
-    const newQuestion = await prisma.question.create({
-      data: {
-        id: questionId,
-        sessionId,
-        sabaqId: sessionData.sabaqId,
-        userId,
-        question,
-        upvotes: 1,
-      },
-    });
-
-    // Create initial vote
-    await prisma.questionVote.create({
-      data: {
-        questionId: newQuestion.id,
-        userId,
-      },
-    });
-
-    // Increment counters
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: { questionsCount: { increment: 1 } },
-    });
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { questionsCount: { increment: 1 } },
-    });
+    const [newQuestion] = await prisma.$transaction([
+      prisma.question.create({
+        data: {
+          id: questionId,
+          sessionId,
+          sabaqId: sessionData.sabaqId,
+          userId,
+          question,
+          upvotes: 1,
+        },
+      }),
+      prisma.questionVote.create({
+        data: {
+          questionId,
+          userId,
+        },
+      }),
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { questionsCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: userId },
+        data: { questionsCount: { increment: 1 } },
+      }),
+    ]);
 
     revalidatePath(`/dashboard/sessions/${sessionId}`);
     return { success: true, question: newQuestion };
@@ -174,35 +171,32 @@ export async function submitQuestion(sessionId: string, questionText: string) {
     const questionId = await generateQuestionId(sessionId);
 
     // Create question with initial upvote from submitter
-    const question = await prisma.question.create({
-      data: {
-        id: questionId,
-        sessionId,
-        sabaqId: sessionData.sabaqId,
-        userId: currentUser.id,
-        question: validatedData.question,
-        upvotes: 1, // Start with 1 from submitter
-      },
-    });
-
-    // Create initial vote from submitter
-    await prisma.questionVote.create({
-      data: {
-        questionId: question.id,
-        userId: currentUser.id,
-      },
-    });
-
-    // Increment counters
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: { questionsCount: { increment: 1 } },
-    });
-
-    await prisma.user.update({
-      where: { id: currentUser.id },
-      data: { questionsCount: { increment: 1 } },
-    });
+    const [question] = await prisma.$transaction([
+      prisma.question.create({
+        data: {
+          id: questionId,
+          sessionId,
+          sabaqId: sessionData.sabaqId,
+          userId: currentUser.id,
+          question: validatedData.question,
+          upvotes: 1, // Start with 1 from submitter
+        },
+      }),
+      prisma.questionVote.create({
+        data: {
+          questionId,
+          userId: currentUser.id,
+        },
+      }),
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { questionsCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: currentUser.id },
+        data: { questionsCount: { increment: 1 } },
+      }),
+    ]);
 
     revalidatePath(`/dashboard/sessions/${sessionId}`);
     return { success: true, question };
@@ -418,8 +412,22 @@ export async function deleteQuestion(questionId: string) {
       }
     }
 
-    const question = await prisma.question.delete({
-      where: { id: questionId },
+    const question = await prisma.$transaction(async (tx) => {
+      const deleted = await tx.question.delete({
+        where: { id: questionId },
+      });
+
+      await tx.session.update({
+        where: { id: deleted.sessionId },
+        data: { questionsCount: { decrement: 1 } },
+      });
+
+      await tx.user.update({
+        where: { id: deleted.userId },
+        data: { questionsCount: { decrement: 1 } },
+      });
+
+      return deleted;
     });
 
     revalidatePath(`/dashboard/sessions/${question.sessionId}`);

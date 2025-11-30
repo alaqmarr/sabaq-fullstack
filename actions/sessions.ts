@@ -165,21 +165,27 @@ export async function startSession(id: string) {
       };
     }
 
-    const session = await prisma.session.update({
-      where: { id },
-      data: {
-        startedAt: new Date(),
-        isActive: true,
-      },
-      include: {
-        sabaq: {
-          select: {
-            name: true,
-            kitaab: true,
+    const [session] = await prisma.$transaction([
+      prisma.session.update({
+        where: { id },
+        data: {
+          startedAt: new Date(),
+          isActive: true,
+        },
+        include: {
+          sabaq: {
+            select: {
+              name: true,
+              kitaab: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.sabaq.update({
+        where: { id: existingSession.sabaqId },
+        data: { activeSessionId: id },
+      }),
+    ]);
 
     // Fetch enrolled users
     const enrollments = await prisma.enrollment.findMany({
@@ -229,13 +235,22 @@ export async function endSession(id: string) {
       return { success: false, error: "Session is not active" };
     }
 
-    const session = await prisma.session.update({
-      where: { id },
-      data: {
-        endedAt: new Date(),
-        isActive: false,
-      },
-    });
+    const [session] = await prisma.$transaction([
+      prisma.session.update({
+        where: { id },
+        data: {
+          endedAt: new Date(),
+          isActive: false,
+        },
+      }),
+      prisma.sabaq.update({
+        where: { id: existingSession.sabaqId },
+        data: {
+          activeSessionId: null,
+          conductedSessionsCount: { increment: 1 },
+        },
+      }),
+    ]);
 
     // 1. Fetch all approved enrollments
     const enrollments = await prisma.enrollment.findMany({
@@ -335,13 +350,19 @@ export async function resumeSession(id: string) {
       return { success: false, error: "Session has not ended yet" };
     }
 
-    const session = await prisma.session.update({
-      where: { id },
-      data: {
-        isActive: true,
-        endedAt: null,
-      },
-    });
+    const [session] = await prisma.$transaction([
+      prisma.session.update({
+        where: { id },
+        data: {
+          isActive: true,
+          endedAt: null,
+        },
+      }),
+      prisma.sabaq.update({
+        where: { id: existingSession.sabaqId },
+        data: { activeSessionId: id },
+      }),
+    ]);
 
     revalidatePath("/dashboard/sessions");
     revalidatePath(`/dashboard/sessions/${id}`);

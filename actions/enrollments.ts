@@ -323,18 +323,32 @@ export async function approveEnrollment(enrollmentId: string) {
       }
     }
 
-    const enrollment = await prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        status: "APPROVED",
-        approvedAt: new Date(),
-        approvedBy: currentUser.id,
-      },
-      include: {
-        user: { select: { email: true, name: true } },
-        sabaq: { select: { name: true, whatsappGroupLink: true } },
-      },
-    });
+    if (enrollmentToCheck.status === "APPROVED") {
+      return { success: false, error: "Enrollment is already approved" };
+    }
+
+    const [enrollment] = await prisma.$transaction([
+      prisma.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: "APPROVED",
+          approvedAt: new Date(),
+          approvedBy: currentUser.id,
+        },
+        include: {
+          user: { select: { email: true, name: true } },
+          sabaq: { select: { name: true, whatsappGroupLink: true } },
+        },
+      }),
+      prisma.sabaq.update({
+        where: { id: enrollmentToCheck.sabaqId },
+        data: { enrollmentCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: enrollmentToCheck.userId },
+        data: { enrollmentCount: { increment: 1 } },
+      }),
+    ]);
 
     // Queue email notification
     if (enrollment.user.email) {
@@ -395,18 +409,33 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
       }
     }
 
-    const enrollment = await prisma.enrollment.update({
-      where: { id: enrollmentId },
-      data: {
-        status: "REJECTED",
-        rejectedAt: new Date(),
-        rejectedBy: currentUser.id,
-        rejectionReason: reason,
-      },
-      include: {
-        user: { select: { email: true, name: true } },
-        sabaq: { select: { name: true } },
-      },
+    const [enrollment] = await prisma.$transaction(async (tx) => {
+      const updated = await tx.enrollment.update({
+        where: { id: enrollmentId },
+        data: {
+          status: "REJECTED",
+          rejectedAt: new Date(),
+          rejectedBy: currentUser.id,
+          rejectionReason: reason,
+        },
+        include: {
+          user: { select: { email: true, name: true } },
+          sabaq: { select: { name: true } },
+        },
+      });
+
+      if (enrollmentToCheck.status === "APPROVED") {
+        await tx.sabaq.update({
+          where: { id: enrollmentToCheck.sabaqId },
+          data: { enrollmentCount: { decrement: 1 } },
+        });
+        await tx.user.update({
+          where: { id: enrollmentToCheck.userId },
+          data: { enrollmentCount: { decrement: 1 } },
+        });
+      }
+
+      return [updated];
     });
 
     // Queue email notification
@@ -446,13 +475,31 @@ export async function bulkApproveEnrollments(enrollmentIds: string[]) {
       },
     });
 
-    await prisma.enrollment.updateMany({
-      where: { id: { in: enrollmentIds } },
-      data: {
-        status: "APPROVED",
-        approvedAt: new Date(),
-        approvedBy: currentUser.id,
-      },
+    await prisma.$transaction(async (tx) => {
+      // 1. Update status
+      await tx.enrollment.updateMany({
+        where: { id: { in: enrollmentIds } },
+        data: {
+          status: "APPROVED",
+          approvedAt: new Date(),
+          approvedBy: currentUser.id,
+        },
+      });
+
+      // 2. Update counts (only for those not already approved)
+      // We fetched 'enrollments' before update. We should check their previous status.
+      for (const enrollment of enrollments) {
+        if (enrollment.status !== "APPROVED") {
+          await tx.sabaq.update({
+            where: { id: enrollment.sabaqId },
+            data: { enrollmentCount: { increment: 1 } },
+          });
+          await tx.user.update({
+            where: { id: enrollment.userId },
+            data: { enrollmentCount: { increment: 1 } },
+          });
+        }
+      }
     });
 
     // Queue email notifications
@@ -500,14 +547,31 @@ export async function bulkRejectEnrollments(
       },
     });
 
-    await prisma.enrollment.updateMany({
-      where: { id: { in: enrollmentIds } },
-      data: {
-        status: "REJECTED",
-        rejectedAt: new Date(),
-        rejectedBy: currentUser.id,
-        rejectionReason: reason,
-      },
+    await prisma.$transaction(async (tx) => {
+      // 1. Update status
+      await tx.enrollment.updateMany({
+        where: { id: { in: enrollmentIds } },
+        data: {
+          status: "REJECTED",
+          rejectedAt: new Date(),
+          rejectedBy: currentUser.id,
+          rejectionReason: reason,
+        },
+      });
+
+      // 2. Update counts (only for those previously approved)
+      for (const enrollment of enrollments) {
+        if (enrollment.status === "APPROVED") {
+          await tx.sabaq.update({
+            where: { id: enrollment.sabaqId },
+            data: { enrollmentCount: { decrement: 1 } },
+          });
+          await tx.user.update({
+            where: { id: enrollment.userId },
+            data: { enrollmentCount: { decrement: 1 } },
+          });
+        }
+      }
     });
 
     // Queue email notifications
@@ -664,16 +728,31 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
     };
 
     if (usersToEnroll.length > 0) {
-      await prisma.enrollment.createMany({
-        data: usersToEnroll.map((user) => ({
-          id: generateEnrollmentId(user.itsNumber, sabaqId), // Generate ID here
-          sabaqId,
-          userId: user.id,
-          status: "APPROVED",
-          approvedAt: new Date(),
-          approvedBy: currentUser.id,
-          requestedAt: new Date(),
-        })),
+      await prisma.$transaction(async (tx) => {
+        await tx.enrollment.createMany({
+          data: usersToEnroll.map((user) => ({
+            id: generateEnrollmentId(user.itsNumber, sabaqId),
+            sabaqId,
+            userId: user.id,
+            status: "APPROVED",
+            approvedAt: new Date(),
+            approvedBy: currentUser.id,
+            requestedAt: new Date(),
+          })),
+        });
+
+        // Increment counts
+        await tx.sabaq.update({
+          where: { id: sabaqId },
+          data: { enrollmentCount: { increment: usersToEnroll.length } },
+        });
+
+        for (const user of usersToEnroll) {
+          await tx.user.update({
+            where: { id: user.id },
+            data: { enrollmentCount: { increment: 1 } },
+          });
+        }
       });
 
       results.enrolled = usersToEnroll.map((u) => ({

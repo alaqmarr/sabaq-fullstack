@@ -147,29 +147,42 @@ export async function markAttendanceManual(
     // Create attendance record with human-readable ID
     const attendanceId = generateAttendanceId(user.itsNumber, sessionId);
 
-    const attendance = await prisma.attendance.create({
-      data: {
-        id: attendanceId,
-        sessionId,
-        userId: user.id,
-        itsNumber: user.itsNumber,
-        markedAt,
-        markedBy: currentUser.id,
-        method: "MANUAL_ENTRY",
-        isLate,
-        minutesLate,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            itsNumber: true,
-            email: true,
+    const [attendance] = await prisma.$transaction([
+      prisma.attendance.create({
+        data: {
+          id: attendanceId,
+          sessionId,
+          userId: user.id,
+          itsNumber: user.itsNumber,
+          markedAt,
+          markedBy: currentUser.id,
+          method: "MANUAL_ENTRY",
+          isLate,
+          minutesLate,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              itsNumber: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { attendanceCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: user.id },
+        data: {
+          attendedCount: { increment: 1 },
+          lateCount: isLate ? { increment: 1 } : undefined,
+        },
+      }),
+    ]);
 
     // Queue email notification
     if (attendance.user.email) {
@@ -292,32 +305,45 @@ export async function markAttendanceLocation(
     // Create attendance record with human-readable ID
     const attendanceId = generateAttendanceId(currentUser.itsNumber, sessionId);
 
-    const attendance = await prisma.attendance.create({
-      data: {
-        id: attendanceId,
-        sessionId,
-        userId: currentUser.id,
-        itsNumber: currentUser.itsNumber,
-        markedAt,
-        markedBy: currentUser.id,
-        method: "LOCATION_BASED_SELF",
-        latitude: userLatitude.toString(),
-        longitude: userLongitude.toString(),
-        distanceMeters: distance,
-        isLate,
-        minutesLate,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            itsNumber: true,
-            email: true,
+    const [attendance] = await prisma.$transaction([
+      prisma.attendance.create({
+        data: {
+          id: attendanceId,
+          sessionId,
+          userId: currentUser.id,
+          itsNumber: currentUser.itsNumber,
+          markedAt,
+          markedBy: currentUser.id,
+          method: "LOCATION_BASED_SELF",
+          latitude: userLatitude.toString(),
+          longitude: userLongitude.toString(),
+          distanceMeters: distance,
+          isLate,
+          minutesLate,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              itsNumber: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { attendanceCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: currentUser.id },
+        data: {
+          attendedCount: { increment: 1 },
+          lateCount: isLate ? { increment: 1 } : undefined,
+        },
+      }),
+    ]);
 
     // Queue email notification
     if (attendance.user.email) {
@@ -397,29 +423,42 @@ export async function markAttendanceQR(sessionId: string) {
     // Create attendance record with human-readable ID
     const attendanceId = generateAttendanceId(currentUser.itsNumber, sessionId);
 
-    const attendance = await prisma.attendance.create({
-      data: {
-        id: attendanceId,
-        sessionId,
-        userId: currentUser.id,
-        itsNumber: currentUser.itsNumber,
-        markedAt,
-        markedBy: currentUser.id,
-        method: "QR_SCAN",
-        isLate,
-        minutesLate,
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            itsNumber: true,
-            email: true,
+    const [attendance] = await prisma.$transaction([
+      prisma.attendance.create({
+        data: {
+          id: attendanceId,
+          sessionId,
+          userId: currentUser.id,
+          itsNumber: currentUser.itsNumber,
+          markedAt,
+          markedBy: currentUser.id,
+          method: "QR_SCAN",
+          isLate,
+          minutesLate,
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              itsNumber: true,
+              email: true,
+            },
           },
         },
-      },
-    });
+      }),
+      prisma.session.update({
+        where: { id: sessionId },
+        data: { attendanceCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: currentUser.id },
+        data: {
+          attendedCount: { increment: 1 },
+          lateCount: isLate ? { increment: 1 } : undefined,
+        },
+      }),
+    ]);
 
     // Queue email notification
     if (attendance.user.email) {
@@ -533,8 +572,25 @@ export async function deleteAttendance(attendanceId: string) {
   try {
     await requirePermission("attendance", "delete");
 
-    const attendance = await prisma.attendance.delete({
-      where: { id: attendanceId },
+    const attendance = await prisma.$transaction(async (tx) => {
+      const deleted = await tx.attendance.delete({
+        where: { id: attendanceId },
+      });
+
+      await tx.session.update({
+        where: { id: deleted.sessionId },
+        data: { attendanceCount: { decrement: 1 } },
+      });
+
+      await tx.user.update({
+        where: { id: deleted.userId },
+        data: {
+          attendedCount: { decrement: 1 },
+          lateCount: deleted.isLate ? { decrement: 1 } : undefined,
+        },
+      });
+
+      return deleted;
     });
 
     revalidatePath(`/dashboard/sessions/${attendance.sessionId}`);
@@ -703,23 +759,8 @@ export async function bulkMarkAttendance(
 
     for (const update of updates) {
       try {
-        if (update.status === "ABSENT") {
-          // Delete attendance if exists
-          await prisma.attendance.deleteMany({
-            where: {
-              sessionId,
-              userId: update.userId,
-            },
-          });
-        } else {
-          // Create or Update attendance
-          const isLate = update.status === "LATE";
-          const markedAt = new Date(); // Or use session start time? No, marked now.
-
-          // Upsert is tricky with "isLate" logic if we want to preserve original markedAt for updates
-          // But here we are "taking attendance", so we are setting the state.
-
-          const existing = await prisma.attendance.findUnique({
+        await prisma.$transaction(async (tx) => {
+          const existing = await tx.attendance.findUnique({
             where: {
               sessionId_userId: {
                 sessionId,
@@ -728,67 +769,121 @@ export async function bulkMarkAttendance(
             },
           });
 
-          let attendance;
-
-          if (existing) {
-            attendance = await prisma.attendance.update({
-              where: { id: existing.id },
-              data: {
-                isLate,
-                markedBy: currentUser.id,
-                // Don't change markedAt if already marked?
-                // If changing status, maybe we should?
-                // Let's keep markedAt unless it was absent before.
-              },
-              include: { user: { select: { email: true, name: true } } },
-            });
+          if (update.status === "ABSENT") {
+            if (existing) {
+              await tx.attendance.delete({
+                where: { id: existing.id },
+              });
+              await tx.session.update({
+                where: { id: sessionId },
+                data: { attendanceCount: { decrement: 1 } },
+              });
+              await tx.user.update({
+                where: { id: update.userId },
+                data: {
+                  attendedCount: { decrement: 1 },
+                  lateCount: existing.isLate ? { decrement: 1 } : undefined,
+                },
+              });
+            }
           } else {
-            // Calculate lateness based on cutoff if we want to be strict,
-            // OR just trust the "status" passed by the Incharge.
-            // The Incharge explicitly selected "LATE" or "PRESENT".
-            // So we trust `isLate`.
+            const isLate = update.status === "LATE";
+            const markedAt = new Date();
 
-            // Create attendance record with human-readable ID
-            // We need ITS number for ID generation
-            const userIts =
-              (await prisma.user.findUnique({ where: { id: update.userId } }))
-                ?.itsNumber || "";
-            const attendanceId = generateAttendanceId(userIts, sessionId);
+            if (existing) {
+              // Update existing
+              const attendance = await tx.attendance.update({
+                where: { id: existing.id },
+                data: {
+                  isLate,
+                  markedBy: currentUser.id,
+                },
+                include: { user: { select: { email: true, name: true } } },
+              });
 
-            attendance = await prisma.attendance.create({
-              data: {
-                id: attendanceId,
-                sessionId,
-                userId: update.userId,
-                itsNumber: userIts,
-                markedAt,
-                markedBy: currentUser.id,
-                method: "MANUAL_ENTRY",
-                isLate,
-                minutesLate: 0, // We don't calculate exact minutes for bulk/manual toggle
-              },
-              include: { user: { select: { email: true, name: true } } },
-            });
-          }
-
-          // Queue email notification (only if status changed to PRESENT or LATE)
-          // We don't email for ABSENT in bulk mark usually, as it might be a correction.
-          // But if they are marked PRESENT/LATE, we should notify.
-          if (attendance.user.email) {
-            await queueEmail(
-              attendance.user.email,
-              `attendance: ${sessionData.sabaq.name}`,
-              "attendance-marked",
-              {
-                userName: attendance.user.name,
-                sabaqName: sessionData.sabaq.name,
-                status: isLate ? "Late" : "Present",
-                markedAt: markedAt.toLocaleString(),
-                sessionId: sessionId,
+              // Adjust late count if status changed
+              if (existing.isLate !== isLate) {
+                await tx.user.update({
+                  where: { id: update.userId },
+                  data: {
+                    lateCount: isLate ? { increment: 1 } : { decrement: 1 },
+                  },
+                });
               }
-            );
+
+              // Queue email if status changed (optional, but good for feedback)
+              // We'll queue it outside the transaction or just here if we want
+              // For bulk, maybe skip email on update to avoid spam?
+              // The original code queued it. Let's keep it consistent.
+              if (attendance.user.email && existing.isLate !== isLate) {
+                // We can't easily queue inside transaction if we want to be safe,
+                // but we can return data to queue after.
+                // For now, let's just queue it here, it's non-blocking.
+                await queueEmail(
+                  attendance.user.email,
+                  `Attendance Update: ${sessionData.sabaq.name}`,
+                  "attendance-marked",
+                  {
+                    userName: attendance.user.name,
+                    sabaqName: sessionData.sabaq.name,
+                    status: isLate ? "Late" : "Present",
+                    markedAt: markedAt.toLocaleString(),
+                    sessionId: sessionId,
+                  }
+                );
+              }
+            } else {
+              // Create new
+              const userIts =
+                (await tx.user.findUnique({ where: { id: update.userId } }))
+                  ?.itsNumber || "";
+              const attendanceId = generateAttendanceId(userIts, sessionId);
+
+              const attendance = await tx.attendance.create({
+                data: {
+                  id: attendanceId,
+                  sessionId,
+                  userId: update.userId,
+                  itsNumber: userIts,
+                  markedAt,
+                  markedBy: currentUser.id,
+                  method: "MANUAL_ENTRY",
+                  isLate,
+                  minutesLate: 0,
+                },
+                include: { user: { select: { email: true, name: true } } },
+              });
+
+              await tx.session.update({
+                where: { id: sessionId },
+                data: { attendanceCount: { increment: 1 } },
+              });
+
+              await tx.user.update({
+                where: { id: update.userId },
+                data: {
+                  attendedCount: { increment: 1 },
+                  lateCount: isLate ? { increment: 1 } : undefined,
+                },
+              });
+
+              if (attendance.user.email) {
+                await queueEmail(
+                  attendance.user.email,
+                  `Attendance: ${sessionData.sabaq.name}`,
+                  "attendance-marked",
+                  {
+                    userName: attendance.user.name,
+                    sabaqName: sessionData.sabaq.name,
+                    status: isLate ? "Late" : "Present",
+                    markedAt: markedAt.toLocaleString(),
+                    sessionId: sessionId,
+                  }
+                );
+              }
+            }
           }
-        }
+        });
         results.success++;
       } catch (err: any) {
         results.failed++;
