@@ -28,7 +28,7 @@ export function ViewToggle({ defaultView = 'grid', view: controlledView, onViewC
     };
 
     return (
-        <div className="flex items-center bg-muted/50 p-1 rounded-lg border">
+        <div className="inline-flex items-center bg-muted/50 p-1 rounded-lg border">
             <Button
                 variant={currentView === 'grid' ? 'secondary' : 'ghost'}
                 size="sm"

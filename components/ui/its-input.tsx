@@ -79,6 +79,7 @@ export function ITSInput({
                     value={value}
                     onChange={handleChange}
                     placeholder={placeholder}
+                    inputMode="numeric"
                     className={cn(
                         "pr-10 transition-all duration-300",
                         foundUser ? "border-green-500 ring-green-500/20" : "",
