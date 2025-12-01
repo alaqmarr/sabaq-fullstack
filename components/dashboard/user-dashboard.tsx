@@ -164,9 +164,6 @@ export async function UserDashboard({ user }: { user: any }) {
 
             {/* Quick Actions */}
             <UserQuickActions />
-
-            {/* Quick Actions */}
-            <UserQuickActions />
         </div>
     );
 }

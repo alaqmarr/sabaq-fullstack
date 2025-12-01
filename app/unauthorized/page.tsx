@@ -1,51 +1,66 @@
-import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { ShieldAlert, AlertTriangle } from 'lucide-react';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+"use client";
 
-export default async function UnauthorizedPage({
-    searchParams,
-}: {
-    searchParams: Promise<{ reason?: string; flagged?: string }>;
-}) {
-    const { reason, flagged } = await searchParams;
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { AlertTriangle, ShieldAlert, ArrowLeft, Lock } from "lucide-react";
+import Link from "next/link";
+import { useEffect } from "react";
+import { logUnauthorizedAccess } from "@/actions/security";
+
+export default function UnauthorizedPage() {
+    useEffect(() => {
+        // Log the unauthorized access attempt
+        logUnauthorizedAccess("Unauthorized Page Visit", {
+            url: window.location.href,
+            referrer: document.referrer,
+        });
+    }, []);
 
     return (
-        <div className="flex min-h-screen flex-col items-center justify-center p-4 text-center">
-            <div className="glass p-8 rounded-2xl max-w-md w-full space-y-6 animate-in fade-in zoom-in duration-500">
-                <div className="flex justify-center">
-                    <div className="p-4 bg-destructive/10 rounded-full">
-                        <ShieldAlert className="h-12 w-12 text-destructive" />
+        <div className="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-background via-background to-destructive/5 p-4">
+            <div className="absolute inset-0 bg-grid-white/5 [mask-image:linear-gradient(0deg,white,rgba(255,255,255,0.6))]" />
+
+            <Card className="w-full max-w-md border-destructive/20 shadow-2xl relative overflow-hidden backdrop-blur-xl bg-background/80">
+                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-destructive via-orange-500 to-destructive" />
+
+                <CardHeader className="text-center pb-2">
+                    <div className="mx-auto bg-destructive/10 w-20 h-20 rounded-full flex items-center justify-center mb-4 ring-1 ring-destructive/20 shadow-inner">
+                        <ShieldAlert className="h-10 w-10 text-destructive" />
                     </div>
-                </div>
+                    <CardTitle className="text-2xl font-bold text-destructive tracking-tight">
+                        Access Denied
+                    </CardTitle>
+                </CardHeader>
 
-                <div className="space-y-2">
-                    <h1 className="text-2xl font-bold tracking-tight">Access Denied</h1>
-                    <p className="text-muted-foreground">
-                        {reason ||
-                            'You do not have permission to view this page. Please contact an administrator if you believe this is an error.'}
+                <CardContent className="text-center space-y-4 pt-2">
+                    <div className="p-4 bg-destructive/5 rounded-lg border border-destructive/10">
+                        <p className="text-sm font-medium text-destructive/80 flex items-center justify-center gap-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            Security Alert
+                        </p>
+                        <p className="mt-2 text-sm text-muted-foreground">
+                            Your attempt to access this resource has been blocked and this activity has been <strong>flagged</strong> for security review.
+                        </p>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground leading-relaxed">
+                        You do not have the necessary permissions to view this page. If you believe this is a mistake, please contact the system administrator immediately before attempting to access other resources.
                     </p>
-                </div>
+                </CardContent>
 
-                {flagged === 'true' && (
-                    <Alert variant="destructive" className="text-left">
-                        <AlertTriangle className="h-4 w-4" />
-                        <AlertTitle>Security Alert</AlertTitle>
-                        <AlertDescription>
-                            Your account has been flagged for unauthorized access attempts. This incident has been logged.
-                        </AlertDescription>
-                    </Alert>
-                )}
-
-                <div className="flex flex-col sm:flex-row gap-3 justify-center pt-2">
-                    <Button asChild variant="default" className="w-full sm:w-auto">
-                        <Link href="/dashboard">Return to Dashboard</Link>
-                    </Button>
-                    <Button asChild variant="outline" className="w-full sm:w-auto">
-                        <Link href="/login">Sign In as Different User</Link>
-                    </Button>
-                </div>
-            </div>
+                <CardFooter className="flex flex-col gap-3 pt-2">
+                    <Link href="/dashboard" className="w-full">
+                        <Button variant="outline" className="w-full gap-2 group hover:border-primary/50 hover:bg-primary/5">
+                            <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
+                            Return to Dashboard
+                        </Button>
+                    </Link>
+                    <div className="text-xs text-center text-muted-foreground opacity-50 flex items-center justify-center gap-1">
+                        <Lock className="h-3 w-3" />
+                        Secure System Log ID: {Math.random().toString(36).substr(2, 9).toUpperCase()}
+                    </div>
+                </CardFooter>
+            </Card>
         </div>
     );
 }

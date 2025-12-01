@@ -11,6 +11,8 @@ import {
   sessionSummaryTemplate,
   sessionAbsentTemplate,
   questionAnsweredTemplate,
+  securityFlaggedUserTemplate,
+  securityFlaggedAdminTemplate,
 } from "@/lib/email-templates";
 
 // Queue an email
@@ -32,6 +34,13 @@ export async function queueEmail(
         status: "PENDING",
       },
     });
+
+    // Trigger processing immediately for urgent emails (OTPs, alerts, etc.)
+    // We skip this for 'session-reminder' as those are handled by a scheduled job.
+    if (template !== "session-reminder") {
+      await processEmailQueue();
+    }
+
     return { success: true };
   } catch (error) {
     console.error("Failed to queue email:", error);
@@ -87,6 +96,12 @@ export async function processEmailQueue() {
             break;
           case "question-answered":
             html = questionAnsweredTemplate(templateInfo.data);
+            break;
+          case "security-flagged-user":
+            html = securityFlaggedUserTemplate(templateInfo.data);
+            break;
+          case "security-flagged-admin":
+            html = securityFlaggedAdminTemplate(templateInfo.data);
             break;
           default:
             throw new Error(`Unknown template: ${templateInfo.templateName}`);

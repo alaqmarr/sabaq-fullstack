@@ -355,7 +355,7 @@ export async function markAttendanceLocation(
           userName: attendance.user.name,
           sabaqName: sessionData.sabaq.name,
           status: isLate ? "Late" : "Present",
-          markedAt: markedAt.toLocaleString(),
+          markedAt: formatDateTime(markedAt),
           sessionId: sessionId,
         }
       );
@@ -470,7 +470,7 @@ export async function markAttendanceQR(sessionId: string) {
           userName: attendance.user.name,
           sabaqName: sessionData.sabaq.name,
           status: isLate ? "Late" : "Present",
-          markedAt: markedAt.toLocaleString(),
+          markedAt: formatDateTime(markedAt),
           sessionId: sessionId,
         }
       );

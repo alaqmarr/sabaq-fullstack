@@ -1,10 +1,37 @@
+'use client';
+
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { WhatsAppIcon } from "@/components/icons/whatsapp-icon";
-import { Mail, Phone, QrCode } from "lucide-react";
+import { Mail, Phone, QrCode, KeyRound, Loader2 } from "lucide-react";
 import { getItsImageUrl } from "@/lib/its";
 import Image from "next/image";
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import {
+    Drawer,
+    DrawerContent,
+    DrawerHeader,
+    DrawerTitle,
+    DrawerDescription,
+    DrawerTrigger,
+} from "@/components/ui/drawer";
+import { QRCodeSVG } from "qrcode.react";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import { sendUserOTP, resetUserPassword } from "@/actions/auth-otp";
+import { updateUser } from "@/actions/users";
 
 interface IDCardProps {
     user: {
@@ -18,6 +45,12 @@ interface IDCardProps {
 }
 
 export function IDCard({ user }: IDCardProps) {
+    const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
+    const [otpSent, setOtpSent] = useState(false);
+    const [otp, setOtp] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [loading, setLoading] = useState(false);
+
     const getInitials = (name: string) => {
         return name
             .split(" ")
@@ -47,6 +80,64 @@ export function IDCard({ user }: IDCardProps) {
         return variants[role] || "frosted-slate";
     };
 
+    const handleSendOTP = async () => {
+        setLoading(true);
+        try {
+            const result = await sendUserOTP(user.id);
+            if (result.success) {
+                setOtpSent(true);
+                toast.success("OTP sent to user's email");
+            } else {
+                toast.error(result.error || "Failed to send OTP");
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleResetPassword = async () => {
+        if (!newPassword) {
+            toast.error("Please enter a new password");
+            return;
+        }
+        if (user.email && !otp) {
+            toast.error("Please enter the OTP");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            if (user.email) {
+                const result = await resetUserPassword(user.id, otp, newPassword);
+                if (result.success) {
+                    toast.success("Password updated successfully");
+                    setIsPasswordDialogOpen(false);
+                    setOtpSent(false);
+                    setOtp("");
+                    setNewPassword("");
+                } else {
+                    toast.error(result.error || "Failed to reset password");
+                }
+            } else {
+                // Direct update if no email
+                const result = await updateUser(user.id, { password: newPassword });
+                if (result.success) {
+                    toast.success("Password updated successfully");
+                    setIsPasswordDialogOpen(false);
+                    setNewPassword("");
+                } else {
+                    toast.error(result.error || "Failed to update password");
+                }
+            }
+        } catch (error) {
+            toast.error("Something went wrong");
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return (
         <div className="relative group perspective-1000">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-20 group-hover:opacity-40 transition duration-1000 group-hover:duration-200"></div>
@@ -60,8 +151,6 @@ export function IDCard({ user }: IDCardProps) {
                         <div className="relative w-full md:w-1/3 bg-black/5 dark:bg-white/5 p-6 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-white/10">
                             <div className="relative h-32 w-32 rounded-full p-1 bg-gradient-to-br from-white/20 to-white/5 ring-1 ring-white/20 shadow-2xl">
                                 <div className="relative h-full w-full rounded-full overflow-hidden bg-background">
-                                    {/* Using standard img tag for ITS images as they might not be optimized for next/image domains config yet, 
-                        but wrapping in a way that ensures layout stability */}
                                     <img
                                         src={getItsImageUrl(user.itsNumber)}
                                         alt={user.name}
@@ -127,10 +216,94 @@ export function IDCard({ user }: IDCardProps) {
                                     </div>
                                 )}
 
-                                <button className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-6 bg-white/5 text-foreground hover:bg-white/10 border border-white/10 backdrop-blur-sm gap-2 hover:shadow-lg">
-                                    <QrCode className="h-4 w-4" />
-                                    <span className="uppercase tracking-wider text-xs">Show QR</span>
-                                </button>
+                                <Drawer>
+                                    <DrawerTrigger asChild>
+                                        <button className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-6 bg-white/5 text-foreground hover:bg-white/10 border border-white/10 backdrop-blur-sm gap-2 hover:shadow-lg">
+                                            <QrCode className="h-4 w-4" />
+                                            <span className="uppercase tracking-wider text-xs">Show QR</span>
+                                        </button>
+                                    </DrawerTrigger>
+                                    <DrawerContent>
+                                        <div className="mx-auto w-full max-w-sm">
+                                            <DrawerHeader>
+                                                <DrawerTitle className="text-center">User QR Code</DrawerTitle>
+                                                <DrawerDescription className="text-center">Scan this code to mark attendance</DrawerDescription>
+                                            </DrawerHeader>
+                                            <div className="p-4 pb-8 flex justify-center">
+                                                <div className="bg-white p-4 rounded-xl">
+                                                    <QRCodeSVG
+                                                        value={JSON.stringify({
+                                                            userId: user.id,
+                                                            itsNumber: user.itsNumber,
+                                                            name: user.name,
+                                                            timestamp: new Date().toISOString(),
+                                                        })}
+                                                        size={200}
+                                                        level="H"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </DrawerContent>
+                                </Drawer>
+
+                                <Dialog open={isPasswordDialogOpen} onOpenChange={setIsPasswordDialogOpen}>
+                                    <DialogTrigger asChild>
+                                        <button className="flex-1 sm:flex-none inline-flex items-center justify-center rounded-xl text-sm font-bold ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 h-10 px-6 bg-red-500/10 text-red-600 hover:bg-red-500/20 border border-red-500/20 backdrop-blur-sm gap-2 hover:shadow-lg hover:shadow-red-500/10">
+                                            <KeyRound className="h-4 w-4" />
+                                            <span className="uppercase tracking-wider text-xs">Password</span>
+                                        </button>
+                                    </DialogTrigger>
+                                    <DialogContent>
+                                        <DialogHeader>
+                                            <DialogTitle>Change Password</DialogTitle>
+                                            <DialogDescription>
+                                                {user.email
+                                                    ? "Send an OTP to the user's email to verify the request."
+                                                    : "Directly update the password (no email linked)."}
+                                            </DialogDescription>
+                                        </DialogHeader>
+                                        <div className="space-y-4 py-4">
+                                            {user.email && !otpSent && (
+                                                <Button onClick={handleSendOTP} disabled={loading} className="w-full">
+                                                    {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Mail className="h-4 w-4 mr-2" />}
+                                                    Send OTP to {user.email}
+                                                </Button>
+                                            )}
+
+                                            {(!user.email || otpSent) && (
+                                                <>
+                                                    {user.email && (
+                                                        <div className="space-y-2">
+                                                            <Label>OTP Code</Label>
+                                                            <Input
+                                                                placeholder="Enter 6-digit code"
+                                                                value={otp}
+                                                                onChange={(e) => setOtp(e.target.value)}
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    <div className="space-y-2">
+                                                        <Label>New Password</Label>
+                                                        <Input
+                                                            type="password"
+                                                            placeholder="Enter new password"
+                                                            value={newPassword}
+                                                            onChange={(e) => setNewPassword(e.target.value)}
+                                                        />
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                        <DialogFooter>
+                                            {(!user.email || otpSent) && (
+                                                <Button onClick={handleResetPassword} disabled={loading}>
+                                                    {loading ? "Updating..." : "Update Password"}
+                                                </Button>
+                                            )}
+                                        </DialogFooter>
+                                    </DialogContent>
+                                </Dialog>
                             </div>
                         </div>
                     </div>

@@ -17,7 +17,8 @@ import {
     X,
     ShieldAlert,
     CalendarDays,
-    QrCode
+    QrCode,
+    Settings
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Role } from '@prisma/client';
@@ -96,6 +97,12 @@ const navItems = [
         title: 'logs',
         href: '/dashboard/logs',
         icon: ShieldAlert,
+        roles: [Role.SUPERADMIN],
+    },
+    {
+        title: 'settings',
+        href: '/dashboard/settings',
+        icon: Settings,
         roles: [Role.SUPERADMIN],
     },
 ];

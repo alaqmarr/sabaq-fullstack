@@ -37,6 +37,7 @@ const userSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
     itsNumber: z.string().min(8, 'ITS Number must be at least 8 characters'),
     email: z.string().email().optional().or(z.literal('')),
+    phone: z.string().optional().or(z.literal('')),
     role: z.nativeEnum(Role),
     password: z.string().min(6, 'Password must be at least 6 characters').optional().or(z.literal('')),
 });
@@ -57,6 +58,7 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
             name: user?.name || '',
             itsNumber: user?.itsNumber || '',
             email: user?.email || '',
+            phone: user?.phone || '',
             role: user?.role || 'MUMIN',
             password: '',
         },
@@ -134,6 +136,19 @@ export function UserDialog({ user, open, onOpenChange }: UserDialogProps) {
                                     <FormLabel>Email (Optional)</FormLabel>
                                     <FormControl>
                                         <Input placeholder="Email" {...field} />
+                                    </FormControl>
+                                    <FormMessage />
+                                </FormItem>
+                            )}
+                        />
+                        <FormField
+                            control={form.control}
+                            name="phone"
+                            render={({ field }) => (
+                                <FormItem>
+                                    <FormLabel>Phone (Optional)</FormLabel>
+                                    <FormControl>
+                                        <Input placeholder="Phone Number" {...field} />
                                     </FormControl>
                                     <FormMessage />
                                 </FormItem>

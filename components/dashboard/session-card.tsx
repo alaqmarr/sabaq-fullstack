@@ -13,6 +13,8 @@ import { toast } from 'sonner';
 import { MyQRDialog } from '@/components/attendance/my-qr-dialog';
 import { playSuccessSound, playErrorSound } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
+import { formatDate, formatTime } from '@/lib/date-utils';
+import { AddToCalendarBtn } from '@/components/calendar/add-to-calendar-btn';
 
 interface SessionCardProps {
     session: any;
@@ -121,13 +123,13 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                             <div className="flex items-center gap-2">
                                 <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-primary/70" />
                                 <span className="truncate">
-                                    {new Date(session.scheduledAt).toLocaleDateString()}
+                                    {formatDate(session.scheduledAt)}
                                 </span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <Clock className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0 text-primary/70" />
                                 <span className="truncate">
-                                    {new Date(session.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                    {formatTime(session.scheduledAt)}
                                 </span>
                             </div>
                             {session.sabaq.location && (
@@ -193,6 +195,8 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                                 </Link>
                             </Button>
                         )}
+
+                        {!isActive && !hasStarted && <AddToCalendarBtn session={session} />}
 
                         <Button size="sm" variant="ghost" asChild className="w-full justify-start">
                             <Link href={`/dashboard/sessions/${session.id}`}>

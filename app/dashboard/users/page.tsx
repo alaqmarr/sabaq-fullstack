@@ -44,20 +44,22 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                     </h1>
                     <p className="text-cred-label mt-2">Manage system users and roles</p>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     <ViewToggle defaultView={currentView} />
-                    <Link href="/dashboard/users?action=bulk">
-                        <Button variant="outline" className="gap-2">
-                            <Upload className="h-4 w-4" />
-                            Bulk Import
-                        </Button>
-                    </Link>
-                    <Link href="/dashboard/users?action=new">
-                        <Button className="gap-2">
-                            <UserPlus className="h-4 w-4" />
-                            Add User
-                        </Button>
-                    </Link>
+                    <div className="flex items-center gap-2">
+                        <Link href="/dashboard/users?action=bulk">
+                            <Button variant="outline" size="sm" className="gap-2 h-9 sm:h-10">
+                                <Upload className="h-4 w-4" />
+                                <span className="hidden sm:inline">Bulk Import</span>
+                            </Button>
+                        </Link>
+                        <Link href="/dashboard/users?action=new">
+                            <Button size="sm" className="gap-2 h-9 sm:h-10">
+                                <UserPlus className="h-4 w-4" />
+                                <span className="hidden sm:inline">Add User</span>
+                            </Button>
+                        </Link>
+                    </div>
                 </div>
             </div>
 
