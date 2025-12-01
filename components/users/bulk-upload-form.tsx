@@ -139,6 +139,27 @@ export function BulkUploadForm() {
         }
     };
 
+    const handleDownloadTemplate = () => {
+        const headers = mode === 'create'
+            ? ['ITS Number', 'Name', 'Email', 'Phone', 'Role', 'Password']
+            : ['ITS Number', 'Name', 'Email', 'Phone', 'Role', 'Password'];
+
+        const sampleData = mode === 'create'
+            ? [
+                ['12345678', 'John Doe', 'john@example.com', '1234567890', 'MUMIN', 'password123'],
+                ['87654321', 'Jane Smith', 'jane@example.com', '0987654321', 'JANAB', 'securepass']
+            ]
+            : [
+                ['12345678', 'John Doe', 'john@newemail.com', '', '', ''],
+                ['87654321', '', '', '0987654321', 'ADMIN', '']
+            ];
+
+        const ws = XLSX.utils.aoa_to_sheet([headers, ...sampleData]);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, "Template");
+        XLSX.writeFile(wb, `user_${mode}_template.xlsx`);
+    };
+
     return (
         <div className="space-y-6">
             <Tabs value={mode} onValueChange={(v) => setMode(v as 'create' | 'update')} className="w-full">
@@ -158,6 +179,7 @@ export function BulkUploadForm() {
                         processedCount={processedCount}
                         onRemove={handleRemoveRow}
                         onSubmit={handleSubmit}
+                        onDownloadTemplate={handleDownloadTemplate}
                     />
                 </TabsContent>
 
@@ -172,6 +194,7 @@ export function BulkUploadForm() {
                         processedCount={processedCount}
                         onRemove={handleRemoveRow}
                         onSubmit={handleSubmit}
+                        onDownloadTemplate={handleDownloadTemplate}
                     />
                 </TabsContent>
             </Tabs>
@@ -188,7 +211,8 @@ function UploadSection({
     progress,
     processedCount,
     onRemove,
-    onSubmit
+    onSubmit,
+    onDownloadTemplate
 }: {
     mode: 'create' | 'update',
     onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void,
@@ -198,7 +222,8 @@ function UploadSection({
     progress: number,
     processedCount: number,
     onRemove: (index: number) => void,
-    onSubmit: () => void
+    onSubmit: () => void,
+    onDownloadTemplate: () => void
 }) {
     return (
         <div className="space-y-6">
@@ -217,7 +242,7 @@ function UploadSection({
                             onChange={onUpload}
                             className="max-w-md"
                         />
-                        <Button variant="outline" onClick={() => window.open('/template.xlsx')} disabled>
+                        <Button variant="outline" onClick={onDownloadTemplate}>
                             <FileSpreadsheet className="mr-2 h-4 w-4" />
                             Download Template
                         </Button>
