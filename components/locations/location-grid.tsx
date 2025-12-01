@@ -7,8 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Edit, Trash, MapPin, Navigation, Map } from 'lucide-react';
 import { LocationDialog } from './location-dialog';
 import { deleteLocation } from '@/actions/locations';
-import { toast } from 'sonner';
-import { MotionList, MotionItem } from '@/components/ui/motion-list';
+import { toast } from 'sonner'
 
 interface LocationGridProps {
     locations: any[];
@@ -42,9 +41,9 @@ export function LocationGrid({ locations }: LocationGridProps) {
 
     return (
         <>
-            <MotionList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {locations.map((location) => (
-                    <MotionItem key={location.id}>
+                    <div key={location.id}>
                         <Card className="glass-premium group relative overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1 border-white/20 dark:border-white/10 h-full">
                             <CardHeader className="pb-3 pt-4 sm:pt-5 px-4 sm:px-5">
                                 <div className="flex justify-between items-start gap-2">
@@ -98,9 +97,9 @@ export function LocationGrid({ locations }: LocationGridProps) {
                                 </Button>
                             </CardFooter>
                         </Card>
-                    </MotionItem>
+                    </div>
                 ))}
-            </MotionList>
+            </div>
 
             {editingLocation && (
                 <LocationDialog

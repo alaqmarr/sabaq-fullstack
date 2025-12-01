@@ -12,20 +12,26 @@ import { toast } from 'sonner';
 import { useSearchParams } from 'next/navigation';
 
 interface EnrollmentRequestsAdminProps {
-    enrollments: any[];
+    initialEnrollments: any[];
     sabaqs: any[];
+    initialTotal: number;
 }
 
-export function EnrollmentRequestsAdmin({ enrollments, sabaqs }: EnrollmentRequestsAdminProps) {
+export function EnrollmentRequestsAdmin({ initialEnrollments, sabaqs, initialTotal }: EnrollmentRequestsAdminProps) {
     const [selectedSabaq, setSelectedSabaq] = useState<string>('all');
     const [view, setView] = useState<'grid' | 'table'>('grid');
     const [showBulkDialog, setShowBulkDialog] = useState(false);
     const searchParams = useSearchParams();
 
+    // Pagination state
+    const [enrollments, setEnrollments] = useState(initialEnrollments);
+    const [total, setTotal] = useState(initialTotal);
+    const [page, setPage] = useState(1);
+    const [loading, setLoading] = useState(false);
+
     // Handle ?action=bulk param
     useEffect(() => {
         if (searchParams.get('action') === 'bulk') {
-            // If we have sabaqs, select the first one and open dialog if not already selected
             if (selectedSabaq === 'all' && sabaqs.length > 0) {
                 setSelectedSabaq(sabaqs[0].id);
                 setShowBulkDialog(true);
@@ -35,8 +41,45 @@ export function EnrollmentRequestsAdmin({ enrollments, sabaqs }: EnrollmentReque
         }
     }, [searchParams, sabaqs, selectedSabaq]);
 
-    const filteredEnrollments =
-        selectedSabaq === 'all' ? enrollments : enrollments.filter((e) => e.sabaqId === selectedSabaq);
+    // Fetch enrollments when sabaq changes or load more
+    const fetchEnrollments = async (pageNum: number, sabaq: string, append: boolean) => {
+        setLoading(true);
+        try {
+            // Dynamically import action to avoid server-client issues if not passed as prop?
+            // No, we can import server actions in client components.
+            const { getEnrollmentRequests } = await import('@/actions/enrollments');
+            const res = await getEnrollmentRequests(pageNum, 20, sabaq);
+
+            if (res.success && res.enrollments) {
+                if (append) {
+                    setEnrollments(prev => [...prev, ...res.enrollments]);
+                } else {
+                    setEnrollments(res.enrollments);
+                }
+                if (res.total !== undefined) setTotal(res.total);
+                setPage(pageNum);
+            } else {
+                toast.error(res.error || 'Failed to fetch enrollments');
+            }
+        } catch (error) {
+            toast.error('Failed to fetch enrollments');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // When selectedSabaq changes, reset and fetch
+    useEffect(() => {
+        // Skip initial load if it matches props (all)
+        if (selectedSabaq === 'all' && enrollments === initialEnrollments) return;
+
+        // If we switch to a specific sabaq, we must fetch page 1 for that sabaq
+        fetchEnrollments(1, selectedSabaq, false);
+    }, [selectedSabaq]);
+
+    const handleLoadMore = () => {
+        fetchEnrollments(page + 1, selectedSabaq, true);
+    };
 
     const handleBulkClick = () => {
         if (selectedSabaq === 'all') {
@@ -47,6 +90,7 @@ export function EnrollmentRequestsAdmin({ enrollments, sabaqs }: EnrollmentReque
     };
 
     const currentSabaq = sabaqs.find(s => s.id === selectedSabaq);
+    const hasMore = enrollments.length < total;
 
     return (
         <div className="space-y-4">
@@ -79,34 +123,31 @@ export function EnrollmentRequestsAdmin({ enrollments, sabaqs }: EnrollmentReque
                 <ViewToggle view={view} onViewChange={setView} />
             </div>
 
-            {/* Bulk Enrollment Dialog Wrapper - We control open state here to pass it down if needed, 
-                but BulkEnrollmentDialog manages its own open state. 
-                We need to conditionally render it or control it. 
-                Actually BulkEnrollmentDialog has its own trigger. 
-                Let's modify this: We will render the dialog conditionally when we have a sabaq selected 
-                and we want to force it open, OR we just render it and let it handle itself?
-                
-                The existing BulkEnrollmentDialog has a trigger button. 
-                We want to trigger it from our button above.
-                
-                Let's change strategy: We render the dialog but controlled.
-                Wait, the existing component is uncontrolled (internal state).
-                I should probably just render it when valid sabaq is selected and pass open=true?
-                
-                Let's use a key to force re-render or just render it when needed.
-            */}
-
-
-
-            {/* 
-                Since I can't easily modify the imported component's internal state without changing it,
-                I will modify BulkEnrollmentDialog to accept controlled props.
-            */}
-
-            {view === 'grid' ? (
-                <EnrollmentGrid enrollments={filteredEnrollments} sabaqId={selectedSabaq} />
+            {enrollments.length === 0 && !loading ? (
+                <div className="text-center py-12 glass-card rounded-lg">
+                    <p className="text-muted-foreground">No pending enrollment requests found.</p>
+                </div>
             ) : (
-                <EnrollmentTable enrollments={filteredEnrollments} sabaqId={selectedSabaq} />
+                <>
+                    {view === 'grid' ? (
+                        <EnrollmentGrid enrollments={enrollments} sabaqId={selectedSabaq} />
+                    ) : (
+                        <EnrollmentTable enrollments={enrollments} sabaqId={selectedSabaq} />
+                    )}
+
+                    {hasMore && (
+                        <div className="flex justify-center pt-4">
+                            <Button
+                                variant="outline"
+                                onClick={handleLoadMore}
+                                disabled={loading}
+                                className="w-full sm:w-auto min-w-[200px]"
+                            >
+                                {loading ? 'Loading...' : 'Load More'}
+                            </Button>
+                        </div>
+                    )}
+                </>
             )}
 
             {selectedSabaq !== 'all' && currentSabaq && (

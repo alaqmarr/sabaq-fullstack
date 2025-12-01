@@ -11,7 +11,6 @@ import { SabaqAdminDialog } from './sabaq-admin-dialog';
 import { deleteSabaq } from '@/actions/sabaqs';
 import { toast } from 'sonner';
 import Link from 'next/link';
-import { MotionList, MotionItem } from '@/components/ui/motion-list';
 import { SabaqCard } from './sabaq-card';
 
 interface SabaqGridProps {
@@ -51,13 +50,13 @@ export function SabaqGrid({ sabaqs, locations, users }: SabaqGridProps) {
 
     return (
         <>
-            <MotionList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {sabaqs.map((sabaq) => {
                     const locationName = locations.find(l => l.id === sabaq.locationId)?.name || 'unknown location';
                     const janabName = users.find(u => u.id === sabaq.janabId)?.name || 'unknown janab';
 
                     return (
-                        <MotionItem key={sabaq.id}>
+                        <div key={sabaq.id}>
                             <SabaqCard
                                 sabaq={sabaq}
                                 locationName={locationName}
@@ -72,10 +71,10 @@ export function SabaqGrid({ sabaqs, locations, users }: SabaqGridProps) {
                                 }}
                                 onDelete={() => handleDelete(sabaq.id)}
                             />
-                        </MotionItem>
+                        </div>
                     );
                 })}
-            </MotionList>
+            </div>
 
             {editingSabaq && (
                 <SabaqDialog

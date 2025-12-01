@@ -818,27 +818,49 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
   }
 }
 
-export async function getEnrollmentRequests() {
+export async function getEnrollmentRequests(
+  page: number = 1,
+  limit: number = 20,
+  sabaqId?: string
+) {
   try {
     const currentUser = await requirePermission("enrollments", "approve");
 
-    // If superadmin, get all pending
+    const where: any = { status: "PENDING" };
+    if (sabaqId && sabaqId !== "all") {
+      where.sabaqId = sabaqId;
+    }
+
+    // If superadmin, get all pending (filtered by sabaqId if provided)
     if (currentUser.role === "SUPERADMIN") {
-      const enrollments = await prisma.enrollment.findMany({
-        where: { status: "PENDING" },
-        include: {
-          user: true,
-          sabaq: true,
-        },
-        orderBy: { requestedAt: "desc" },
-      });
+      const [enrollments, total] = await prisma.$transaction([
+        prisma.enrollment.findMany({
+          where,
+          include: {
+            user: true,
+            sabaq: true,
+          },
+          orderBy: { requestedAt: "desc" },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.enrollment.count({ where }),
+      ]);
 
       const sabaqs = await prisma.sabaq.findMany({
         select: { id: true, name: true },
         orderBy: { name: "asc" },
       });
 
-      return { success: true, enrollments, sabaqs };
+      return {
+        success: true,
+        enrollments,
+        sabaqs,
+        total,
+        page,
+        limit,
+        hasMore: (page - 1) * limit + enrollments.length < total,
+      };
     }
 
     // Otherwise get pending for assigned sabaqs
@@ -854,34 +876,54 @@ export async function getEnrollmentRequests() {
       select: { id: true },
     });
 
-    const sabaqIds = [
+    const allowedSabaqIds = [
       ...adminSabaqs.map((s) => s.sabaqId),
       ...janabSabaqs.map((s) => s.id),
     ];
 
-    if (sabaqIds.length === 0) {
-      return { success: true, enrollments: [], sabaqs: [] };
+    if (allowedSabaqIds.length === 0) {
+      return { success: true, enrollments: [], sabaqs: [], total: 0 };
     }
 
-    const enrollments = await prisma.enrollment.findMany({
-      where: {
-        status: "PENDING",
-        sabaqId: { in: sabaqIds },
-      },
-      include: {
-        user: true,
-        sabaq: true,
-      },
-      orderBy: { requestedAt: "desc" },
-    });
+    // If sabaqId is provided, check if allowed
+    if (sabaqId && sabaqId !== "all") {
+      if (!allowedSabaqIds.includes(sabaqId)) {
+        return { success: false, error: "Unauthorized for this sabaq" };
+      }
+      where.sabaqId = sabaqId;
+    } else {
+      where.sabaqId = { in: allowedSabaqIds };
+    }
+
+    const [enrollments, total] = await prisma.$transaction([
+      prisma.enrollment.findMany({
+        where,
+        include: {
+          user: true,
+          sabaq: true,
+        },
+        orderBy: { requestedAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.enrollment.count({ where }),
+    ]);
 
     const sabaqs = await prisma.sabaq.findMany({
-      where: { id: { in: sabaqIds } },
+      where: { id: { in: allowedSabaqIds } },
       select: { id: true, name: true },
       orderBy: { name: "asc" },
     });
 
-    return { success: true, enrollments, sabaqs };
+    return {
+      success: true,
+      enrollments,
+      sabaqs,
+      total,
+      page,
+      limit,
+      hasMore: (page - 1) * limit + enrollments.length < total,
+    };
   } catch (error: any) {
     console.error("Failed to fetch enrollment requests:", error);
     return { success: false, error: "Failed to fetch enrollment requests" };

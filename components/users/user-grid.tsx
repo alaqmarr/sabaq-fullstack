@@ -10,7 +10,6 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { UserDialog } from './user-dialog';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
-import { MotionList, MotionItem } from '@/components/ui/motion-list';
 
 interface UserGridProps {
     users: any[];
@@ -81,7 +80,7 @@ export function UserGrid({ users }: UserGridProps) {
 
     return (
         <>
-            <MotionList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {users.map((user) => {
                     const isJanab = user.role === 'JANAB';
                     const isSuperAdmin = user.role === 'SUPERADMIN';
@@ -99,7 +98,7 @@ export function UserGrid({ users }: UserGridProps) {
                     }
 
                     return (
-                        <MotionItem key={user.id}>
+                        <div key={user.id}>
                             <Card className="glass-premium hover-lift group relative overflow-hidden border-0 p-1 h-full">
                                 <Link href={`/dashboard/users/${user.id}`} className="absolute inset-0 z-0" />
                                 <CardHeader className="pb-3 pt-6 pl-6 pr-6 relative z-10 pointer-events-none">
@@ -257,10 +256,10 @@ export function UserGrid({ users }: UserGridProps) {
                                     )}
                                 </div>
                             </Card>
-                        </MotionItem>
+                        </div>
                     );
                 })}
-            </MotionList>
+            </div>
 
             {editingUser && (
                 <UserDialog

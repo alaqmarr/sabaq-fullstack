@@ -3,7 +3,6 @@ import { redirect } from 'next/navigation';
 import { getUsers } from '@/actions/users';
 import { UsersClientWrapper } from '@/components/users/users-client-wrapper';
 import { UserDialogManager } from '@/components/users/user-dialog-manager';
-import { BulkUserDialogManager } from '@/components/users/bulk-user-dialog-manager';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Upload } from 'lucide-react';
@@ -30,10 +29,11 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     const { view, action } = await searchParams;
     const currentView = view === 'table' ? 'table' : 'grid';
     const isDialogOpen = action === 'new';
-    const isBulkOpen = action === 'bulk';
 
-    const res = await getUsers();
+
+    const res = await getUsers(1, 20);
     const users = res.success && res.users ? res.users : [];
+    const total = res.success && res.total ? res.total : 0;
 
     return (
         <div className="space-y-6 sm:space-y-8">
@@ -47,7 +47,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-between sm:justify-end">
                     <ViewToggle defaultView={currentView} />
                     <div className="flex items-center gap-2">
-                        <Link href="/dashboard/users?action=bulk">
+                        <Link href="/dashboard/users/bulk">
                             <Button variant="outline" size="sm" className="gap-2 h-9 sm:h-10">
                                 <Upload className="h-4 w-4" />
                                 <span className="hidden sm:inline">Bulk Import</span>
@@ -63,10 +63,13 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 </div>
             </div>
 
-            <UsersClientWrapper users={users} currentView={currentView} />
+            <UsersClientWrapper
+                initialUsers={users}
+                initialTotal={total}
+                currentView={currentView}
+            />
 
             <UserDialogManager isOpen={isDialogOpen} />
-            <BulkUserDialogManager isOpen={isBulkOpen} />
         </div>
     );
 }

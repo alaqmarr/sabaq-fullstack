@@ -54,10 +54,69 @@ export async function lookupUserByITS(itsNumber: string) {
   }
 }
 
-export async function getUsers() {
+export async function getUsers(
+  page: number = 1,
+  limit: number = 20,
+  query: string = ""
+) {
   try {
     await requirePermission("users", "read");
+
+    // 1. Fetch minimal data for sorting and filtering
+    const where: any = {};
+    if (query) {
+      where.OR = [
+        { name: { contains: query, mode: "insensitive" } },
+        { email: { contains: query, mode: "insensitive" } },
+        { itsNumber: { contains: query, mode: "insensitive" } },
+        { phone: { contains: query, mode: "insensitive" } },
+        // Role is enum, strict match or skip? Prisma doesn't support contains for enum easily.
+        // We can try to match if query matches an enum value.
+      ];
+    }
+
+    const allUsers = await prisma.user.findMany({
+      where,
+      select: {
+        id: true,
+        role: true,
+        name: true,
+      },
+    });
+
+    // 2. Define role priority (lower number = higher priority)
+    const rolePriority: Record<string, number> = {
+      SUPERADMIN: 0,
+      ADMIN: 1,
+      MANAGER: 2,
+      JANAB: 3,
+      ATTENDANCE_INCHARGE: 4,
+      MUMIN: 5,
+    };
+
+    // 3. Sort all users
+    const sortedAllUsers = allUsers.sort((a, b) => {
+      const roleA = rolePriority[a.role] ?? 99;
+      const roleB = rolePriority[b.role] ?? 99;
+
+      if (roleA !== roleB) {
+        return roleA - roleB;
+      }
+
+      // If roles are same, sort by name
+      return (a.name || "").localeCompare(b.name || "");
+    });
+
+    // 4. Slice for pagination
+    const startIndex = (page - 1) * limit;
+    const paginatedUsers = sortedAllUsers.slice(startIndex, startIndex + limit);
+    const paginatedIds = paginatedUsers.map((u) => u.id);
+
+    // 5. Fetch full details for the current page
     const users = await prisma.user.findMany({
+      where: {
+        id: { in: paginatedIds },
+      },
       include: {
         assignedSabaqs: {
           include: {
@@ -72,30 +131,19 @@ export async function getUsers() {
       },
     });
 
-    // Define role priority (lower number = higher priority)
-    const rolePriority: Record<string, number> = {
-      SUPERADMIN: 0,
-      ADMIN: 1,
-      MANAGER: 2,
-      JANAB: 3,
-      ATTENDANCE_INCHARGE: 4,
-      MUMIN: 5,
-    };
-
-    // Sort users
+    // 6. Re-sort the fetched users to match the sliced order (since 'in' query doesn't guarantee order)
     const sortedUsers = users.sort((a, b) => {
-      const roleA = rolePriority[a.role] ?? 99;
-      const roleB = rolePriority[b.role] ?? 99;
-
-      if (roleA !== roleB) {
-        return roleA - roleB;
-      }
-
-      // If roles are same, sort by name
-      return (a.name || "").localeCompare(b.name || "");
+      return paginatedIds.indexOf(a.id) - paginatedIds.indexOf(b.id);
     });
 
-    return { success: true, users: sortedUsers };
+    return {
+      success: true,
+      users: sortedUsers,
+      total: allUsers.length,
+      page,
+      limit,
+      hasMore: startIndex + limit < allUsers.length,
+    };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -436,6 +484,7 @@ export async function bulkCreateUsers(users: any[]) {
             name: userData.name,
             itsNumber: userData.itsNumber,
             email: userData.email,
+            phone: userData.phone ? normalizePhone(userData.phone) : undefined,
             role: userData.role || "MUMIN",
             password: hashedPassword,
           },
@@ -451,6 +500,75 @@ export async function bulkCreateUsers(users: any[]) {
       count: createdCount,
       skipped: errors.length,
       message: `Created ${createdCount} users, skipped ${errors.length}`,
+      errors,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+function normalizePhone(phone: string): string {
+  let p = phone.trim();
+  const hasPlus = p.startsWith("+");
+  const digits = p.replace(/\D/g, "");
+
+  if (digits.length === 10) {
+    return `+91${digits}`;
+  }
+  if (digits.length === 12 && digits.startsWith("91")) {
+    return `+${digits}`;
+  }
+
+  if (!hasPlus) {
+    return `+${p}`;
+  }
+  return p;
+}
+
+export async function bulkUpdateUsers(users: any[]) {
+  try {
+    await requirePermission("users", "update");
+
+    let updatedCount = 0;
+    let errors: string[] = [];
+
+    for (const userData of users) {
+      try {
+        const existingUser = await prisma.user.findUnique({
+          where: { itsNumber: userData.itsNumber },
+        });
+
+        if (!existingUser) {
+          errors.push(`User with ITS ${userData.itsNumber} not found`);
+          continue;
+        }
+
+        const dataToUpdate: any = {};
+        if (userData.name) dataToUpdate.name = userData.name;
+        if (userData.email) dataToUpdate.email = userData.email;
+        if (userData.phone) dataToUpdate.phone = normalizePhone(userData.phone);
+        if (userData.role) dataToUpdate.role = userData.role;
+        if (userData.password) {
+          dataToUpdate.password = await hash(userData.password, 10);
+        }
+
+        await prisma.user.update({
+          where: { id: userData.itsNumber },
+          data: dataToUpdate,
+        });
+        updatedCount++;
+      } catch (error: any) {
+        errors.push(
+          `Failed to update user ${userData.itsNumber}: ${error.message}`
+        );
+      }
+    }
+
+    return {
+      success: true,
+      count: updatedCount,
+      skipped: errors.length,
+      message: `Updated ${updatedCount} users, skipped ${errors.length}`,
       errors,
     };
   } catch (error: any) {

@@ -23,7 +23,7 @@ export default async function EnrollmentsPage() {
         );
     }
 
-    const { enrollments, sabaqs } = await getEnrollmentRequests();
+    const { enrollments, sabaqs, total } = await getEnrollmentRequests(1, 20);
 
     if (!enrollments || !sabaqs) {
         return (
@@ -42,7 +42,11 @@ export default async function EnrollmentsPage() {
                 <p className="text-cred-label mt-2">Manage user enrollment requests</p>
             </div>
 
-            <EnrollmentRequestsAdmin enrollments={enrollments} sabaqs={sabaqs} />
+            <EnrollmentRequestsAdmin
+                initialEnrollments={enrollments}
+                sabaqs={sabaqs}
+                initialTotal={total || 0}
+            />
         </div>
     );
 }
