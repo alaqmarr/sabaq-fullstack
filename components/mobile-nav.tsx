@@ -19,7 +19,8 @@ import {
     CalendarDays,
     QrCode,
     Settings,
-    Activity
+    Activity,
+    BarChart3
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import { Role } from '@prisma/client';
@@ -32,6 +33,12 @@ const navItems = [
         title: 'dashboard',
         href: '/dashboard',
         icon: LayoutGrid,
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
+    },
+    {
+        title: 'profile',
+        href: '/dashboard/profile',
+        icon: UserCheck,
         roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
     },
     {
@@ -99,6 +106,12 @@ const navItems = [
         href: '/dashboard/logs',
         icon: ShieldAlert,
         roles: [Role.SUPERADMIN],
+    },
+    {
+        title: 'reports',
+        href: '/dashboard/reports',
+        icon: BarChart3,
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.JANAB],
     },
     {
         title: 'system status',

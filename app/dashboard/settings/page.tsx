@@ -102,6 +102,9 @@ export default function SettingsPage() {
         { value: "question-answered", label: "Question Answered" },
         { value: "security-flagged-user", label: "Security Alert (User)" },
         { value: "security-flagged-admin", label: "Security Alert (Admin)" },
+        { value: "profile-updated", label: "Profile Updated" },
+        { value: "role-promoted", label: "Role Promoted" },
+        { value: "role-demoted", label: "Role Demoted" },
     ];
 
     return (

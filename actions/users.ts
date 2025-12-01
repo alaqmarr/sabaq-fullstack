@@ -6,6 +6,12 @@ import { auth } from "@/auth";
 import { Role } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { queueEmail, processEmailQueue } from "./email-queue";
+import { sendEmail } from "@/lib/email";
+import {
+  profileUpdatedTemplate,
+  rolePromotedTemplate,
+  roleDemotedTemplate,
+} from "@/lib/email-templates";
 
 export async function lookupUserByITS(itsNumber: string) {
   try {
@@ -140,6 +146,24 @@ export async function promoteUser(userId: string) {
       data: { role: newRole },
     });
 
+    // Send Promotion Email
+    if (user.email) {
+      const featuresMap: Record<string, string[]> = {
+        ATTENDANCE_INCHARGE: ["Mark Attendance", "View Reports"],
+        MANAGER: ["Manage Sessions", "View Analytics", "Manage Enrollments"],
+        ADMIN: ["Manage Users", "Manage Sabaqs", "Full System Access"],
+        SUPERADMIN: ["System Configuration", "Security Logs", "Full Control"],
+      };
+
+      const emailHtml = rolePromotedTemplate({
+        userName: user.name,
+        newRole,
+        features: featuresMap[newRole] || ["Access to Dashboard"],
+      });
+
+      await sendEmail(user.email, "Role Promotion Notification", emailHtml);
+    }
+
     return { success: true, newRole };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -189,6 +213,24 @@ export async function demoteUser(userId: string) {
       where: { id: userId },
       data: { role: newRole },
     });
+
+    // Send Demotion Email
+    if (user.email) {
+      const lostAccessMap: Record<string, string[]> = {
+        MUMIN: ["Marking Attendance", "Viewing Reports"],
+        ATTENDANCE_INCHARGE: ["Session Management", "Enrollment Management"],
+        MANAGER: ["User Management", "Sabaq Management"],
+        ADMIN: ["System Configuration", "Security Logs"],
+      };
+
+      const emailHtml = roleDemotedTemplate({
+        userName: user.name,
+        newRole,
+        lostAccess: lostAccessMap[newRole] || ["Previous Privileges"],
+      });
+
+      await sendEmail(user.email, "Role Update Notification", emailHtml);
+    }
 
     return { success: true, newRole };
   } catch (error: any) {
@@ -271,10 +313,89 @@ export async function updateUser(id: string, data: any) {
     // Check if role changed
     if (data.role && data.role !== targetUser.role) {
       if (targetUser.email) {
-        await queueEmail(targetUser.email, "Role Updated", "role-updated", {
-          userName: targetUser.name,
-          newRole: data.role,
-        });
+        const roleHierarchy = [
+          "MUMIN",
+          "ATTENDANCE_INCHARGE",
+          "JANAB",
+          "MANAGER",
+          "ADMIN",
+          "SUPERADMIN",
+        ];
+
+        // Helper to get index, handling JANAB specially if needed
+        const getRoleIndex = (r: string) => {
+          if (r === "JANAB") return 2.5;
+          return roleHierarchy.indexOf(r);
+        };
+
+        const oldIndex = getRoleIndex(targetUser.role as string);
+        const newIndex = getRoleIndex(data.role);
+
+        if (newIndex > oldIndex) {
+          // Promotion
+          const featuresMap: Record<string, string[]> = {
+            ATTENDANCE_INCHARGE: ["Mark Attendance", "View Reports"],
+            JANAB: ["Manage Sabaq", "View Reports"],
+            MANAGER: [
+              "Manage Sessions",
+              "View Analytics",
+              "Manage Enrollments",
+            ],
+            ADMIN: ["Manage Users", "Manage Sabaqs", "Full System Access"],
+            SUPERADMIN: [
+              "System Configuration",
+              "Security Logs",
+              "Full Control",
+            ],
+          };
+
+          await queueEmail(
+            targetUser.email,
+            "Role Promotion Notification",
+            "role-promoted",
+            {
+              userName: targetUser.name,
+              newRole: data.role,
+              features: featuresMap[data.role] || ["Access to Dashboard"],
+            }
+          );
+        } else if (newIndex < oldIndex) {
+          // Demotion
+          const lostAccessMap: Record<string, string[]> = {
+            MUMIN: ["Marking Attendance", "Viewing Reports"],
+            ATTENDANCE_INCHARGE: [
+              "Session Management",
+              "Enrollment Management",
+            ],
+            JANAB: ["Manager Privileges"],
+            MANAGER: ["User Management", "Sabaq Management"],
+            ADMIN: ["System Configuration", "Security Logs"],
+          };
+
+          await queueEmail(
+            targetUser.email,
+            "Role Update Notification",
+            "role-demoted",
+            {
+              userName: targetUser.name,
+              newRole: data.role,
+              lostAccess: lostAccessMap[data.role] || ["Previous Privileges"],
+            }
+          );
+        } else {
+          // Lateral or unknown change
+          await queueEmail(
+            targetUser.email,
+            "Profile Updated",
+            "profile-updated",
+            {
+              userName: targetUser.name,
+              updatedFields: ["Role"],
+              time: new Date().toLocaleString(),
+            }
+          );
+        }
+
         // Trigger processing immediately
         void processEmailQueue();
       }
@@ -478,5 +599,83 @@ export async function getUserProfile(userId: string) {
       success: false,
       error: error.message || "Failed to fetch user profile",
     };
+  }
+}
+
+export async function updateUserProfile(
+  userId: string,
+  data: { phone?: string; email?: string; otp?: string }
+) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Only allow users to update their own profile unless they are admins
+    const isSelf = session.user.id === userId;
+    const isAdmin = ["SUPERADMIN", "ADMIN"].includes(
+      session.user.role as string
+    );
+
+    if (!isSelf && !isAdmin) {
+      return {
+        success: false,
+        error: "You are not authorized to update this profile",
+      };
+    }
+
+    // If updating self and changing sensitive fields, require OTP
+    if (isSelf && (data.phone || data.email)) {
+      if (!data.otp) {
+        return {
+          success: false,
+          error: "OTP is required for security verification",
+        };
+      }
+
+      // Verify OTP
+      const otpRecord = await prisma.adminOTP.findFirst({
+        where: {
+          userId: session.user.id,
+          code: data.otp,
+          expiresAt: { gt: new Date() },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      if (!otpRecord) {
+        return { success: false, error: "Invalid or expired OTP" };
+      }
+
+      // Delete used OTP
+      await prisma.adminOTP.delete({ where: { id: otpRecord.id } });
+    }
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        phone: data.phone,
+        email: data.email,
+      },
+    });
+
+    // Send confirmation email if email exists
+    if (data.email) {
+      const emailHtml = profileUpdatedTemplate({
+        userName: session.user.name || "User",
+        updatedFields: Object.keys(data).filter(
+          (k) => k !== "otp" && data[k as keyof typeof data]
+        ),
+        time: new Date().toLocaleString(),
+      });
+
+      await sendEmail(data.email, "Profile Updated Successfully", emailHtml);
+    }
+
+    return { success: true };
+  } catch (error) {
+    console.error("Error updating user profile:", error);
+    return { success: false, error: "Failed to update profile" };
   }
 }

@@ -41,6 +41,10 @@ export async function sendTestEmail(templateName: string) {
       resource: "/test/resource",
       userId: session.user.id,
       userEmail: session.user.email,
+      updatedFields: ["Phone Number", "Email Address"],
+      newRole: "ADMIN",
+      features: ["Manage Users", "Manage Sabaqs", "Full System Access"],
+      lostAccess: ["System Configuration", "Security Logs"],
     };
 
     await queueEmail(
@@ -75,6 +79,9 @@ export async function sendAllTestEmails() {
       "question-answered",
       "security-flagged-user",
       "security-flagged-admin",
+      "profile-updated",
+      "role-promoted",
+      "role-demoted",
     ];
 
     // Dummy data for templates
@@ -99,6 +106,10 @@ export async function sendAllTestEmails() {
       answerText: "42",
       answeredAt: new Date().toLocaleString(),
       location: "Main Hall",
+      updatedFields: ["Phone Number", "Email Address"],
+      newRole: "ADMIN",
+      features: ["Manage Users", "Manage Sabaqs", "Full System Access"],
+      lostAccess: ["System Configuration", "Security Logs"],
     };
 
     // Queue all emails

@@ -720,3 +720,115 @@ export const securityFlaggedAdminTemplate = (data: {
     content,
   });
 };
+
+// 12. Profile Updated
+export const profileUpdatedTemplate = (data: {
+  userName: string;
+  updatedFields: string[];
+  time: string;
+}) => {
+  const content = `
+    <div class="greeting">Profile Updated</div>
+    <div class="message">
+      Your profile details have been successfully updated.
+    </div>
+    
+    <table class="info-table">
+      ${createRow("Updated Fields", data.updatedFields.join(", "))}
+      ${createRow("Time", data.time)}
+    </table>
+
+    <div class="highlight-box">
+      If you did not make these changes, please contact support immediately.
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard/profile" class="button">View Profile</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Profile Updated",
+    previewText: `Your profile has been updated successfully.`,
+    content,
+  });
+};
+
+// 13. Role Promoted
+export const rolePromotedTemplate = (data: {
+  userName: string;
+  newRole: string;
+  features: string[];
+}) => {
+  const content = `
+    <div class="greeting">Role Promotion</div>
+    <div class="message">
+      Congratulations! You have been promoted to <strong>${
+        data.newRole
+      }</strong>.
+    </div>
+    
+    <div class="highlight-box" style="background-color: #ebf8ff; border-color: #4299e1; color: #2c5282;">
+      <strong>New Capabilities:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        ${data.features.map((f) => `<li>${f}</li>`).join("")}
+      </ul>
+    </div>
+
+    <div class="alert-box">
+      <strong>STRICT SECURITY NOTICE:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>Your account activity is strictly monitored. Every click and action is logged.</li>
+        <li>Any malpractice or unauthorized action will result in immediate suspension and flagging.</li>
+        <li><strong>NEVER</strong> share your credentials with anyone. You are responsible for all actions taken under your account.</li>
+      </ul>
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">Access Dashboard</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Role Promotion Notification",
+    previewText: `You have been promoted to ${data.newRole}.`,
+    content,
+  });
+};
+
+// 14. Role Demoted
+export const roleDemotedTemplate = (data: {
+  userName: string;
+  newRole: string;
+  lostAccess: string[];
+}) => {
+  const content = `
+    <div class="greeting">Role Update</div>
+    <div class="message">
+      Your role has been updated to <strong>${data.newRole}</strong>.
+    </div>
+    
+    <div class="highlight-box" style="background-color: #fff5f5; border-color: #fc8181; color: #c53030;">
+      <strong>Access Revoked:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        ${data.lostAccess.map((f) => `<li>${f}</li>`).join("")}
+      </ul>
+    </div>
+
+    <div class="alert-box">
+      <strong>SECURITY REMINDER:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>Your account activity continues to be monitored.</li>
+        <li>Do not attempt to access unauthorized resources.</li>
+        <li>Keep your credentials secure.</li>
+      </ul>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Role Update Notification",
+    previewText: `Your role has been updated to ${data.newRole}.`,
+    content,
+  });
+};

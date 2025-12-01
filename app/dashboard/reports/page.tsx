@@ -1,8 +1,10 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
-import { getAttendanceTrends, getEnrollmentDistribution } from '@/actions/analytics';
+import { getAttendanceTrends, getEnrollmentDistribution, getTopStudents, getSabaqPerformance } from '@/actions/analytics';
 import { AttendanceChart } from '@/components/analytics/attendance-chart';
 import { EnrollmentChart } from '@/components/analytics/enrollment-chart';
+import { TopStudents } from '@/components/analytics/top-students';
+import { SabaqPerformance } from '@/components/analytics/sabaq-performance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export const metadata = {
@@ -24,13 +26,17 @@ export default async function ReportsPage() {
         );
     }
 
-    const [attendanceRes, enrollmentRes] = await Promise.all([
+    const [attendanceRes, enrollmentRes, topStudentsRes, sabaqPerformanceRes] = await Promise.all([
         getAttendanceTrends(),
-        getEnrollmentDistribution()
+        getEnrollmentDistribution(),
+        getTopStudents(),
+        getSabaqPerformance()
     ]);
 
     const attendanceData = attendanceRes.success && attendanceRes.data ? attendanceRes.data : [];
     const enrollmentData = enrollmentRes.success && enrollmentRes.data ? enrollmentRes.data : [];
+    const topStudentsData = topStudentsRes.success && topStudentsRes.data ? topStudentsRes.data : [];
+    const sabaqPerformanceData = sabaqPerformanceRes.success && sabaqPerformanceRes.data ? sabaqPerformanceRes.data : [];
 
     return (
         <div className="space-y-6 sm:space-y-8">
@@ -59,6 +65,9 @@ export default async function ReportsPage() {
                         <EnrollmentChart data={enrollmentData} />
                     </CardContent>
                 </Card>
+
+                <TopStudents data={topStudentsData} />
+                <SabaqPerformance data={sabaqPerformanceData} />
             </div>
         </div>
     );

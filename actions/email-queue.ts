@@ -13,6 +13,9 @@ import {
   questionAnsweredTemplate,
   securityFlaggedUserTemplate,
   securityFlaggedAdminTemplate,
+  profileUpdatedTemplate,
+  rolePromotedTemplate,
+  roleDemotedTemplate,
 } from "@/lib/email-templates";
 
 // Queue an email
@@ -102,6 +105,15 @@ export async function processEmailQueue() {
             break;
           case "security-flagged-admin":
             html = securityFlaggedAdminTemplate(templateInfo.data);
+            break;
+          case "profile-updated":
+            html = profileUpdatedTemplate(templateInfo.data);
+            break;
+          case "role-promoted":
+            html = rolePromotedTemplate(templateInfo.data);
+            break;
+          case "role-demoted":
+            html = roleDemotedTemplate(templateInfo.data);
             break;
           default:
             throw new Error(`Unknown template: ${templateInfo.templateName}`);
