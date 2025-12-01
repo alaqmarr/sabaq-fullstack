@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import Link from 'next/link';
-import { MotionList, MotionItem } from '@/components/ui/motion-list';
 import { useSession } from 'next-auth/react';
 
 interface DashboardSessionListProps {
@@ -62,9 +61,9 @@ export function DashboardSessionList({ sessions, type, emptyMessage = "No sessio
     };
 
     return (
-        <MotionList className="space-y-4">
+        <div className="space-y-4">
             {sessions.map((session) => (
-                <MotionItem key={session.id}>
+                <div key={session.id}>
                     <Card className="glass-premium overflow-hidden border-0">
                         <CardContent className="p-0">
                             <div className="flex flex-col md:flex-row">
@@ -161,8 +160,8 @@ export function DashboardSessionList({ sessions, type, emptyMessage = "No sessio
                             </div>
                         </CardContent>
                     </Card>
-                </MotionItem>
+                </div>
             ))}
-        </MotionList>
+        </div>
     );
 }
