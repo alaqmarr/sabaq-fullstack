@@ -62,20 +62,29 @@ export const viewport = {
   ],
 };
 
-export default function RootLayout({
+import { auth } from "@/auth";
+import { getAppConfig } from "@/actions/app-config";
+import { MaintenanceGuard } from "@/components/maintenance-guard";
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+  const { config } = await getAppConfig();
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} ${arabicFont.variable} font-sans antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
-        <SessionProvider>
+        <SessionProvider session={session}>
           <SmoothScrollProvider>
-            <AppHeader />
-            <main className="min-h-screen">
-              {children}
-            </main>
+            <MaintenanceGuard config={config} userRole={session?.user?.role}>
+              <AppHeader />
+              <main className="min-h-screen">
+                {children}
+              </main>
+            </MaintenanceGuard>
             <Toaster />
           </SmoothScrollProvider>
         </SessionProvider>

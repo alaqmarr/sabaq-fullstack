@@ -316,3 +316,15 @@ model AdminOTP {
   @@index([userId])
   @@index([code])
 }
+
+model AppConfig {
+  id                 Int      @id @default(1) // Singleton pattern
+  isAdminUp          Boolean  @default(true)
+  isPostApiUp        Boolean  @default(true)
+  isGetApiUp         Boolean  @default(true)
+  isUnderMaintenance Boolean  @default(false)
+  version            String   @default("1.0.0")
+  overallStatus      String   @default("OPERATIONAL") // OPERATIONAL, DEGRADED, DOWN
+  downReason         String?  @default("System under maintenance")
+  updatedAt          DateTime @updatedAt
+}

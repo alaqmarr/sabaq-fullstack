@@ -5,8 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Activity, Database, Mail, CheckCircle, XCircle, RefreshCw, Send } from "lucide-react";
+import { Activity, Database, Mail, CheckCircle, XCircle, RefreshCw, Send, Settings, Save } from "lucide-react";
 import { checkSystemStatus, sendTestEmail, sendAllTestEmails } from "@/actions/settings";
+import { getAppConfig, updateAppConfig } from "@/actions/app-config";
+import { Switch } from "@/components/ui/switch";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
 export default function SettingsPage() {
@@ -15,6 +19,10 @@ export default function SettingsPage() {
     const [selectedTemplate, setSelectedTemplate] = useState("session-reminder");
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingAllEmails, setSendingAllEmails] = useState(false);
+
+    // Config State
+    const [config, setConfig] = useState<any>(null);
+    const [savingConfig, setSavingConfig] = useState(false);
 
     const checkStatus = async () => {
         setLoadingStatus(true);
@@ -27,8 +35,16 @@ export default function SettingsPage() {
         setLoadingStatus(false);
     };
 
+    const fetchConfig = async () => {
+        const result = await getAppConfig();
+        if (result.success) {
+            setConfig(result.config);
+        }
+    };
+
     useEffect(() => {
         checkStatus();
+        fetchConfig();
     }, []);
 
     const handleSendTestEmail = async () => {
@@ -53,6 +69,28 @@ export default function SettingsPage() {
         setSendingAllEmails(false);
     };
 
+    const handleSaveConfig = async () => {
+        if (!config) return;
+        setSavingConfig(true);
+        const result = await updateAppConfig({
+            isAdminUp: config.isAdminUp,
+            isPostApiUp: config.isPostApiUp,
+            isGetApiUp: config.isGetApiUp,
+            isUnderMaintenance: config.isUnderMaintenance,
+            version: config.version,
+            overallStatus: config.overallStatus,
+            downReason: config.downReason,
+        });
+
+        if (result.success) {
+            toast.success("System configuration updated");
+            setConfig(result.config);
+        } else {
+            toast.error("Failed to update configuration");
+        }
+        setSavingConfig(false);
+    };
+
     const templates = [
         { value: "enrollment-approved", label: "Enrollment Approved" },
         { value: "enrollment-rejected", label: "Enrollment Rejected" },
@@ -67,13 +105,128 @@ export default function SettingsPage() {
     ];
 
     return (
-        <div className="space-y-6 p-6">
+        <div className="space-y-6 p-4 sm:p-6">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight">System Settings</h1>
-                <p className="text-muted-foreground">Manage system configuration and diagnostics.</p>
+                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">System Settings</h1>
+                <p className="text-sm sm:text-base text-muted-foreground">Manage system configuration and diagnostics.</p>
             </div>
 
-            <div className="grid gap-6 md:grid-cols-2">
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* System Configuration */}
+                <Card className="lg:col-span-2">
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Settings className="h-5 w-5" />
+                            System Configuration
+                        </CardTitle>
+                        <CardDescription>Control system availability and maintenance mode</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        {config ? (
+                            <div className="space-y-6">
+                                <div className="grid gap-6 sm:grid-cols-2">
+                                    <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg">
+                                        <Label htmlFor="admin-up" className="flex flex-col space-y-1">
+                                            <span>Admin Portal</span>
+                                            <span className="font-normal text-xs text-muted-foreground">Enable/Disable admin access</span>
+                                        </Label>
+                                        <Switch
+                                            id="admin-up"
+                                            checked={config.isAdminUp}
+                                            onCheckedChange={(checked) => setConfig({ ...config, isAdminUp: checked })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg">
+                                        <Label htmlFor="maintenance" className="flex flex-col space-y-1">
+                                            <span>Maintenance Mode</span>
+                                            <span className="font-normal text-xs text-muted-foreground">Put system under maintenance</span>
+                                        </Label>
+                                        <Switch
+                                            id="maintenance"
+                                            checked={config.isUnderMaintenance}
+                                            onCheckedChange={(checked) => setConfig({ ...config, isUnderMaintenance: checked })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg">
+                                        <Label htmlFor="post-api" className="flex flex-col space-y-1">
+                                            <span>POST API</span>
+                                            <span className="font-normal text-xs text-muted-foreground">Enable data mutations</span>
+                                        </Label>
+                                        <Switch
+                                            id="post-api"
+                                            checked={config.isPostApiUp}
+                                            onCheckedChange={(checked) => setConfig({ ...config, isPostApiUp: checked })}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between space-x-2 border p-4 rounded-lg">
+                                        <Label htmlFor="get-api" className="flex flex-col space-y-1">
+                                            <span>GET API</span>
+                                            <span className="font-normal text-xs text-muted-foreground">Enable data fetching</span>
+                                        </Label>
+                                        <Switch
+                                            id="get-api"
+                                            checked={config.isGetApiUp}
+                                            onCheckedChange={(checked) => setConfig({ ...config, isGetApiUp: checked })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div className="space-y-2">
+                                        <Label>Overall Status</Label>
+                                        <Select
+                                            value={config.overallStatus}
+                                            onValueChange={(val) => setConfig({ ...config, overallStatus: val })}
+                                        >
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="OPERATIONAL">Operational</SelectItem>
+                                                <SelectItem value="DEGRADED">Degraded Performance</SelectItem>
+                                                <SelectItem value="DOWN">System Down</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="space-y-2">
+                                        <Label>System Version</Label>
+                                        <Input
+                                            value={config.version}
+                                            onChange={(e) => setConfig({ ...config, version: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="space-y-2 sm:col-span-2">
+                                        <Label>Down Reason (Public)</Label>
+                                        <Input
+                                            value={config.downReason || ""}
+                                            onChange={(e) => setConfig({ ...config, downReason: e.target.value })}
+                                            placeholder="e.g. Scheduled Maintenance"
+                                        />
+                                    </div>
+                                </div>
+
+                                <Button onClick={handleSaveConfig} disabled={savingConfig} className="w-full sm:w-auto">
+                                    {savingConfig ? (
+                                        <>
+                                            <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="mr-2 h-4 w-4" />
+                                            Save Configuration
+                                        </>
+                                    )}
+                                </Button>
+                            </div>
+                        ) : (
+                            <div className="flex justify-center p-8">
+                                <RefreshCw className="h-8 w-8 animate-spin text-muted-foreground" />
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+
                 {/* System Status */}
                 <Card>
                     <CardHeader>
@@ -126,7 +279,7 @@ export default function SettingsPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">Select Template</label>
+                            <Label>Select Template</Label>
                             <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
                                 <SelectTrigger>
                                     <SelectValue />
@@ -140,7 +293,7 @@ export default function SettingsPage() {
                                 </SelectContent>
                             </Select>
                         </div>
-                        <div className="flex gap-3">
+                        <div className="flex flex-col sm:flex-row gap-3">
                             <Button onClick={handleSendTestEmail} disabled={sendingEmail || sendingAllEmails} className="flex-1">
                                 {sendingEmail ? (
                                     <>
