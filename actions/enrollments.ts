@@ -784,12 +784,10 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
           data: { enrollmentCount: { increment: usersToEnroll.length } },
         });
 
-        for (const user of usersToEnroll) {
-          await tx.user.update({
-            where: { id: user.id },
-            data: { enrollmentCount: { increment: 1 } },
-          });
-        }
+        await tx.user.updateMany({
+          where: { id: { in: usersToEnroll.map((u) => u.id) } },
+          data: { enrollmentCount: { increment: 1 } },
+        });
       });
 
       results.enrolled = usersToEnroll.map((u) => ({
