@@ -13,9 +13,15 @@ import { SabaqQuickActions } from '@/components/sabaqs/sabaq-quick-actions';
 import { RegistrationLink } from '@/components/sabaqs/registration-link';
 import { SabaqEnrollmentCards } from '@/components/sabaqs/sabaq-enrollment-cards';
 
+import { requireSabaqAccess } from '@/lib/rbac';
+
 export default async function SabaqDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const session = await auth();
+
+    // Enforce Granular Access
+    await requireSabaqAccess(id);
+
     const { sabaq } = await getSabaqById(id);
 
     if (!sabaq) {

@@ -5,6 +5,8 @@ import { ActiveSessionsSection } from '@/components/dashboard/active-sessions';
 import { UpcomingSessionsSection } from '@/components/dashboard/upcoming-sessions';
 import { ActiveSessionsSkeleton, UpcomingSessionsSkeleton } from '@/components/dashboard/skeletons';
 import { AdminQuickActions } from '@/components/dashboard/admin-quick-actions';
+import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 
 export const metadata = {
     title: "Admin Dashboard",
@@ -17,12 +19,15 @@ export default async function DashboardPage() {
         redirect('/login');
     }
 
+    try {
+        await requirePermission('sabaqs', 'read');
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect('/unauthorized');
+    }
+
     const role = session.user.role;
     const isAdminOrManager = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(role);
-
-    if (!isAdminOrManager) {
-        redirect('/');
-    }
 
     return (
         <div className="space-y-6 sm:space-y-8">

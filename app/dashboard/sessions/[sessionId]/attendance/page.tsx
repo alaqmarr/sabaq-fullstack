@@ -1,19 +1,20 @@
 
 import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
-import { requirePermission } from '@/lib/rbac';
+import { requirePermission, requireSessionAccess } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 import { getSessionById } from '@/actions/sessions';
 import { getSessionAttendance, getAttendanceStats } from '@/actions/attendance';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ChevronLeft } from 'lucide-react';
+import { AttendanceStats } from '@/components/attendance/attendance-stats';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { AttendanceForm } from '@/components/attendance/attendance-form';
 import { LocationAttendance } from '@/components/attendance/location-attendance';
 import { AttendanceList } from '@/components/attendance/attendance-list';
-import { AttendanceStats } from '@/components/attendance/attendance-stats';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
-import Link from 'next/link';
-import { ChevronLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 
 export default async function SessionAttendancePage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
@@ -22,7 +23,9 @@ export default async function SessionAttendancePage({ params }: { params: Promis
 
     try {
         await requirePermission('sessions', 'read');
+        await requireSessionAccess(sessionId);
     } catch (error) {
+        if (isRedirectError(error)) throw error;
         redirect('/unauthorized');
     }
 

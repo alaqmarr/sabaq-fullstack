@@ -34,7 +34,21 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Separator } from "@/components/ui/separator";
 
-export default function SettingsPage() {
+import { requirePermission } from "@/lib/rbac";
+import { isRedirectError } from "@/lib/utils";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+
+export default async function SettingsPage() {
+    const session = await auth();
+    if (!session?.user) redirect("/login");
+
+    try {
+        await requirePermission("settings", "manage");
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect("/unauthorized");
+    }
     const [dbStatus, setDbStatus] = useState<{ status: string; latency?: number } | null>(null);
     const [maintenanceStatus, setMaintenanceStatus] = useState<{ redis: string; firebase: string; lastSync: string | null } | null>(null);
     const [loadingStatus, setLoadingStatus] = useState(false);

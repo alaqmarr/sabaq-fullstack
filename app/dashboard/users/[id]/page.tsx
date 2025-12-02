@@ -15,16 +15,26 @@ import { CircularProgress } from '@/components/ui/circular-progress';
 import { getItsImageUrl } from '@/lib/its';
 import { IDCard } from '@/components/users/id-card';
 
+import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
+
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     const { id } = await params;
 
+    try {
+        // If viewing own profile, allow. If viewing others, check permission.
+        if (session?.user?.id !== id) {
+            await requirePermission('users', 'read');
+        }
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect('/unauthorized');
+    }
+
     const result = await getUserProfile(id);
 
     if (!result.success) {
-        if (result.error === "Unauthorized" || result.error === "You are not authorized to view this profile") {
-            redirect('/dashboard');
-        }
         return (
             <div className="p-6 text-center">
                 <h2 className="text-xl font-semibold text-destructive">Error</h2>

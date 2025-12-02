@@ -5,6 +5,7 @@ import { LocationsClientWrapper } from '@/components/locations/locations-client-
 import { LocationHeader } from '@/components/locations/location-header';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 
 export default async function LocationsPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
     const session = await auth();
@@ -13,7 +14,7 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
     try {
         await requirePermission('locations', 'read');
     } catch (error) {
-        // requirePermission now handles redirect, but we keep try/catch for safety
+        if (isRedirectError(error)) throw error;
         redirect('/unauthorized');
     }
 

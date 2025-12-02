@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 import { prisma } from '@/lib/prisma';
 import { SecurityLogsTable } from '@/components/admin/security-logs-table';
 
@@ -11,6 +12,7 @@ export default async function SecurityLogsPage() {
     try {
         await requirePermission('users', 'delete'); // Assuming SUPERADMIN has this
     } catch (error) {
+        if (isRedirectError(error)) throw error;
         redirect('/unauthorized');
     }
 

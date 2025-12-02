@@ -5,6 +5,8 @@ import { getSabaqs } from '@/actions/sabaqs';
 import { SessionGrid } from '@/components/sessions/session-grid';
 import { SessionTable } from '@/components/sessions/session-table';
 import { ViewToggle } from '@/components/ui/view-toggle';
+import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 
 export const metadata = {
     title: "Sessions",
@@ -14,15 +16,11 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    const role = session.user.role;
-    const allowedRoles = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'JANAB', 'ATTENDANCE_INCHARGE'];
-
-    if (!allowedRoles.includes(role)) {
-        return (
-            <div className="glass p-8 rounded-lg text-center">
-                <p className="text-red-500">Unauthorized: You do not have permission to view sessions.</p>
-            </div>
-        );
+    try {
+        await requirePermission('sessions', 'read');
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect('/unauthorized');
     }
 
     const { view } = await searchParams;

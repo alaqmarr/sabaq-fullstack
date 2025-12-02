@@ -1,8 +1,8 @@
-import { auth } from '@/auth';
-import { redirect } from 'next/navigation';
-import permissionsConfig from '@/config/permissions.json';
-import { prisma } from '@/lib/prisma';
-import { Role } from '@prisma/client';
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import permissionsConfig from "@/config/permissions.json";
+import { prisma } from "@/lib/prisma";
+import { Role } from "@prisma/client";
 
 type Resource = keyof typeof permissionsConfig.roles.SUPERADMIN;
 type Action = string;
@@ -26,7 +26,8 @@ export async function checkPermission(
     return false;
   }
 
-  const resourcePermissions = rolePermissions[resource as keyof typeof rolePermissions];
+  const resourcePermissions =
+    rolePermissions[resource as keyof typeof rolePermissions];
   if (!resourcePermissions) {
     return false;
   }
@@ -50,22 +51,91 @@ export async function logAuditEvent(
       },
     });
   } catch (error) {
-    console.error('Failed to log audit event:', error);
+    console.error("Failed to log audit event:", error);
   }
 }
 
 export async function requirePermission(resource: Resource, action: Action) {
   const session = await auth();
   if (!session?.user?.id) {
-    throw new Error('Unauthorized');
+    throw new Error("Unauthorized");
   }
 
-  const hasPermission = await checkPermission(session.user.id, resource, action);
+  const hasPermission = await checkPermission(
+    session.user.id,
+    resource,
+    action
+  );
   if (!hasPermission) {
-    await logAuditEvent(session.user.id, 'UNAUTHORIZED_ACCESS_ATTEMPT', resource, { action });
+    await logAuditEvent(
+      session.user.id,
+      "UNAUTHORIZED_ACCESS_ATTEMPT",
+      resource,
+      { action }
+    );
     const reason = `You do not have permission to perform '${action}' on '${resource}'.`;
     redirect(`/unauthorized?reason=${encodeURIComponent(reason)}&flagged=true`);
   }
 
   return session.user;
+}
+
+export async function requireSabaqAccess(sabaqId: string) {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login");
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: {
+      id: true,
+      role: true,
+      managedSabaqs: { select: { id: true } },
+      assignedSabaqs: { select: { sabaqId: true } },
+    },
+  });
+
+  if (!user) redirect("/login");
+
+  // SUPERADMIN and ADMIN have global access
+  if (user.role === "SUPERADMIN" || user.role === "ADMIN") {
+    return session.user;
+  }
+
+  // Check specific assignments
+  const isJanabForSabaq = user.managedSabaqs.some((s) => s.id === sabaqId);
+  const isAssignedToSabaq = user.assignedSabaqs.some(
+    (s) => s.sabaqId === sabaqId
+  );
+
+  if (isJanabForSabaq || isAssignedToSabaq) {
+    return session.user;
+  }
+
+  // Log and Redirect
+  await logAuditEvent(user.id, "UNAUTHORIZED_SABAQ_ACCESS", "sabaq", {
+    sabaqId,
+  });
+  const reason = "You do not have permission to access this Sabaq.";
+  redirect(`/unauthorized?reason=${encodeURIComponent(reason)}&flagged=true`);
+}
+
+export async function requireSessionAccess(sessionId: string) {
+  const session = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: { sabaqId: true },
+  });
+
+  if (!session) {
+    // If session doesn't exist, we can't check access, but we should probably 404 or let the caller handle it.
+    // For security, if we can't verify, we deny.
+    // But usually this is called inside a page where we expect session to exist.
+    // Let's return true here and let the page handle 404, OR throw not found.
+    // Better to throw not found or let the page handle it.
+    // But to check access we NEED sabaqId.
+    return; // Caller will handle 404
+  }
+
+  await requireSabaqAccess(session.sabaqId);
 }

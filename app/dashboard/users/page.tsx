@@ -7,6 +7,8 @@ import { ViewToggle } from '@/components/ui/view-toggle';
 import { Button } from '@/components/ui/button';
 import { UserPlus, Upload } from 'lucide-react';
 import Link from 'next/link';
+import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 
 export const metadata = {
     title: "Users",
@@ -16,14 +18,11 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    const role = session.user.role;
-
-    if (role !== 'SUPERADMIN') {
-        return (
-            <div className="glass p-8 rounded-lg text-center">
-                <p className="text-red-500">Unauthorized: Only administrators can manage users.</p>
-            </div>
-        );
+    try {
+        await requirePermission('users', 'read');
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect('/unauthorized');
     }
 
     const { view, action } = await searchParams;

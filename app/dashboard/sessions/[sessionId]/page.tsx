@@ -1,6 +1,7 @@
 import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
-import { requirePermission } from '@/lib/rbac';
+import { requirePermission, requireSessionAccess } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 import { getSessionById } from '@/actions/sessions';
 import { getAttendanceStats } from '@/actions/attendance';
 import { getQuestionStats } from '@/actions/questions';
@@ -24,7 +25,9 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
 
     try {
         await requirePermission('sessions', 'read');
+        await requireSessionAccess(sessionId);
     } catch (error) {
+        if (isRedirectError(error)) throw error;
         redirect('/unauthorized');
     }
 
@@ -36,7 +39,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
         notFound();
     }
 
-    const sessionData = sessionResult.session;
+    const sessionData = sessionResult.session!;
     const stats = statsResult.success ? statsResult.stats : null;
     const questionStats = questionStatsResult.success ? questionStatsResult.stats : null;
 

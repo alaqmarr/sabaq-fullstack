@@ -240,6 +240,11 @@ export async function upvoteQuestion(questionId: string) {
       return { success: false, error: "Question not found" };
     }
 
+    // Prevent self-upvote
+    if (question.userId === currentUser.id) {
+      return { success: false, error: "You cannot upvote your own question" };
+    }
+
     if (existingVote) {
       // Remove vote
       await prisma.questionVote.delete({

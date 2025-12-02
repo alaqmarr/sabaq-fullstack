@@ -6,6 +6,8 @@ import { EnrollmentChart } from '@/components/analytics/enrollment-chart';
 import { TopStudents } from '@/components/analytics/top-students';
 import { SabaqPerformance } from '@/components/analytics/sabaq-performance';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { requirePermission } from '@/lib/rbac';
+import { isRedirectError } from '@/lib/utils';
 
 export const metadata = {
     title: "Reports & Analytics",
@@ -15,15 +17,11 @@ export default async function ReportsPage() {
     const session = await auth();
     if (!session?.user) redirect('/login');
 
-    const role = session.user.role;
-    const allowedRoles = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'JANAB'];
-
-    if (!allowedRoles.includes(role)) {
-        return (
-            <div className="glass p-8 rounded-lg text-center">
-                <p className="text-red-500">Unauthorized: You do not have permission to view reports.</p>
-            </div>
-        );
+    try {
+        await requirePermission('analytics', 'read');
+    } catch (error) {
+        if (isRedirectError(error)) throw error;
+        redirect('/unauthorized');
     }
 
     const [attendanceRes, enrollmentRes, topStudentsRes, sabaqPerformanceRes] = await Promise.all([
