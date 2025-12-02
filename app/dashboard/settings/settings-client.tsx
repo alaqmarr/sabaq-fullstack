@@ -32,6 +32,7 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function SettingsClient() {
     const [dbStatus, setDbStatus] = useState<{ status: string; latency?: number } | null>(null);
@@ -328,8 +329,8 @@ export function SettingsClient() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         {/* Database */}
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col p-4 border rounded-lg">
+                            <div className="flex items-center gap-3 mb-2">
                                 <Database className="h-5 w-5 text-muted-foreground" />
                                 <div>
                                     <p className="font-medium">Database (Neon)</p>
@@ -337,25 +338,33 @@ export function SettingsClient() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {loadingStatus ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : dbStatus?.status === "healthy" ? (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Healthy ({dbStatus.latency}ms)
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="destructive" className="gap-1">
-                                        <XCircle className="h-3 w-3" />
-                                        Error
-                                    </Badge>
-                                )}
+                                <div className="flex items-center gap-2 w-full mt-2">
+                                    {loadingStatus ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : dbStatus?.status === "healthy" ? (
+                                        <Alert variant="success">
+                                            <CheckCircle className="h-4 w-4" />
+                                            <AlertTitle>Healthy</AlertTitle>
+                                            <AlertDescription>
+                                                Connected to Neon PostgreSQL. Latency: {dbStatus.latency}ms
+                                            </AlertDescription>
+                                        </Alert>
+                                    ) : (
+                                        <Alert variant="destructive">
+                                            <XCircle className="h-4 w-4" />
+                                            <AlertTitle>Error</AlertTitle>
+                                            <AlertDescription>
+                                                Failed to connect to database.
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
                         {/* Redis */}
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col p-4 border rounded-lg">
+                            <div className="flex items-center gap-3 mb-2">
                                 <Database className="h-5 w-5 text-muted-foreground" />
                                 <div>
                                     <p className="font-medium">Cache (Redis)</p>
@@ -363,25 +372,33 @@ export function SettingsClient() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {loadingStatus ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : maintenanceStatus?.redis === "connected" ? (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Connected
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="destructive" className="gap-1">
-                                        <XCircle className="h-3 w-3" />
-                                        {maintenanceStatus?.redis || "Unknown"}
-                                    </Badge>
-                                )}
+                                <div className="flex items-center gap-2 w-full mt-2">
+                                    {loadingStatus ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : maintenanceStatus?.redis === "connected" ? (
+                                        <Alert variant="success">
+                                            <CheckCircle className="h-4 w-4" />
+                                            <AlertTitle>Connected</AlertTitle>
+                                            <AlertDescription>
+                                                Successfully connected to Redis cache.
+                                            </AlertDescription>
+                                        </Alert>
+                                    ) : (
+                                        <Alert variant="destructive">
+                                            <XCircle className="h-4 w-4" />
+                                            <AlertTitle>Error</AlertTitle>
+                                            <AlertDescription>
+                                                {maintenanceStatus?.redis || "Unknown error"}
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                </div>
                             </div>
                         </div>
 
                         {/* Firebase */}
-                        <div className="flex items-center justify-between p-4 border rounded-lg">
-                            <div className="flex items-center gap-3">
+                        <div className="flex flex-col p-4 border rounded-lg">
+                            <div className="flex items-center gap-3 mb-2">
                                 <Database className="h-5 w-5 text-muted-foreground" />
                                 <div>
                                     <p className="font-medium">Realtime DB (Firebase)</p>
@@ -389,19 +406,27 @@ export function SettingsClient() {
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {loadingStatus ? (
-                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                ) : maintenanceStatus?.firebase === "connected" ? (
-                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
-                                        <CheckCircle className="h-3 w-3" />
-                                        Connected
-                                    </Badge>
-                                ) : (
-                                    <Badge variant="destructive" className="gap-1">
-                                        <XCircle className="h-3 w-3" />
-                                        {maintenanceStatus?.firebase || "Unknown"}
-                                    </Badge>
-                                )}
+                                <div className="flex items-center gap-2 w-full mt-2">
+                                    {loadingStatus ? (
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                    ) : maintenanceStatus?.firebase === "connected" ? (
+                                        <Alert variant="success">
+                                            <CheckCircle className="h-4 w-4" />
+                                            <AlertTitle>Connected</AlertTitle>
+                                            <AlertDescription>
+                                                Successfully connected to Firebase Realtime Database.
+                                            </AlertDescription>
+                                        </Alert>
+                                    ) : (
+                                        <Alert variant="destructive">
+                                            <XCircle className="h-4 w-4" />
+                                            <AlertTitle>Error</AlertTitle>
+                                            <AlertDescription>
+                                                {maintenanceStatus?.firebase || "Unknown error"}
+                                            </AlertDescription>
+                                        </Alert>
+                                    )}
+                                </div>
                             </div>
                         </div>
 

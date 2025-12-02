@@ -9,7 +9,7 @@ interface FirebaseAdminConfig {
 }
 
 function formatPrivateKey(key: string) {
-  return key.replace(/\\n/g, "\n");
+  return key.replace(/\\n/g, "\n").replace(/^"|"$/g, "");
 }
 
 export function createFirebaseAdminApp(config: FirebaseAdminConfig) {

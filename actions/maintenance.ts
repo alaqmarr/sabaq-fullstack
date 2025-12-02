@@ -39,13 +39,13 @@ export async function getMaintenanceStatus() {
     try {
       if (adminDb) {
         // Just a simple read to check connection
-        await adminDb.ref(".info/connected").get();
+        await adminDb.ref("_system_health").get();
         status.firebase = "connected";
       } else {
         status.firebase = "not_configured";
       }
-    } catch (e) {
-      status.firebase = "error";
+    } catch (e: any) {
+      status.firebase = `error: ${e.message}`;
     }
 
     // Check Last Sync
