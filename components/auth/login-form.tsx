@@ -13,6 +13,8 @@ import { useEffect, useState } from 'react';
 import { CheckCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import Image from 'next/image';
+
 function LoginButton() {
     const { pending } = useFormStatus();
     return (
@@ -69,8 +71,8 @@ export function LoginForm({ setupComplete }: { setupComplete?: boolean }) {
         <GlassCard className="w-full max-w-md border-white/20 dark:border-white/10 overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
             <CardHeader className="text-center space-y-2 pb-2">
-                <div className="mx-auto h-16 w-16 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden mb-2 shadow-lg shadow-black/5 ring-1 ring-white/20">
-                    <img src="/logo.jpg" alt="Logo" className="h-full w-full object-contain" />
+                <div className="relative mx-auto h-16 w-16 rounded-xl bg-white/10 flex items-center justify-center overflow-hidden mb-2 shadow-lg shadow-black/5 ring-1 ring-white/20">
+                    <Image src="/logo.jpg" alt="Logo" fill className="object-contain" sizes="64px" />
                 </div>
                 <CardTitle className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 lowercase">
                     salaams

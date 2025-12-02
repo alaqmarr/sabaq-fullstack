@@ -37,7 +37,7 @@ export default async function SabaqsPage({ searchParams }: { searchParams: Promi
     const users = usersRes.success && usersRes.users ? usersRes.users : [];
 
     // Filter users who can be Janab (Strictly JANAB role as requested)
-    const potentialJanabs = users.filter(u => u.role === 'JANAB');
+    const potentialJanabs = users.filter((u: any) => u.role === 'JANAB');
 
     return (
         <div className="space-y-6 sm:space-y-8">

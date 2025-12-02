@@ -29,8 +29,8 @@ export default async function SabaqDetailsPage({ params }: { params: Promise<{ i
     const { sessions: activeSessions } = await getActiveSessions();
     const { enrollments } = await getEnrollmentsBySabaq(id);
 
-    const upcomingSession = upcomingSessions?.find(s => s.sabaqId === id);
-    const ongoingSession = activeSessions?.find(s => s.sabaqId === id);
+    const upcomingSession = upcomingSessions?.find((s: any) => s.sabaqId === id);
+    const ongoingSession = activeSessions?.find((s: any) => s.sabaqId === id);
 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">

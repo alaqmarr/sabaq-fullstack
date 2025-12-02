@@ -10,6 +10,8 @@ import { generateQuestionId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 import { createNotification } from "@/actions/notifications";
 
+import { cache } from "@/lib/cache";
+
 // Validate user attended session
 async function validateAttendance(sessionId: string, userId: string) {
   const attendance = await prisma.attendance.findUnique({
@@ -133,6 +135,7 @@ export async function submitQuestionPublic({
       }),
     ]);
 
+    await cache.del(`questions:session:${sessionId}`);
     revalidatePath(`/dashboard/sessions/${sessionId}`);
     return { success: true, question: newQuestion };
   } catch (error: any) {
@@ -199,6 +202,7 @@ export async function submitQuestion(sessionId: string, questionText: string) {
       }),
     ]);
 
+    await cache.del(`questions:session:${sessionId}`);
     revalidatePath(`/dashboard/sessions/${sessionId}`);
     return { success: true, question };
   } catch (error: any) {
@@ -248,6 +252,7 @@ export async function upvoteQuestion(questionId: string) {
         data: { upvotes: { decrement: 1 } },
       });
 
+      await cache.del(`questions:session:${question.sessionId}`);
       revalidatePath(`/dashboard/sessions/${question.sessionId}`);
       return { success: true, action: "removed" };
     } else {
@@ -265,6 +270,7 @@ export async function upvoteQuestion(questionId: string) {
         data: { upvotes: { increment: 1 } },
       });
 
+      await cache.del(`questions:session:${question.sessionId}`);
       revalidatePath(`/dashboard/sessions/${question.sessionId}`);
       return { success: true, action: "added" };
     }
@@ -344,6 +350,7 @@ export async function answerQuestion(questionId: string, answerText: string) {
       },
     });
 
+    await cache.del(`questions:session:${question.sessionId}`);
     revalidatePath(`/dashboard/sessions/${question.sessionId}`);
 
     // Queue email notification if user has email
@@ -440,6 +447,7 @@ export async function deleteQuestion(questionId: string) {
       return deleted;
     });
 
+    await cache.del(`questions:session:${question.sessionId}`);
     revalidatePath(`/dashboard/sessions/${question.sessionId}`);
     return { success: true };
   } catch (error: any) {
@@ -455,6 +463,12 @@ export async function deleteQuestion(questionId: string) {
 export async function getSessionQuestions(sessionId: string) {
   try {
     const currentUser = await requirePermission("questions", "read");
+
+    const cacheKey = `questions:session:${sessionId}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     // Verify access to session/sabaq
     const session = await prisma.session.findUnique({
@@ -527,7 +541,10 @@ export async function getSessionQuestions(sessionId: string) {
       orderBy: [{ upvotes: "desc" }, { createdAt: "desc" }],
     });
 
-    return { success: true, questions };
+    const result = { success: true, questions };
+    await cache.set(cacheKey, result, 60); // Cache for 1 minute
+
+    return result;
   } catch (error: any) {
     return {
       success: false,

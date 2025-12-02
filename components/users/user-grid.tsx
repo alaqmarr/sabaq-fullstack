@@ -28,7 +28,7 @@ export function UserGrid({ users }: UserGridProps) {
             const { promoteUser } = await import('@/actions/users');
             const result = await promoteUser(userId);
             if (result.success) {
-                toast.success(`User promoted to ${result.newRole}`);
+                toast.success(`User promoted to ${(result as any).newRole}`);
                 window.location.reload();
             } else {
                 toast.error(result.error || 'Failed to promote user');
@@ -47,7 +47,7 @@ export function UserGrid({ users }: UserGridProps) {
             const { demoteUser } = await import('@/actions/users');
             const result = await demoteUser(userId);
             if (result.success) {
-                toast.success(`User demoted to ${result.newRole}`);
+                toast.success(`User demoted to ${(result as any).newRole}`);
                 window.location.reload();
             } else {
                 toast.error(result.error || 'Failed to demote user');

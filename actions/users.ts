@@ -54,6 +54,8 @@ export async function lookupUserByITS(itsNumber: string) {
   }
 }
 
+import { cache } from "@/lib/cache";
+
 export async function getUsers(
   page: number = 1,
   limit: number = 20,
@@ -61,6 +63,12 @@ export async function getUsers(
 ) {
   try {
     await requirePermission("users", "read");
+
+    const cacheKey = `users:page:${page}:limit:${limit}:query:${query}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     // 1. Fetch minimal data for sorting and filtering
     const where: any = {};
@@ -70,8 +78,6 @@ export async function getUsers(
         { email: { contains: query, mode: "insensitive" } },
         { itsNumber: { contains: query, mode: "insensitive" } },
         { phone: { contains: query, mode: "insensitive" } },
-        // Role is enum, strict match or skip? Prisma doesn't support contains for enum easily.
-        // We can try to match if query matches an enum value.
       ];
     }
 
@@ -136,7 +142,7 @@ export async function getUsers(
       return paginatedIds.indexOf(a.id) - paginatedIds.indexOf(b.id);
     });
 
-    return {
+    const result = {
       success: true,
       users: sortedUsers,
       total: allUsers.length,
@@ -144,143 +150,11 @@ export async function getUsers(
       limit,
       hasMore: startIndex + limit < allUsers.length,
     };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
 
-export async function promoteUser(userId: string) {
-  try {
-    const currentUser = await requirePermission("users", "update");
+    // Cache for 1 hour (3600 seconds)
+    await cache.set(cacheKey, result, 3600);
 
-    // Only Superadmin and Admin can promote
-    if (!["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
-      throw new Error("Unauthorized");
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error("User not found");
-
-    // Role hierarchy: MUMIN -> ATTENDANCE_INCHARGE -> MANAGER -> ADMIN -> SUPERADMIN
-    // JANAB is skipped as it must be set explicitly
-    const roleHierarchy: Role[] = [
-      "MUMIN",
-      "ATTENDANCE_INCHARGE",
-      "MANAGER",
-      "ADMIN",
-      "SUPERADMIN",
-    ];
-
-    if (user.role === "JANAB") {
-      throw new Error(
-        "Janab role cannot be changed via quick actions. Use edit instead."
-      );
-    }
-
-    const currentIndex = roleHierarchy.indexOf(user.role);
-    if (currentIndex === -1 || currentIndex === roleHierarchy.length - 1) {
-      return { success: false, error: "Cannot promote further" };
-    }
-
-    const newRole = roleHierarchy[currentIndex + 1];
-
-    // Prevent Admin from promoting to Superadmin unless they are Superadmin
-    if (newRole === "SUPERADMIN" && currentUser.role !== "SUPERADMIN") {
-      throw new Error("Only Superadmins can promote to Superadmin");
-    }
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role: newRole },
-    });
-
-    // Send Promotion Email
-    if (user.email) {
-      const featuresMap: Record<string, string[]> = {
-        ATTENDANCE_INCHARGE: ["Mark Attendance", "View Reports"],
-        MANAGER: ["Manage Sessions", "View Analytics", "Manage Enrollments"],
-        ADMIN: ["Manage Users", "Manage Sabaqs", "Full System Access"],
-        SUPERADMIN: ["System Configuration", "Security Logs", "Full Control"],
-      };
-
-      const emailHtml = rolePromotedTemplate({
-        userName: user.name,
-        newRole,
-        features: featuresMap[newRole] || ["Access to Dashboard"],
-      });
-
-      await sendEmail(user.email, "Role Promotion Notification", emailHtml);
-    }
-
-    return { success: true, newRole };
-  } catch (error: any) {
-    return { success: false, error: error.message };
-  }
-}
-
-export async function demoteUser(userId: string) {
-  try {
-    const currentUser = await requirePermission("users", "update");
-
-    // Only Superadmin and Admin can demote
-    if (!["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
-      throw new Error("Unauthorized");
-    }
-
-    const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) throw new Error("User not found");
-
-    // Role hierarchy: MUMIN -> ATTENDANCE_INCHARGE -> MANAGER -> ADMIN -> SUPERADMIN
-    const roleHierarchy: Role[] = [
-      "MUMIN",
-      "ATTENDANCE_INCHARGE",
-      "MANAGER",
-      "ADMIN",
-      "SUPERADMIN",
-    ];
-
-    if (user.role === "JANAB") {
-      throw new Error(
-        "Janab role cannot be changed via quick actions. Use edit instead."
-      );
-    }
-
-    const currentIndex = roleHierarchy.indexOf(user.role);
-    if (currentIndex === -1 || currentIndex === 0) {
-      return { success: false, error: "Cannot demote further" };
-    }
-
-    const newRole = roleHierarchy[currentIndex - 1];
-
-    // Prevent Admin from demoting Superadmin
-    if (user.role === "SUPERADMIN" && currentUser.role !== "SUPERADMIN") {
-      throw new Error("Only Superadmins can demote Superadmins");
-    }
-
-    await prisma.user.update({
-      where: { id: userId },
-      data: { role: newRole },
-    });
-
-    // Send Demotion Email
-    if (user.email) {
-      const lostAccessMap: Record<string, string[]> = {
-        MUMIN: ["Marking Attendance", "Viewing Reports"],
-        ATTENDANCE_INCHARGE: ["Session Management", "Enrollment Management"],
-        MANAGER: ["User Management", "Sabaq Management"],
-        ADMIN: ["System Configuration", "Security Logs"],
-      };
-
-      const emailHtml = roleDemotedTemplate({
-        userName: user.name,
-        newRole,
-        lostAccess: lostAccessMap[newRole] || ["Previous Privileges"],
-      });
-
-      await sendEmail(user.email, "Role Update Notification", emailHtml);
-    }
-
-    return { success: true, newRole };
+    return result;
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -295,163 +169,183 @@ export async function createUser(data: any) {
     });
 
     if (existingUser) {
-      return {
-        success: false,
-        error: "User with this ITS number already exists",
-      };
+      return { success: false, error: "User already exists" };
     }
 
-    const hashedPassword = await hash(data.password, 10);
+    const hashedPassword = await hash(data.password || data.itsNumber, 10);
 
-    const user = await prisma.user.create({
+    const newUser = await prisma.user.create({
       data: {
         id: data.itsNumber,
-        ...data,
+        name: data.name,
+        itsNumber: data.itsNumber,
+        email: data.email,
+        phone: data.phone ? normalizePhone(data.phone) : undefined,
+        role: data.role || "MUMIN",
         password: hashedPassword,
       },
     });
 
-    return { success: true, user };
+    await cache.invalidatePattern("users:*");
+    return { success: true, user: newUser };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Failed to create user" };
   }
 }
 
-export async function updateUser(id: string, data: any) {
+export async function promoteUser(userId: string) {
   try {
-    const actor = await requirePermission("users", "update");
+    const currentUser = await requirePermission("users", "promote");
 
-    // Fetch target user to check for role change
-    const targetUser = await prisma.user.findUnique({
-      where: { id },
-      select: { role: true, email: true, name: true },
+    // Prevent promoting self
+    if (currentUser.id === userId) {
+      return { success: false, error: "Cannot promote yourself" };
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { success: false, error: "User not found" };
+
+    const roleHierarchy = [
+      "MUMIN",
+      "ATTENDANCE_INCHARGE",
+      "JANAB",
+      "MANAGER",
+      "ADMIN",
+      "SUPERADMIN",
+    ];
+    const currentIndex = roleHierarchy.indexOf(user.role);
+
+    if (currentIndex === -1 || currentIndex === roleHierarchy.length - 1) {
+      return { success: false, error: "Cannot promote further" };
+    }
+
+    const newRole = roleHierarchy[currentIndex + 1];
+
+    // Only SUPERADMIN can promote to ADMIN/MANAGER
+    if (
+      ["ADMIN", "MANAGER"].includes(newRole) &&
+      currentUser.role !== "SUPERADMIN"
+    ) {
+      return {
+        success: false,
+        error: "Insufficient permissions to promote to this level",
+      };
+    }
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole as Role },
     });
 
-    if (!targetUser) {
-      return { success: false, error: "User not found" };
+    // Send email notification
+    if (updatedUser.email) {
+      const emailHtml = rolePromotedTemplate({
+        userName: updatedUser.name || "User",
+        newRole: newRole,
+        features: [
+          "Access to new dashboard features",
+          "Ability to manage more resources",
+        ],
+      });
+      await sendEmail(updatedUser.email, "Role Promoted", emailHtml);
     }
 
-    // Hierarchy checks
-    if (data.role && data.role !== targetUser.role) {
-      // Prevent non-Superadmin from assigning Superadmin role
-      if (data.role === "SUPERADMIN" && actor.role !== "SUPERADMIN") {
-        return {
-          success: false,
-          error: "Only Superadmins can assign Superadmin role",
-        };
-      }
-      // Prevent non-Superadmin from modifying a Superadmin's role
-      if (targetUser.role === "SUPERADMIN" && actor.role !== "SUPERADMIN") {
-        return {
-          success: false,
-          error: "Only Superadmins can modify Superadmin users",
-        };
-      }
+    await cache.invalidatePattern("users:*");
+    return { success: true, user: updatedUser };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to promote user" };
+  }
+}
+
+export async function demoteUser(userId: string) {
+  try {
+    const currentUser = await requirePermission("users", "demote");
+
+    // Prevent demoting self
+    if (currentUser.id === userId) {
+      return { success: false, error: "Cannot demote yourself" };
     }
 
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    if (!user) return { success: false, error: "User not found" };
+
+    const roleHierarchy = [
+      "MUMIN",
+      "ATTENDANCE_INCHARGE",
+      "JANAB",
+      "MANAGER",
+      "ADMIN",
+      "SUPERADMIN",
+    ];
+    const currentIndex = roleHierarchy.indexOf(user.role);
+
+    if (currentIndex <= 0) {
+      return { success: false, error: "Cannot demote further" };
+    }
+
+    const newRole = roleHierarchy[currentIndex - 1];
+
+    const updatedUser = await prisma.user.update({
+      where: { id: userId },
+      data: { role: newRole as Role },
+    });
+
+    // Send email notification
+    if (updatedUser.email) {
+      const emailHtml = roleDemotedTemplate({
+        userName: updatedUser.name || "User",
+        newRole: newRole,
+        lostAccess: [
+          "Access to advanced dashboard features",
+          "Ability to manage resources",
+        ],
+      });
+      await sendEmail(updatedUser.email, "Role Demoted", emailHtml);
+    }
+
+    await cache.invalidatePattern("users:*");
+    return { success: true, user: updatedUser };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to demote user" };
+  }
+}
+
+export async function updateUser(userId: string, data: any) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    const currentUser = session.user;
+    const isSelf = currentUser.id === userId;
+    const isAdmin = ["SUPERADMIN", "ADMIN", "MANAGER"].includes(
+      currentUser.role as string
+    );
+
+    if (!isSelf && !isAdmin) {
+      return { success: false, error: "Insufficient permissions" };
+    }
+
+    // If updating password, hash it
     if (data.password) {
       data.password = await hash(data.password, 10);
     }
 
-    const user = await prisma.user.update({
-      where: { id },
-      data,
-    });
-
-    // Check if role changed
-    if (data.role && data.role !== targetUser.role) {
-      if (targetUser.email) {
-        const roleHierarchy = [
-          "MUMIN",
-          "ATTENDANCE_INCHARGE",
-          "JANAB",
-          "MANAGER",
-          "ADMIN",
-          "SUPERADMIN",
-        ];
-
-        // Helper to get index, handling JANAB specially if needed
-        const getRoleIndex = (r: string) => {
-          if (r === "JANAB") return 2.5;
-          return roleHierarchy.indexOf(r);
-        };
-
-        const oldIndex = getRoleIndex(targetUser.role as string);
-        const newIndex = getRoleIndex(data.role);
-
-        if (newIndex > oldIndex) {
-          // Promotion
-          const featuresMap: Record<string, string[]> = {
-            ATTENDANCE_INCHARGE: ["Mark Attendance", "View Reports"],
-            JANAB: ["Manage Sabaq", "View Reports"],
-            MANAGER: [
-              "Manage Sessions",
-              "View Analytics",
-              "Manage Enrollments",
-            ],
-            ADMIN: ["Manage Users", "Manage Sabaqs", "Full System Access"],
-            SUPERADMIN: [
-              "System Configuration",
-              "Security Logs",
-              "Full Control",
-            ],
-          };
-
-          await queueEmail(
-            targetUser.email,
-            "Role Promotion Notification",
-            "role-promoted",
-            {
-              userName: targetUser.name,
-              newRole: data.role,
-              features: featuresMap[data.role] || ["Access to Dashboard"],
-            }
-          );
-        } else if (newIndex < oldIndex) {
-          // Demotion
-          const lostAccessMap: Record<string, string[]> = {
-            MUMIN: ["Marking Attendance", "Viewing Reports"],
-            ATTENDANCE_INCHARGE: [
-              "Session Management",
-              "Enrollment Management",
-            ],
-            JANAB: ["Manager Privileges"],
-            MANAGER: ["User Management", "Sabaq Management"],
-            ADMIN: ["System Configuration", "Security Logs"],
-          };
-
-          await queueEmail(
-            targetUser.email,
-            "Role Update Notification",
-            "role-demoted",
-            {
-              userName: targetUser.name,
-              newRole: data.role,
-              lostAccess: lostAccessMap[data.role] || ["Previous Privileges"],
-            }
-          );
-        } else {
-          // Lateral or unknown change
-          await queueEmail(
-            targetUser.email,
-            "Profile Updated",
-            "profile-updated",
-            {
-              userName: targetUser.name,
-              updatedFields: ["Role"],
-              time: new Date().toLocaleString(),
-            }
-          );
-        }
-
-        // Trigger processing immediately
-        void processEmailQueue();
-      }
+    // Prevent non-admins from changing roles
+    if (data.role && !isAdmin) {
+      delete data.role;
     }
 
-    return { success: true, user };
+    await prisma.user.update({
+      where: { id: userId },
+      data: data,
+    });
+
+    await cache.invalidatePattern("users:*");
+    return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message };
+    return { success: false, error: error.message || "Failed to update user" };
   }
 }
 
@@ -493,6 +387,10 @@ export async function bulkCreateUsers(users: any[]) {
       } catch (error: any) {
         errors.push(`Failed to create user ${userData.name}: ${error.message}`);
       }
+    }
+
+    if (createdCount > 0) {
+      await cache.invalidatePattern("users:*");
     }
 
     return {
@@ -562,6 +460,10 @@ export async function bulkUpdateUsers(users: any[]) {
           `Failed to update user ${userData.itsNumber}: ${error.message}`
         );
       }
+    }
+
+    if (updatedCount > 0) {
+      await cache.invalidatePattern("users:*");
     }
 
     return {

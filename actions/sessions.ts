@@ -10,6 +10,8 @@ import { generateSessionId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 import { createNotification } from "@/actions/notifications";
 
+import { cache } from "@/lib/cache";
+
 export async function createSession(data: {
   sabaqId: string;
   scheduledAt: Date;
@@ -36,6 +38,7 @@ export async function createSession(data: {
       },
     });
 
+    await cache.invalidatePattern("sessions:*");
     revalidatePath(`/dashboard/sabaqs/${validatedData.sabaqId}`);
     revalidatePath("/dashboard/sessions");
     return { success: true, session: newSession };
@@ -83,6 +86,7 @@ export async function updateSession(
       data: validatedData,
     });
 
+    await cache.invalidatePattern("sessions:*");
     revalidatePath(`/dashboard/sabaqs/${updatedSession.sabaqId}`);
     revalidatePath("/dashboard/sessions");
     return { success: true, session: updatedSession };
@@ -120,6 +124,7 @@ export async function deleteSession(id: string) {
       where: { id },
     });
 
+    await cache.invalidatePattern("sessions:*");
     revalidatePath(`/dashboard/sabaqs/${existingSession.sabaqId}`);
     revalidatePath("/dashboard/sessions");
     return { success: true };
@@ -217,8 +222,7 @@ export async function startSession(id: string) {
       )
     );
 
-    // Queue emails for session start (optional, but good for engagement)
-    // We'll skip email for now to avoid spam, relying on push/in-app notification.
+    await cache.invalidatePattern("sessions:*");
 
     return { success: true, session };
   } catch (error: any) {
@@ -340,6 +344,7 @@ export async function endSession(id: string) {
     // Trigger processing immediately
     void processEmailQueue();
 
+    await cache.invalidatePattern("sessions:*");
     revalidatePath("/dashboard/sessions");
     revalidatePath(`/dashboard/sessions/${id}`);
     return { success: true, session };
@@ -383,6 +388,7 @@ export async function resumeSession(id: string) {
       }),
     ]);
 
+    await cache.invalidatePattern("sessions:*");
     revalidatePath("/dashboard/sessions");
     revalidatePath(`/dashboard/sessions/${id}`);
     return { success: true, session };
@@ -571,6 +577,12 @@ export async function getActiveSessions() {
     const currentUser = await requirePermission("sessions", "read");
     const role = currentUser.role;
 
+    const cacheKey = `sessions:active:${role}:${currentUser.id}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     let where: any = { isActive: true };
 
     if (role !== "SUPERADMIN") {
@@ -627,7 +639,11 @@ export async function getActiveSessions() {
       },
       orderBy: { startedAt: "desc" },
     });
-    return { success: true, sessions };
+
+    const result = { success: true, sessions };
+    await cache.set(cacheKey, result, 60); // Cache for 1 minute
+
+    return result;
   } catch (error: any) {
     return {
       success: false,
@@ -640,6 +656,12 @@ export async function getUpcomingSessions(days: number = 7) {
   try {
     const currentUser = await requirePermission("sessions", "read");
     const role = currentUser.role;
+
+    const cacheKey = `sessions:upcoming:${role}:${currentUser.id}:${days}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     const now = new Date();
     const futureDate = new Date(now);
@@ -700,7 +722,11 @@ export async function getUpcomingSessions(days: number = 7) {
       },
       orderBy: { scheduledAt: "asc" },
     });
-    return { success: true, sessions };
+
+    const result = { success: true, sessions };
+    await cache.set(cacheKey, result, 60); // Cache for 1 minute
+
+    return result;
   } catch (error: any) {
     return {
       success: false,
@@ -711,6 +737,12 @@ export async function getUpcomingSessions(days: number = 7) {
 
 export async function getPublicSessionInfo(sessionId: string) {
   try {
+    const cacheKey = `session:public:${sessionId}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
       include: {
@@ -730,7 +762,10 @@ export async function getPublicSessionInfo(sessionId: string) {
       return { success: false, error: "Session not found" };
     }
 
-    return { success: true, session };
+    const result = { success: true, session };
+    await cache.set(cacheKey, result, 60); // Cache for 1 minute
+
+    return result;
   } catch (error: any) {
     console.error("Failed to fetch public session info:", error);
     return { success: false, error: "Failed to fetch session info" };

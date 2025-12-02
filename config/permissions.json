@@ -26,7 +26,8 @@
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
       "scan": ["read"],
-      "logs": ["read"]
+      "logs": ["read"],
+      "settings": ["manage"]
     },
     "ADMIN": {
       "users": [],
@@ -38,7 +39,8 @@
       "questions": ["read", "answer"],
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
-      "scan": ["read"]
+      "scan": ["read"],
+      "settings": ["manage"]
     },
     "MANAGER": {
       "users": [],

@@ -25,7 +25,7 @@ export default function ScanClient() {
             const res = await getActiveSessions();
             if (res.success && res.sessions) {
                 setSessions(res.sessions);
-                if (initialSessionId && res.sessions.some(s => s.id === initialSessionId)) {
+                if (initialSessionId && res.sessions.some((s: any) => s.id === initialSessionId)) {
                     setSelectedSessionId(initialSessionId);
                 } else if (res.sessions.length > 0) {
                     setSelectedSessionId(res.sessions[0].id);
@@ -82,7 +82,7 @@ export default function ScanClient() {
                                 <SelectValue placeholder="Select active session" />
                             </SelectTrigger>
                             <SelectContent>
-                                {sessions.map((session) => (
+                                {sessions.map((session: any) => (
                                     <SelectItem key={session.id} value={session.id}>
                                         {session.sabaq.name} ({session.sabaq.kitaab})
                                     </SelectItem>

@@ -7,6 +7,8 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { SignOutButton } from '@/components/auth/signout-button';
 
+import Image from 'next/image';
+
 export function AppHeader() {
     const { data: session } = useSession();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -17,8 +19,8 @@ export function AppHeader() {
                 <div className="flex h-16 items-center justify-between">
                     {/* Logo/Brand */}
                     <Link href="/" className="flex items-center gap-2 sm:gap-3 group">
-                        <div className="h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
-                            <img src="/logo.jpg" alt="Logo" className="h-full w-full object-contain" />
+                        <div className="relative h-8 w-8 sm:h-10 sm:w-10 rounded-lg bg-white/10 flex items-center justify-center overflow-hidden">
+                            <Image src="/logo.jpg" alt="Logo" fill className="object-contain" sizes="(max-width: 640px) 32px, 40px" />
                         </div>
                         <div className="flex flex-col">
                             <span className="font-bold text-base sm:text-lg bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">

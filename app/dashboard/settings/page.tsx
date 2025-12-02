@@ -13,12 +13,35 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 
+import {
+    getMaintenanceStatus,
+    triggerManualSync,
+    clearAllNotifications,
+    clearSystemLogs,
+    processEmailQueueAction,
+    clearEmailQueueAction
+} from "@/actions/maintenance";
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Separator } from "@/components/ui/separator";
+
 export default function SettingsPage() {
     const [dbStatus, setDbStatus] = useState<{ status: string; latency?: number } | null>(null);
+    const [maintenanceStatus, setMaintenanceStatus] = useState<{ redis: string; firebase: string; lastSync: string | null } | null>(null);
     const [loadingStatus, setLoadingStatus] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState("session-reminder");
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingAllEmails, setSendingAllEmails] = useState(false);
+    const [processingAction, setProcessingAction] = useState<string | null>(null);
 
     // Config State
     const [config, setConfig] = useState<any>(null);
@@ -26,12 +49,21 @@ export default function SettingsPage() {
 
     const checkStatus = async () => {
         setLoadingStatus(true);
-        const result = await checkSystemStatus();
-        if (result.success) {
-            setDbStatus({ status: "healthy", latency: result.dbLatency });
+        const [dbResult, maintenanceResult] = await Promise.all([
+            checkSystemStatus(),
+            getMaintenanceStatus()
+        ]);
+
+        if (dbResult.success) {
+            setDbStatus({ status: "healthy", latency: dbResult.dbLatency });
         } else {
             setDbStatus({ status: "error" });
         }
+
+        if (maintenanceResult.success && maintenanceResult.status) {
+            setMaintenanceStatus(maintenanceResult.status);
+        }
+
         setLoadingStatus(false);
     };
 
@@ -46,6 +78,62 @@ export default function SettingsPage() {
         checkStatus();
         fetchConfig();
     }, []);
+
+    const handleManualSync = async () => {
+        setProcessingAction("sync");
+        const result = await triggerManualSync();
+        if (result.success) {
+            toast.success(result.message);
+            checkStatus(); // Refresh last sync time
+        } else {
+            toast.error(result.error || "Sync failed");
+        }
+        setProcessingAction(null);
+    };
+
+    const handleClearNotifications = async () => {
+        setProcessingAction("notifications");
+        const result = await clearAllNotifications();
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.error || "Failed to clear notifications");
+        }
+        setProcessingAction(null);
+    };
+
+    const handleClearLogs = async () => {
+        setProcessingAction("logs");
+        const result = await clearSystemLogs(30);
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.error || "Failed to clear logs");
+        }
+        setProcessingAction(null);
+    };
+
+    const handleProcessQueue = async () => {
+        setProcessingAction("process-queue");
+        const result = await processEmailQueueAction();
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.error || "Failed to process queue");
+        }
+        setProcessingAction(null);
+    };
+
+    const handleClearQueue = async () => {
+        setProcessingAction("clear-queue");
+        const result = await clearEmailQueueAction();
+        if (result.success) {
+            toast.success(result.message);
+        } else {
+            toast.error(result.error || "Failed to clear queue");
+        }
+        setProcessingAction(null);
+    };
 
     const handleSendTestEmail = async () => {
         setSendingEmail(true);
@@ -240,12 +328,13 @@ export default function SettingsPage() {
                         <CardDescription>Real-time system status checks</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        {/* Database */}
                         <div className="flex items-center justify-between p-4 border rounded-lg">
                             <div className="flex items-center gap-3">
                                 <Database className="h-5 w-5 text-muted-foreground" />
                                 <div>
-                                    <p className="font-medium">Database Connection</p>
-                                    <p className="text-sm text-muted-foreground">PostgreSQL (Prisma)</p>
+                                    <p className="font-medium">Database (Neon)</p>
+                                    <p className="text-sm text-muted-foreground">PostgreSQL</p>
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -264,10 +353,181 @@ export default function SettingsPage() {
                                 )}
                             </div>
                         </div>
+
+                        {/* Redis */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <Database className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="font-medium">Cache (Redis)</p>
+                                    <p className="text-sm text-muted-foreground">Session & Data Caching</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {loadingStatus ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : maintenanceStatus?.redis === "connected" ? (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+                                        <CheckCircle className="h-3 w-3" />
+                                        Connected
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="destructive" className="gap-1">
+                                        <XCircle className="h-3 w-3" />
+                                        {maintenanceStatus?.redis || "Unknown"}
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Firebase */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg">
+                            <div className="flex items-center gap-3">
+                                <Database className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="font-medium">Realtime DB (Firebase)</p>
+                                    <p className="text-sm text-muted-foreground">Live Attendance</p>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {loadingStatus ? (
+                                    <RefreshCw className="h-4 w-4 animate-spin" />
+                                ) : maintenanceStatus?.firebase === "connected" ? (
+                                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 gap-1">
+                                        <CheckCircle className="h-3 w-3" />
+                                        Connected
+                                    </Badge>
+                                ) : (
+                                    <Badge variant="destructive" className="gap-1">
+                                        <XCircle className="h-3 w-3" />
+                                        {maintenanceStatus?.firebase || "Unknown"}
+                                    </Badge>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Last Sync */}
+                        <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/50">
+                            <div className="flex items-center gap-3">
+                                <RefreshCw className="h-5 w-5 text-muted-foreground" />
+                                <div>
+                                    <p className="font-medium">Last Sync</p>
+                                    <p className="text-sm text-muted-foreground">
+                                        {maintenanceStatus?.lastSync
+                                            ? new Date(maintenanceStatus.lastSync).toLocaleString()
+                                            : "Never / Unknown"}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <Button variant="outline" size="sm" onClick={checkStatus} disabled={loadingStatus} className="w-full">
                             <RefreshCw className={`mr-2 h-4 w-4 ${loadingStatus ? "animate-spin" : ""}`} />
                             Refresh Status
                         </Button>
+                    </CardContent>
+                </Card>
+
+                {/* Maintenance Controls */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                            <Database className="h-5 w-5" />
+                            Maintenance Controls
+                        </CardTitle>
+                        <CardDescription>Perform system maintenance tasks</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid gap-4 sm:grid-cols-2">
+                            <Button
+                                variant="outline"
+                                onClick={handleManualSync}
+                                disabled={!!processingAction}
+                                className="justify-start"
+                            >
+                                {processingAction === "sync" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                                Sync Everything Manually
+                            </Button>
+
+                            <Button
+                                variant="outline"
+                                onClick={handleProcessQueue}
+                                disabled={!!processingAction}
+                                className="justify-start"
+                            >
+                                {processingAction === "process-queue" ? <RefreshCw className="mr-2 h-4 w-4 animate-spin" /> : <Mail className="mr-2 h-4 w-4" />}
+                                Process Email Queue
+                            </Button>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Clear All Notifications
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear All Notifications?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove all notifications for all users. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearNotifications} className="bg-red-600 hover:bg-red-700">
+                                            Clear All
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Clear Logs (Keep 30)
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear System Logs?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove all security logs except for the latest 30 records. This action cannot be undone.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearLogs} className="bg-red-600 hover:bg-red-700">
+                                            Clear Logs
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+
+                            <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                    <Button variant="outline" className="justify-start text-red-600 hover:text-red-700 hover:bg-red-50">
+                                        <XCircle className="mr-2 h-4 w-4" />
+                                        Clear Email Queue
+                                    </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                        <AlertDialogTitle>Clear Email Queue?</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                            This will remove all PENDING emails from the queue. They will not be sent.
+                                        </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction onClick={handleClearQueue} className="bg-red-600 hover:bg-red-700">
+                                            Clear Queue
+                                        </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                </AlertDialogContent>
+                            </AlertDialog>
+                        </div>
                     </CardContent>
                 </Card>
 

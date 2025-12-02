@@ -18,11 +18,11 @@ export async function ActiveSessionsSection() {
         const attendances = await prisma.attendance.findMany({
             where: {
                 userId: session.user.id,
-                sessionId: { in: sessions.map(s => s.id) }
+                sessionId: { in: sessions.map((s: any) => s.id) }
             },
             select: { sessionId: true }
         });
-        attendedSessionIds = new Set(attendances.map(a => a.sessionId));
+        attendedSessionIds = new Set(attendances.map((a: any) => a.sessionId));
     }
 
     return (

@@ -13,8 +13,11 @@ import { ArrowLeft, Calendar, Clock, MapPin, Users, MessageSquare, ChevronRight,
 import { ExportButton } from '@/components/exports/export-button';
 import { SessionQuickActions } from '@/components/sessions/session-quick-actions';
 
+import { SessionStatsCard } from '@/components/sessions/session-stats-card';
+
 export default async function SessionDetailPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
+    // ... (rest of the function start)
     const session = await auth();
 
     if (!session?.user) redirect('/login');
@@ -112,20 +115,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     </CardContent>
                 </Card>
 
-                <Card>
-                    <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                        <CardTitle className="text-sm font-medium">Attendance</CardTitle>
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-lg font-bold">
-                            {stats?.totalPresent || 0}
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                            {stats?.lateCount || 0} Late
-                        </p>
-                    </CardContent>
-                </Card>
+                <SessionStatsCard sessionId={sessionId} initialStats={stats ?? null} />
 
                 <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">

@@ -151,11 +151,13 @@ export function IDCard({ user }: IDCardProps) {
                         <div className="relative w-full md:w-1/3 bg-black/5 dark:bg-white/5 p-6 flex flex-col items-center justify-center gap-4 border-b md:border-b-0 md:border-r border-white/10">
                             <div className="relative h-32 w-32 rounded-full p-1 bg-gradient-to-br from-white/20 to-white/5 ring-1 ring-white/20 shadow-2xl">
                                 <div className="relative h-full w-full rounded-full overflow-hidden bg-background">
-                                    <img
+                                    <Image
                                         src={getItsImageUrl(user.itsNumber)}
                                         alt={user.name}
-                                        className="h-full w-full object-cover"
+                                        fill
+                                        className="object-cover"
                                         loading="eager"
+                                        sizes="128px"
                                     />
                                 </div>
                             </div>
