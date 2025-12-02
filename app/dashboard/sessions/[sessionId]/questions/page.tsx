@@ -14,20 +14,29 @@ import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { format } from 'date-fns';
 
-export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }) {
-    const { sessionId } = await params;
-    const result = await getSessionById(sessionId);
+import { Metadata } from 'next';
 
-    if (!result.success || !result.session) {
+export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }): Promise<Metadata> {
+    try {
+        const { sessionId } = await params;
+        const result = await getSessionById(sessionId);
+
+        if (!result.success || !result.session) {
+            return {
+                title: "Session Not Found",
+            };
+        }
+
+        const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
         return {
-            title: "Session Not Found",
+            title: `Questions | ${result.session.sabaq.name} | ${date}`,
+        };
+    } catch (error) {
+        console.error("Metadata generation failed:", error);
+        return {
+            title: "Login",
         };
     }
-
-    const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
-    return {
-        title: `${date} | ${result.session.sabaq.name}`,
-    };
 }
 
 export default async function SessionQuestionsPage({ params }: { params: Promise<{ sessionId: string }> }) {

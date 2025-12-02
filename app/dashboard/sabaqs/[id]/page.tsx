@@ -15,19 +15,28 @@ import { SabaqEnrollmentCards } from '@/components/sabaqs/sabaq-enrollment-cards
 
 import { requireSabaqAccess } from '@/lib/rbac';
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
-    const { id } = await params;
-    const { sabaq } = await getSabaqById(id);
+import { Metadata } from 'next';
 
-    if (!sabaq) {
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+    try {
+        const { id } = await params;
+        const { sabaq } = await getSabaqById(id);
+
+        if (!sabaq) {
+            return {
+                title: "Sabaq Not Found",
+            };
+        }
+
         return {
-            title: "Sabaq Not Found",
+            title: `${sabaq.name} | Asbaaq Management System`,
+        };
+    } catch (error) {
+        console.error("Metadata generation failed:", error);
+        return {
+            title: "Login",
         };
     }
-
-    return {
-        title: `${sabaq.name} | Asbaaq Management System`,
-    };
 }
 
 export default async function SabaqDetailsPage({ params }: { params: Promise<{ id: string }> }) {
