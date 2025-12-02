@@ -32,23 +32,42 @@ const arabicFont = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Asbaaq Management System",
+    default: "Asbaaq | Umoor Talimiyah",
     template: "%s | Asbaaq Management"
   },
-  description: "Comprehensive sabaq session management system with attendance tracking, enrollment management, and real-time analytics.",
+  icons: {
+    icon: "/logo.jpg",
+  },
+  description: "Realtime attendance marking, user intimations, session management, and much more.",
   keywords: ["sabaq", "attendance", "management", "education", "sessions", "enrollment"],
-  authors: [{ name: "Asbaaq Team" }],
-  creator: "Asbaaq Management",
+  authors: [{ name: "Al Aqmar" }],
+  creator: "Al Aqmar [alaqmar.dev]",
   openGraph: {
     type: "website",
-    title: "Asbaaq Management System",
-    description: "Comprehensive sabaq session management with real-time tracking",
-    siteName: "Asbaaq Management",
+    title: "Asbaaq | Umoor Talimiyah",
+    description: "Realtime attendance marking, user intimations, session management, and much more.",
+    siteName: "Asbaaq | Umoor Talimiyah",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Asbaaq | Umoor Talimiyah",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Asbaaq Management System",
-    description: "Comprehensive sabaq session management with real-time tracking",
+    title: "Asbaaq | Umoor Talimiyah",
+    description: "Realtime attendance marking, user intimations, session management, and much more.",
+    images: [
+      {
+        url: "/logo.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Asbaaq | Umoor Talimiyah",
+      },
+    ],
   },
 };
 
@@ -57,8 +76,10 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" }
+    // blue style theme colors
+    { media: "(prefers-color-scheme: light)", color: "#85a3e2ff" },
+
+    { media: "(prefers-color-scheme: dark)", color: "#85a3e2ff" }
   ],
 };
 
