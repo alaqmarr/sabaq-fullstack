@@ -9,13 +9,17 @@ import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { playSuccessSound, playErrorSound } from '@/lib/sounds';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Keyboard } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 
 export default function ScanClient() {
     const [processing, setProcessing] = useState(false);
     const [sessions, setSessions] = useState<any[]>([]);
     const [selectedSessionId, setSelectedSessionId] = useState<string>('');
     const [loading, setLoading] = useState(true);
+    const [manualIts, setManualIts] = useState('');
 
     const searchParams = useSearchParams();
     const initialSessionId = searchParams.get('sessionId');
@@ -38,43 +42,55 @@ export default function ScanClient() {
 
     const [scanResult, setScanResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-    const handleScan = async (decodedText: string) => {
+    const processAttendance = async (its: string) => {
         if (processing || !selectedSessionId) return;
 
         // Basic validation: ITS number should be 8 digits
-        if (!/^\d{8}$/.test(decodedText)) {
+        if (!/^\d{8}$/.test(its)) {
             setScanResult({ type: 'error', message: 'Invalid ITS: Must be 8 digits' });
+            playErrorSound();
             return;
         }
 
         setProcessing(true);
 
         try {
-            // decodedText is the User's ITS Number
-            const result = await markAttendanceManual(selectedSessionId, decodedText);
+            const result = await markAttendanceManual(selectedSessionId, its);
 
             if (result.success) {
-                setScanResult({ type: 'success', message: `Marked: ${decodedText}` });
+                setScanResult({ type: 'success', message: `Marked: ${its}` });
+                playSuccessSound();
+                setManualIts(''); // Clear manual input on success
             } else {
                 setScanResult({ type: 'error', message: result.error || 'Failed to mark' });
+                playErrorSound();
             }
         } catch (error) {
             setScanResult({ type: 'error', message: 'System Error' });
+            playErrorSound();
         } finally {
             setProcessing(false);
         }
     };
 
+    const handleScan = async (decodedText: string) => {
+        await processAttendance(decodedText);
+    };
+
+    const handleManualSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        processAttendance(manualIts);
+    };
+
     return (
-        <div className="container max-w-md mx-auto py-8 space-y-6">
+        <div className="container max-w-md mx-auto py-4 sm:py-8 space-y-6">
+            <PageHeader
+                title="Scan Attendance"
+                description="Select a session and scan ID cards"
+            />
+
             <Card className="glass-premium border-0">
-                <CardHeader>
-                    <CardTitle className="text-center text-cred-heading">Scan Attendance</CardTitle>
-                    <CardDescription className="text-center text-cred-label">
-                        Select a session and scan ID cards
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-6 pt-6">
                     <div className="space-y-2">
                         <label className="text-sm text-cred-label font-bold uppercase tracking-wider">Select Session</label>
                         <Select value={selectedSessionId} onValueChange={setSelectedSessionId}>
@@ -91,6 +107,28 @@ export default function ScanClient() {
                         </Select>
                     </div>
 
+                    {/* Manual Entry - Priority 1 (Mobile First) */}
+                    <div className="space-y-2 p-4 bg-white/5 rounded-lg border border-white/10">
+                        <label className="text-sm text-cred-label font-bold uppercase tracking-wider flex items-center gap-2">
+                            <Keyboard className="h-4 w-4" />
+                            Manual Entry
+                        </label>
+                        <form onSubmit={handleManualSubmit} className="flex gap-2">
+                            <Input
+                                placeholder="Enter ITS Number"
+                                value={manualIts}
+                                onChange={(e) => setManualIts(e.target.value)}
+                                className="bg-background/50"
+                                maxLength={8}
+                                type="tel" // Better keyboard on mobile
+                            />
+                            <Button type="submit" disabled={processing || !selectedSessionId || manualIts.length !== 8}>
+                                {processing ? <Loader2 className="h-4 w-4 animate-spin" /> : "Mark"}
+                            </Button>
+                        </form>
+                    </div>
+
+                    {/* QR Scanner - Priority 2 */}
                     <div className="space-y-4">
                         <QRScanner
                             onScan={handleScan}

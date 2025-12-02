@@ -92,8 +92,8 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
     };
 
     return (
-        <div className="space-y-4 h-full flex flex-col">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div className="space-y-4 h-[calc(100dvh-140px)] flex flex-col">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shrink-0">
                 <Tabs defaultValue="security" value={activeTab} onValueChange={setActiveTab} className="w-full sm:w-auto">
                     <TabsList className="grid w-full grid-cols-2 sm:w-[300px]">
                         <TabsTrigger value="security" className="flex items-center gap-2">
@@ -121,7 +121,7 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
             <div className="flex-1 min-h-0">
                 {activeTab === 'security' && (
                     <Card className="glass-card h-full flex flex-col border-0 sm:border">
-                        <CardHeader className="pb-3">
+                        <CardHeader className="pb-3 shrink-0">
                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                 <Shield className="h-5 w-5 text-primary" />
                                 Security Events
@@ -133,9 +133,9 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
                                 Track critical user actions and system security events.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex-1 min-h-0 p-0 sm:p-6 sm:pt-0">
-                            <ScrollArea className="h-[calc(100vh-280px)] sm:h-[600px] w-full pr-4">
-                                <div className="space-y-4 p-4 sm:p-0">
+                        <CardContent className="flex-1 min-h-0 p-0 sm:p-6 sm:pt-0 overflow-hidden">
+                            <ScrollArea className="h-full w-full">
+                                <div className="space-y-4 p-4 sm:p-0 sm:pr-4">
                                     {filteredSecurityLogs.length === 0 ? (
                                         <div className="text-center py-12 text-muted-foreground">
                                             {searchTerm ? 'No matching security logs found.' : 'No security logs found.'}
@@ -168,7 +168,11 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
                                                         </Badge>
                                                     </div>
 
-                                                    {log.details && renderDetails(log.details)}
+                                                    {log.details && (
+                                                        <div className="w-full overflow-hidden">
+                                                            {renderDetails(log.details)}
+                                                        </div>
+                                                    )}
 
                                                     {log.ipAddress && (
                                                         <div className="text-xs text-muted-foreground font-mono mt-1">
@@ -187,7 +191,7 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
 
                 {activeTab === 'email' && (
                     <Card className="glass-card h-full flex flex-col border-0 sm:border">
-                        <CardHeader className="pb-3">
+                        <CardHeader className="pb-3 shrink-0">
                             <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
                                 <Mail className="h-5 w-5 text-primary" />
                                 Email History
@@ -199,9 +203,9 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
                                 View sent emails and delivery status.
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="flex-1 min-h-0 p-0 sm:p-6 sm:pt-0">
-                            <ScrollArea className="h-[calc(100vh-280px)] sm:h-[600px] w-full pr-4">
-                                <div className="space-y-4 p-4 sm:p-0">
+                        <CardContent className="flex-1 min-h-0 p-0 sm:p-6 sm:pt-0 overflow-hidden">
+                            <ScrollArea className="h-full w-full">
+                                <div className="space-y-4 p-4 sm:p-0 sm:pr-4">
                                     {filteredEmailLogs.length === 0 ? (
                                         <div className="text-center py-12 text-muted-foreground">
                                             {searchTerm ? 'No matching email logs found.' : 'No email logs found.'}
@@ -237,9 +241,9 @@ export function LogsViewer({ emailLogs, securityLogs }: LogsViewerProps) {
                                                     </div>
 
                                                     {log.error && (
-                                                        <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded">
+                                                        <div className="flex items-start gap-2 text-xs text-destructive bg-destructive/10 p-2 rounded break-words">
                                                             <AlertTriangle className="h-3.5 w-3.5 mt-0.5 shrink-0" />
-                                                            <span>{log.error}</span>
+                                                            <span className="break-all">{log.error}</span>
                                                         </div>
                                                     )}
                                                 </div>

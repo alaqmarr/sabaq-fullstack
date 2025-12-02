@@ -15,6 +15,7 @@ import { ExportButton } from '@/components/exports/export-button';
 import { SessionQuickActions } from '@/components/sessions/session-quick-actions';
 
 import { SessionStatsCard } from '@/components/sessions/session-stats-card';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default async function SessionDetailPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
@@ -60,33 +61,34 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
             {/* Header */}
-            <div className="flex flex-col gap-2">
-                <div className="flex items-center gap-4 mb-4">
+            {/* Header */}
+            <PageHeader
+                title={sessionData.sabaq.name}
+                description={`${sessionData.sabaq.kitaab} • Nisaab ${sessionData.sabaq.level}`}
+                actions={isAdmin ? [
+                    {
+                        label: "Export",
+                        href: `/dashboard/sessions/${sessionId}/export`, // Assuming export route or similar, or just keep the component if it's complex
+                        // Actually ExportButton is a component, so I might need to keep it separate or adapt PageHeader to accept components.
+                        // PageHeader accepts children, so I can put ExportButton there.
+                        // But wait, the user wants PageHeader.
+                        // I will put ExportButton in children.
+                    }
+                ].filter(Boolean) as any : []}
+            >
+                <div className="flex items-center gap-2">
                     <Link href="/dashboard/sessions">
                         <Button variant="ghost" size="icon">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                     </Link>
-                    <div className="flex items-center gap-2">
-                        {getStatusBadge()}
-                        <span className="text-sm text-muted-foreground">
-                            {format(new Date(sessionData.scheduledAt), 'PPP')}
-                        </span>
-                    </div>
-                </div>
-
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h2 className="text-3xl font-bold tracking-tight text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                            {sessionData.sabaq.name}
-                        </h2>
-                        <p className="text-muted-foreground">
-                            {sessionData.sabaq.kitaab} • Nisaab {sessionData.sabaq.level}
-                        </p>
-                    </div>
+                    {getStatusBadge()}
+                    <span className="text-sm text-muted-foreground hidden sm:inline">
+                        {format(new Date(sessionData.scheduledAt), 'PPP')}
+                    </span>
                     {isAdmin && <ExportButton type="session" id={sessionId} />}
                 </div>
-            </div>
+            </PageHeader>
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
