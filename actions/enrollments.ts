@@ -8,6 +8,7 @@ import { processEmailQueue } from "./email-queue";
 import { generateEnrollmentId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 import { createNotification } from "@/actions/notifications";
+import { cache } from "@/lib/cache";
 
 export async function createEnrollmentRequest(
   sabaqId: string,
@@ -81,6 +82,9 @@ export async function createEnrollmentRequest(
       },
     });
 
+    await cache.del(`enrollments:sabaq:${sabaqId}`);
+    await cache.del(`enrollments:user:${userId}`);
+
     revalidatePath("/dashboard/enrollments");
     revalidatePath("/");
 
@@ -135,6 +139,9 @@ export async function createPublicEnrollmentRequest(
         status: "PENDING",
       },
     });
+
+    await cache.del(`enrollments:sabaq:${sabaqId}`);
+    await cache.del(`enrollments:user:${user.id}`);
 
     return { success: true, enrollment };
   } catch (error: any) {
@@ -207,6 +214,12 @@ export async function getEnrollmentsBySabaq(sabaqId: string) {
       }
     }
 
+    const cacheKey = `enrollments:sabaq:${sabaqId}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const enrollments = await prisma.enrollment.findMany({
       where: { sabaqId },
       include: {
@@ -223,7 +236,9 @@ export async function getEnrollmentsBySabaq(sabaqId: string) {
       orderBy: { requestedAt: "desc" },
     });
 
-    return { success: true, enrollments };
+    const result = { success: true, enrollments };
+    await cache.set(cacheKey, result, 120); // Cache for 2 minutes
+    return result;
   } catch (error: any) {
     console.error("Failed to fetch enrollments:", error);
     return { success: false, error: "Failed to fetch enrollments" };
@@ -235,6 +250,12 @@ export async function getMyEnrollments() {
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: "Unauthorized" };
+    }
+
+    const cacheKey = `enrollments:user:${session.user.id}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
     }
 
     const enrollments = await prisma.enrollment.findMany({
@@ -257,7 +278,9 @@ export async function getMyEnrollments() {
       orderBy: { requestedAt: "desc" },
     });
 
-    return { success: true, enrollments };
+    const result = { success: true, enrollments };
+    await cache.set(cacheKey, result, 120); // Cache for 2 minutes
+    return result;
   } catch (error: any) {
     console.error("Failed to fetch my enrollments:", error);
     return { success: false, error: "Failed to fetch enrollments" };
@@ -375,6 +398,10 @@ export async function approveEnrollment(enrollmentId: string) {
       data: { sabaqId: enrollment.sabaqId },
     });
 
+    await cache.del(`enrollments:sabaq:${enrollment.sabaqId}`);
+    await cache.del(`enrollments:user:${enrollment.userId}`);
+    await cache.del(`user:profile:${enrollment.userId}`);
+
     revalidatePath(`/dashboard/sabaqs/${enrollment.sabaqId}`);
     return { success: true, enrollment };
   } catch (error: any) {
@@ -471,6 +498,10 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
       data: { sabaqId: enrollment.sabaqId },
     });
 
+    await cache.del(`enrollments:sabaq:${enrollment.sabaqId}`);
+    await cache.del(`enrollments:user:${enrollment.userId}`);
+    await cache.del(`user:profile:${enrollment.userId}`);
+
     revalidatePath(`/dashboard/sabaqs/${enrollment.sabaqId}`);
     return { success: true, enrollment };
   } catch (error: any) {
@@ -541,6 +572,13 @@ export async function bulkApproveEnrollments(enrollmentIds: string[]) {
         message: `Your enrollment for ${enrollment.sabaq.name} has been approved.`,
         data: { sabaqId: enrollment.sabaqId },
       });
+
+      await cache.del(`enrollments:user:${enrollment.userId}`);
+      await cache.del(`user:profile:${enrollment.userId}`);
+    }
+
+    if (enrollments.length > 0) {
+      await cache.del(`enrollments:sabaq:${enrollments[0].sabaqId}`);
     }
 
     // Trigger processing immediately
@@ -623,6 +661,13 @@ export async function bulkRejectEnrollments(
         message: `Your enrollment for ${enrollment.sabaq.name} was rejected: ${reason}`,
         data: { sabaqId: enrollment.sabaqId },
       });
+
+      await cache.del(`enrollments:user:${enrollment.userId}`);
+      await cache.del(`user:profile:${enrollment.userId}`);
+    }
+
+    if (enrollments.length > 0) {
+      await cache.del(`enrollments:sabaq:${enrollments[0].sabaqId}`);
     }
 
     // Trigger processing immediately
@@ -789,6 +834,12 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
           data: { enrollmentCount: { increment: 1 } },
         });
       });
+
+      await cache.del(`enrollments:sabaq:${sabaqId}`);
+      for (const user of usersToEnroll) {
+        await cache.del(`enrollments:user:${user.id}`);
+        await cache.del(`user:profile:${user.id}`);
+      }
 
       results.enrolled = usersToEnroll.map((u) => ({
         itsNumber: u.itsNumber,

@@ -7,15 +7,27 @@ import { Role } from "@prisma/client";
 type Resource = keyof typeof permissionsConfig.roles.SUPERADMIN;
 type Action = string;
 
+import { cache } from "@/lib/cache";
+
 export async function checkPermission(
   userId: string,
   resource: Resource,
   action: Action
 ): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, isActive: true },
-  });
+  const cacheKey = `rbac:user:${userId}`;
+  let user = await cache.get<{ role: string; isActive: boolean }>(cacheKey);
+
+  if (!user) {
+    const dbUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true, isActive: true },
+    });
+
+    if (dbUser) {
+      user = { role: dbUser.role, isActive: dbUser.isActive };
+      await cache.set(cacheKey, user, 300); // Cache for 5 minutes
+    }
+  }
 
   if (!user || !user.isActive) {
     return false;

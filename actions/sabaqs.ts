@@ -7,6 +7,7 @@ import { requirePermission } from "@/lib/rbac";
 import { SabaqSchema } from "@/schemas";
 import { queueEmail } from "./email-queue";
 import { z } from "zod";
+import { cache } from "@/lib/cache";
 
 export async function createSabaq(data: any) {
   try {
@@ -70,6 +71,7 @@ export async function createSabaq(data: any) {
       }
     }
 
+    await cache.invalidatePattern("sabaqs:*");
     revalidatePath("/dashboard/sabaqs");
     return { success: true, sabaq };
   } catch (error: any) {
@@ -116,6 +118,10 @@ export async function updateSabaq(id: string, data: any) {
       }
     }
 
+    await cache.invalidatePattern("sabaqs:*");
+    await cache.del(`sabaq:${id}`);
+    await cache.del(`sabaq:public:${id}`);
+
     revalidatePath("/dashboard/sabaqs");
     return { success: true, sabaq };
   } catch (error: any) {
@@ -156,6 +162,11 @@ export async function deleteSabaq(id: string) {
     await prisma.sabaq.delete({
       where: { id },
     });
+
+    await cache.invalidatePattern("sabaqs:*");
+    await cache.del(`sabaq:${id}`);
+    await cache.del(`sabaq:public:${id}`);
+
     revalidatePath("/dashboard/sabaqs");
     return { success: true };
   } catch (error: any) {
@@ -167,6 +178,12 @@ export async function getSabaqs() {
   try {
     const currentUser = await requirePermission("sabaqs", "read");
     const role = currentUser.role;
+
+    const cacheKey = `sabaqs:all:${role}:${currentUser.id}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
 
     let where: any = { isActive: true };
 
@@ -272,7 +289,10 @@ export async function getSabaqs() {
         : null,
     }));
 
-    return { success: true, sabaqs: serializedSabaqs };
+    const result = { success: true, sabaqs: serializedSabaqs };
+    await cache.set(cacheKey, result, 300); // Cache for 5 minutes
+
+    return result;
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to fetch sabaqs" };
   }
@@ -313,26 +333,35 @@ export async function getSabaqById(id: string) {
       }
     }
 
-    const sabaq = await prisma.sabaq.findUnique({
-      where: { id },
-      include: {
-        location: true,
-        janab: {
-          select: {
-            id: true,
-            name: true,
-            itsNumber: true,
+    const cacheKey = `sabaq:${id}`;
+    let sabaq = await cache.get<any>(cacheKey);
+
+    if (!sabaq) {
+      sabaq = await prisma.sabaq.findUnique({
+        where: { id },
+        include: {
+          location: true,
+          janab: {
+            select: {
+              id: true,
+              name: true,
+              itsNumber: true,
+            },
+          },
+          activeSession: true,
+          _count: {
+            select: {
+              enrollments: true,
+              sessions: true,
+            },
           },
         },
-        activeSession: true,
-        _count: {
-          select: {
-            enrollments: true,
-            sessions: true,
-          },
-        },
-      },
-    });
+      });
+
+      if (sabaq) {
+        await cache.set(cacheKey, sabaq, 300);
+      }
+    }
 
     if (!sabaq) return { success: false, error: "Sabaq not found" };
 
@@ -356,32 +385,41 @@ export async function getSabaqById(id: string) {
 
 export async function getPublicSabaqInfo(sabaqId: string) {
   try {
-    const sabaq = await prisma.sabaq.findUnique({
-      where: { id: sabaqId },
-      select: {
-        id: true,
-        name: true,
-        kitaab: true,
-        level: true,
-        description: true,
-        criteria: true,
-        enrollmentStartsAt: true,
-        enrollmentEndsAt: true,
-        allowLocationAttendance: true,
-        janab: {
-          select: {
-            name: true,
+    const cacheKey = `sabaq:public:${sabaqId}`;
+    let sabaq = await cache.get<any>(cacheKey);
+
+    if (!sabaq) {
+      sabaq = await prisma.sabaq.findUnique({
+        where: { id: sabaqId },
+        select: {
+          id: true,
+          name: true,
+          kitaab: true,
+          level: true,
+          description: true,
+          criteria: true,
+          enrollmentStartsAt: true,
+          enrollmentEndsAt: true,
+          allowLocationAttendance: true,
+          janab: {
+            select: {
+              name: true,
+            },
+          },
+          location: {
+            select: {
+              name: true,
+              latitude: true,
+              longitude: true,
+            },
           },
         },
-        location: {
-          select: {
-            name: true,
-            latitude: true,
-            longitude: true,
-          },
-        },
-      },
-    });
+      });
+
+      if (sabaq) {
+        await cache.set(cacheKey, sabaq, 300);
+      }
+    }
 
     if (!sabaq) {
       return { success: false, error: "Sabaq not found" };

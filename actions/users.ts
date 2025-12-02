@@ -250,6 +250,8 @@ export async function promoteUser(userId: string) {
     }
 
     await cache.invalidatePattern("users:*");
+    await cache.del(`user:profile:${userId}`);
+    await cache.del(`rbac:user:${userId}`);
     return { success: true, user: updatedUser };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to promote user" };
@@ -302,6 +304,8 @@ export async function demoteUser(userId: string) {
     }
 
     await cache.invalidatePattern("users:*");
+    await cache.del(`user:profile:${userId}`);
+    await cache.del(`rbac:user:${userId}`);
     return { success: true, user: updatedUser };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to demote user" };
@@ -341,6 +345,8 @@ export async function updateUser(userId: string, data: any) {
     });
 
     await cache.invalidatePattern("users:*");
+    await cache.del(`user:profile:${userId}`);
+    await cache.del(`rbac:user:${userId}`);
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message || "Failed to update user" };
@@ -514,6 +520,12 @@ export async function getUserProfile(userId: string) {
       };
     }
 
+    const cacheKey = `user:profile:${userId}`;
+    const cached = await cache.get<any>(cacheKey);
+    if (cached) {
+      return cached;
+    }
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: {
@@ -618,7 +630,7 @@ export async function getUserProfile(userId: string) {
       },
     });
 
-    return {
+    const result = {
       success: true,
       profile: {
         user,
@@ -626,6 +638,9 @@ export async function getUserProfile(userId: string) {
         recentActivity,
       },
     };
+
+    await cache.set(cacheKey, result, 180); // Cache for 3 minutes
+    return result;
   } catch (error: any) {
     return {
       success: false,
@@ -704,6 +719,9 @@ export async function updateUserProfile(
 
       await sendEmail(data.email, "Profile Updated Successfully", emailHtml);
     }
+
+    await cache.invalidatePattern("users:*");
+    await cache.del(`user:profile:${userId}`);
 
     return { success: true };
   } catch (error) {
