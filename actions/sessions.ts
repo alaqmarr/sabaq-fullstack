@@ -341,6 +341,68 @@ export async function endSession(id: string) {
       }
     }
 
+    // 4. Send Session Report to Admins
+    const totalStudents = enrollments.length;
+    const presentCount = attendances.filter((a) => !a.isLate).length;
+    const lateCount = attendances.filter((a) => a.isLate).length;
+    const absentCount = totalStudents - (presentCount + lateCount);
+    const attendanceRate =
+      totalStudents > 0
+        ? `${Math.round(((presentCount + lateCount) / totalStudents) * 100)}%`
+        : "0%";
+
+    // Get top students (present)
+    const topStudents = enrollments
+      .filter(
+        (e) =>
+          attendanceMap.has(e.user.id) && !attendanceMap.get(e.user.id)?.isLate
+      )
+      .slice(0, 5)
+      .map((e) => e.user.name || "Unknown");
+
+    // Get absentees
+    const lowAttendanceStudents = enrollments
+      .filter((e) => !attendanceMap.has(e.user.id))
+      .slice(0, 5)
+      .map((e) => e.user.name || "Unknown");
+
+    // Fetch admins
+    const sabaqAdmins = await prisma.sabaqAdmin.findMany({
+      where: { sabaqId: existingSession.sabaqId },
+      include: { user: { select: { email: true } } },
+    });
+
+    const superAdmins = await prisma.user.findMany({
+      where: { role: "SUPERADMIN" },
+      select: { email: true },
+    });
+
+    const adminEmails = [
+      ...sabaqAdmins.map((sa) => sa.user.email),
+      ...superAdmins.map((sa) => sa.email),
+    ].filter((email): email is string => !!email);
+
+    const uniqueAdminEmails = [...new Set(adminEmails)];
+
+    for (const email of uniqueAdminEmails) {
+      await queueEmail(
+        email,
+        `Session Report: ${existingSession.sabaq.name}`,
+        "session-report",
+        {
+          sabaqName: existingSession.sabaq.name,
+          sessionDate: formatDateTime(existingSession.scheduledAt),
+          totalStudents,
+          presentCount,
+          absentCount,
+          lateCount,
+          attendanceRate,
+          topStudents,
+          lowAttendanceStudents,
+        }
+      );
+    }
+
     // Trigger processing immediately
     void processEmailQueue();
 

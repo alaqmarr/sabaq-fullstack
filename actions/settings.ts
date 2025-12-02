@@ -82,6 +82,10 @@ export async function sendAllTestEmails() {
       "profile-updated",
       "role-promoted",
       "role-demoted",
+      "admin-assigned",
+      "sync-success",
+      "sync-failed",
+      "session-report",
     ];
 
     // Dummy data for templates

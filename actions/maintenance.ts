@@ -5,7 +5,8 @@ import { adminDb } from "@/lib/firebase-admin";
 import { requirePermission } from "@/lib/rbac";
 import { cache } from "@/lib/cache";
 import { syncSessionAttendance } from "@/actions/sync";
-import { processEmailQueue } from "@/actions/email-queue";
+import { processEmailQueue, queueEmail } from "@/actions/email-queue";
+import { auth } from "@/auth";
 function isRedirectError(error: any) {
   return (
     error &&
@@ -83,9 +84,44 @@ export async function triggerManualSync() {
     // Update Last Sync Time
     await cache.set("system:last_sync", new Date().toISOString());
 
+    // Send Success Email
+    const session = await auth();
+    if (session?.user?.email) {
+      const startTime = Date.now(); // Approximate start
+      await queueEmail(
+        session.user.email,
+        "System Sync Successful",
+        "sync-success",
+        {
+          syncedCount,
+          duration: "N/A", // We didn't track duration precisely here, but could
+          time: new Date().toLocaleString(),
+        }
+      );
+    }
+
     return { success: true, message: `Synced ${syncedCount} sessions.` };
   } catch (error: any) {
     if (isRedirectError(error)) throw error;
+
+    // Send Failure Email
+    try {
+      const session = await auth();
+      if (session?.user?.email) {
+        await queueEmail(
+          session.user.email,
+          "System Sync Failed",
+          "sync-failed",
+          {
+            error: error.message,
+            time: new Date().toLocaleString(),
+          }
+        );
+      }
+    } catch (e) {
+      console.error("Failed to send sync failure email:", e);
+    }
+
     return { success: false, error: error.message };
   }
 }

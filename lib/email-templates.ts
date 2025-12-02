@@ -832,3 +832,197 @@ export const roleDemotedTemplate = (data: {
     content,
   });
 };
+
+// 15. Admin Assigned
+export const adminAssignedTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  role: string;
+  assignedBy: string;
+}) => {
+  const content = `
+    <div class="greeting">New Responsibility Assigned</div>
+    <div class="message">
+      You have been assigned as <strong>${data.role}</strong> for <strong>${
+    data.sabaqName
+  }</strong>.
+    </div>
+    
+    <table class="info-table">
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow("Role", data.role)}
+      ${createRow("Assigned By", data.assignedBy)}
+    </table>
+
+    <div class="highlight-box">
+      Please log in to the dashboard to view your new responsibilities.
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">Access Dashboard</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `New Assignment: ${data.sabaqName}`,
+    previewText: `You have been assigned as ${data.role} for ${data.sabaqName}.`,
+    content,
+  });
+};
+
+// 16. Sync Success
+export const syncSuccessTemplate = (data: {
+  syncedCount: number;
+  duration: string;
+  time: string;
+}) => {
+  const content = `
+    <div class="greeting">System Sync Successful</div>
+    <div class="message">
+      The automated system synchronization has completed successfully.
+    </div>
+    
+    <table class="info-table">
+      ${createRow("Status", `<span class="badge badge-success">Success</span>`)}
+      ${createRow("Records Synced", data.syncedCount)}
+      ${createRow("Duration", data.duration)}
+      ${createRow("Time", data.time)}
+    </table>
+  `;
+  return baseEmailTemplate({
+    title: "System Sync: Success",
+    previewText: `System sync completed successfully. ${data.syncedCount} records synced.`,
+    content,
+  });
+};
+
+// 17. Sync Failed
+export const syncFailedTemplate = (data: { error: string; time: string }) => {
+  const content = `
+    <div class="greeting" style="color: #c53030;">System Sync Failed</div>
+    <div class="message">
+      The automated system synchronization encountered an error.
+    </div>
+    
+    <table class="info-table" style="border-left: 4px solid #c53030;">
+      ${createRow("Status", `<span class="badge badge-error">Failed</span>`)}
+      ${createRow("Time", data.time)}
+    </table>
+
+    <div class="alert-box">
+      <strong>Error Details:</strong><br>
+      ${data.error}
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard/settings" class="button">Check System Health</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "System Sync: Failed",
+    previewText: `System sync failed. Error: ${data.error}`,
+    content,
+  });
+};
+
+// 18. Sabaq Role Assigned (Generic)
+export const sabaqRoleAssignedTemplate = (data: {
+  userName: string;
+  sabaqName: string;
+  role: string; // Admin, Manager, Attendance Incharge
+  assignedBy: string;
+}) => {
+  return adminAssignedTemplate(data);
+};
+
+// 19. Session Report (Comprehensive)
+export const sessionReportTemplate = (data: {
+  sabaqName: string;
+  sessionDate: string;
+  totalStudents: number;
+  presentCount: number;
+  absentCount: number;
+  lateCount: number;
+  attendanceRate: string;
+  topStudents: string[]; // List of names
+  lowAttendanceStudents: string[]; // List of names
+}) => {
+  const content = `
+    <div class="greeting">Session Report</div>
+    <div class="message">
+      Here is the comprehensive report for the session conducted on <strong>${
+        data.sessionDate
+      }</strong> for <strong>${data.sabaqName}</strong>.
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
+      <div style="text-align: center; width: 30%; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+        <div style="font-size: 24px; font-weight: 700; color: #166534;">${
+          data.presentCount
+        }</div>
+        <div style="font-size: 11px; text-transform: uppercase; color: #166534;">Present</div>
+      </div>
+      <div style="text-align: center; width: 30%; background: #fff1f2; padding: 10px; border-radius: 6px; border: 1px solid #fecdd3;">
+        <div style="font-size: 24px; font-weight: 700; color: #9f1239;">${
+          data.absentCount
+        }</div>
+        <div style="font-size: 11px; text-transform: uppercase; color: #9f1239;">Absent</div>
+      </div>
+      <div style="text-align: center; width: 30%; background: #fffbeb; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
+        <div style="font-size: 24px; font-weight: 700; color: #92400e;">${
+          data.lateCount
+        }</div>
+        <div style="font-size: 11px; text-transform: uppercase; color: #92400e;">Late</div>
+      </div>
+    </div>
+
+    <table class="info-table">
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow("Date", data.sessionDate)}
+      ${createRow("Total Students", data.totalStudents)}
+      ${createRow("Attendance Rate", data.attendanceRate)}
+    </table>
+
+    ${
+      data.topStudents.length > 0
+        ? `
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; font-weight: 600; color: #718096; text-transform: uppercase; margin-bottom: 5px;">Top Attendees (Present)</div>
+        <ul style="background-color: #f9fafb; border: 1px solid #e2e8f0; border-radius: 6px; padding: 10px 10px 10px 30px; margin: 0; font-size: 13px; color: #4a5568;">
+          ${data.topStudents.map((name) => `<li>${name}</li>`).join("")}
+        </ul>
+      </div>
+    `
+        : ""
+    }
+
+    ${
+      data.lowAttendanceStudents.length > 0
+        ? `
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; font-weight: 600; color: #c53030; text-transform: uppercase; margin-bottom: 5px;">Absentees (Action Required)</div>
+        <ul style="background-color: #fff5f5; border: 1px solid #feb2b2; border-radius: 6px; padding: 10px 10px 10px 30px; margin: 0; font-size: 13px; color: #c53030;">
+          ${data.lowAttendanceStudents
+            .map((name) => `<li>${name}</li>`)
+            .join("")}
+        </ul>
+      </div>
+    `
+        : ""
+    }
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard/reports" class="button">View Full Analytics</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `Session Report: ${data.sabaqName}`,
+    previewText: `Attendance Report for ${data.sabaqName} on ${data.sessionDate}. Rate: ${data.attendanceRate}`,
+    content,
+  });
+};

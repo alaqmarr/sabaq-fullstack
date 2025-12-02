@@ -16,6 +16,10 @@ import {
   profileUpdatedTemplate,
   rolePromotedTemplate,
   roleDemotedTemplate,
+  adminAssignedTemplate,
+  syncSuccessTemplate,
+  syncFailedTemplate,
+  sessionReportTemplate,
 } from "@/lib/email-templates";
 
 // Queue an email
@@ -114,6 +118,18 @@ export async function processEmailQueue() {
             break;
           case "role-demoted":
             html = roleDemotedTemplate(templateInfo.data);
+            break;
+          case "admin-assigned":
+            html = adminAssignedTemplate(templateInfo.data);
+            break;
+          case "sync-success":
+            html = syncSuccessTemplate(templateInfo.data);
+            break;
+          case "sync-failed":
+            html = syncFailedTemplate(templateInfo.data);
+            break;
+          case "session-report":
+            html = sessionReportTemplate(templateInfo.data);
             break;
           default:
             throw new Error(`Unknown template: ${templateInfo.templateName}`);
