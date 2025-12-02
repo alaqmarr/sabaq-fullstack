@@ -687,6 +687,7 @@ export const securityFlaggedAdminTemplate = (data: {
   userId: string;
   action: string;
   resource: string;
+  details?: any;
   time: string;
   ip?: string;
   userAgent?: string;
@@ -704,6 +705,17 @@ export const securityFlaggedAdminTemplate = (data: {
       )}
       ${createRow("Action", data.action)}
       ${createRow("Resource", data.resource)}
+      ${data.details?.url ? createRow("Target URL", data.details.url) : ""}
+      ${
+        data.details?.referrer
+          ? createRow("Referrer", data.details.referrer)
+          : ""
+      }
+      ${
+        data.details?.action
+          ? createRow("Attempted Action", data.details.action)
+          : ""
+      }
       ${createRow("Time", data.time)}
       ${data.ip ? createRow("IP", data.ip) : ""}
     </table>

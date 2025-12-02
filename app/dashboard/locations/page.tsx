@@ -26,18 +26,9 @@ export default async function LocationsPage({ searchParams }: { searchParams: Pr
 
     return (
         <div className="space-y-4 sm:space-y-6">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 lowercase">
-                        locations
-                    </h1>
-                    <p className="text-cred-label mt-2 lowercase">manage attendance locations</p>
-                </div>
-                <div className="flex items-center gap-2">
-                    <LocationHeader />
-                    <ViewToggle defaultView={currentView} />
-                </div>
-            </div>
+            <LocationHeader>
+                <ViewToggle defaultView={currentView} />
+            </LocationHeader>
 
             <LocationsClientWrapper locations={locations} currentView={currentView} />
         </div>

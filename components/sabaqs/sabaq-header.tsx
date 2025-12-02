@@ -4,23 +4,35 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { SabaqDialog } from './sabaq-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 interface SabaqHeaderProps {
     locations: any[];
     users: any[];
     defaultOpen?: boolean;
+    children?: React.ReactNode;
 }
 
-export function SabaqHeader({ locations, users, defaultOpen = false }: SabaqHeaderProps) {
+export function SabaqHeader({ locations, users, defaultOpen = false, children }: SabaqHeaderProps) {
     const [open, setOpen] = useState(defaultOpen);
 
     return (
         <>
-            <Button onClick={() => setOpen(true)} size="sm" className="sm:h-10">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Create Sabaq</span>
-                <span className="inline sm:hidden">Create</span>
-            </Button>
+            <PageHeader
+                title="sabaqs"
+                description="manage sabaq programs"
+                actions={[
+                    {
+                        label: "Create Sabaq",
+                        mobileLabel: "Create",
+                        icon: Plus,
+                        onClick: () => setOpen(true),
+                        permission: { resource: "sabaqs", action: "create" }
+                    }
+                ]}
+            >
+                {children}
+            </PageHeader>
             <SabaqDialog locations={locations} users={users} open={open} onOpenChange={setOpen} />
         </>
     );

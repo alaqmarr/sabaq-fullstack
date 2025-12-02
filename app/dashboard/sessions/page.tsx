@@ -7,6 +7,7 @@ import { SessionTable } from '@/components/sessions/session-table';
 import { ViewToggle } from '@/components/ui/view-toggle';
 import { requirePermission } from '@/lib/rbac';
 import { isRedirectError } from '@/lib/utils';
+import { PageHeader } from '@/components/ui/page-header';
 
 export const metadata = {
     title: "Sessions",
@@ -36,15 +37,12 @@ export default async function SessionsPage({ searchParams }: { searchParams: Pro
 
     return (
         <div className="space-y-6 sm:space-y-8">
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-                <div>
-                    <h1 className="text-3xl sm:text-4xl text-cred-heading bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400">
-                        Sessions
-                    </h1>
-                    <p className="text-cred-label mt-2">Manage sabaq sessions</p>
-                </div>
+            <PageHeader
+                title="Sessions"
+                description="Manage sabaq sessions"
+            >
                 <ViewToggle defaultView={currentView} />
-            </div>
+            </PageHeader>
 
             {currentView === 'grid' ? (
                 <SessionGrid sessions={sessions} sabaqs={sabaqs} />

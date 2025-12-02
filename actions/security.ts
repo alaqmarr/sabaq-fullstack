@@ -58,6 +58,7 @@ export async function logUnauthorizedAccess(resource: string, details?: any) {
         userId: user.id,
         action: "UNAUTHORIZED_ACCESS",
         resource,
+        details,
         time: new Date().toLocaleString(),
         ip,
         userAgent,

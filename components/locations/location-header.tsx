@@ -4,17 +4,33 @@ import { Button } from '@/components/ui/button';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { LocationDialog } from './location-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
-export function LocationHeader() {
+interface LocationHeaderProps {
+    children?: React.ReactNode;
+}
+
+export function LocationHeader({ children }: LocationHeaderProps) {
     const [open, setOpen] = useState(false);
 
     return (
         <>
-            <Button onClick={() => setOpen(true)} variant="frosted-green" size="sm" className="sm:h-10">
-                <Plus className="h-4 w-4 sm:mr-2" />
-                <span className="hidden sm:inline">Add Location</span>
-                <span className="inline sm:hidden">Add</span>
-            </Button>
+            <PageHeader
+                title="locations"
+                description="manage attendance locations"
+                actions={[
+                    {
+                        label: "Add Location",
+                        mobileLabel: "Add",
+                        icon: Plus,
+                        onClick: () => setOpen(true),
+                        variant: "frosted-green",
+                        permission: { resource: "locations", action: "create" }
+                    }
+                ]}
+            >
+                {children}
+            </PageHeader>
             <LocationDialog open={open} onOpenChange={setOpen} />
         </>
     );

@@ -33,7 +33,7 @@
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
       "scan": ["read"],
-      "logs": ["read"],
+      "logs": ["read", "delete"],
       "settings": ["manage"]
     },
     "ADMIN": {

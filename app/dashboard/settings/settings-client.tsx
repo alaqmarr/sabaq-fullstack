@@ -33,6 +33,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { PageHeader } from "@/components/ui/page-header";
 
 export function SettingsClient() {
     const [dbStatus, setDbStatus] = useState<{ status: string; latency?: number } | null>(null);
@@ -197,10 +198,10 @@ export function SettingsClient() {
 
     return (
         <div className="space-y-6 p-4 sm:p-6">
-            <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">System Settings</h1>
-                <p className="text-sm sm:text-base text-muted-foreground">Manage system configuration and diagnostics.</p>
-            </div>
+            <PageHeader
+                title="System Settings"
+                description="Manage system configuration and diagnostics."
+            />
 
             <div className="grid gap-6 lg:grid-cols-2">
                 {/* System Configuration */}

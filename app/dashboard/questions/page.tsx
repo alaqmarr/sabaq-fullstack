@@ -9,6 +9,7 @@ import { format } from 'date-fns';
 import { prisma } from '@/lib/prisma';
 import { Badge } from '@/components/ui/badge';
 import { getUserQuestions } from '@/actions/questions';
+import { PageHeader } from '@/components/ui/page-header';
 
 import { Prisma } from '@prisma/client';
 
@@ -95,12 +96,10 @@ export default async function QuestionsPage() {
 
     return (
         <div className="space-y-4 sm:space-y-6">
-            <div>
-                <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Questions</h1>
-                <p className="text-sm sm:text-base text-muted-foreground">
-                    {isAdmin ? 'Answer questions from sabaq sessions' : 'View and upvote questions from sessions'}
-                </p>
-            </div>
+            <PageHeader
+                title="Questions"
+                description={isAdmin ? 'Answer questions from sabaq sessions' : 'View and upvote questions from sessions'}
+            />
 
             <Tabs defaultValue={isAdmin ? "unanswered" : "my-questions"} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3">

@@ -8,6 +8,7 @@ import { BookOpen, Activity, Clock, CheckCircle, Calendar, Edit } from 'lucide-r
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ProfileEditDialog } from '@/components/users/profile-edit-dialog';
+import { PageHeader } from '@/components/ui/page-header';
 
 export default async function ProfilePage() {
     const session = await auth();
@@ -28,10 +29,9 @@ export default async function ProfilePage() {
 
     return (
         <div className="space-y-8 max-w-7xl mx-auto pb-10">
-            <div className="flex justify-between items-center">
-                <h1 className="text-3xl font-bold text-cred-heading">My Profile</h1>
+            <PageHeader title="My Profile">
                 <ProfileEditDialog user={user} />
-            </div>
+            </PageHeader>
 
             {/* Profile Header */}
             <IDCard user={user} />
