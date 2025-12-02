@@ -66,6 +66,8 @@ import { auth } from "@/auth";
 import { getAppConfig } from "@/actions/app-config";
 import { MaintenanceGuard } from "@/components/maintenance-guard";
 
+import NextTopLoader from 'nextjs-toploader';
+
 export default async function RootLayout({
   children,
 }: Readonly<{
@@ -77,6 +79,7 @@ export default async function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} ${arabicFont.variable} font-sans antialiased min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950`}>
+        <NextTopLoader color="#2563eb" showSpinner={false} />
         <SessionProvider session={session}>
           <SmoothScrollProvider>
             <MaintenanceGuard config={config} userRole={session?.user?.role}>
