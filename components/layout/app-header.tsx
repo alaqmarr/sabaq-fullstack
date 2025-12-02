@@ -9,9 +9,17 @@ import { SignOutButton } from '@/components/auth/signout-button';
 
 import Image from 'next/image';
 
+import { usePathname } from 'next/navigation';
+
 export function AppHeader() {
     const { data: session } = useSession();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const pathname = usePathname();
+
+    // Don't show this header on dashboard pages as they have their own layout
+    if (pathname?.startsWith('/dashboard')) {
+        return null;
+    }
 
     return (
         <header className="sticky top-0 z-50 w-full border-b border-border/40 glass-strong backdrop-blur-xl">

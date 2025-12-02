@@ -5,7 +5,7 @@ import { LoginForm } from '@/components/auth/login-form';
 export default async function LoginPage({
     searchParams,
 }: {
-    searchParams: Promise<{ setup?: string }>;
+    searchParams: Promise<{ setup?: string, callbackUrl?: string }>;
 }) {
     // Check if initial setup is required
     const setupCheck = await checkSetupRequired();
@@ -17,10 +17,11 @@ export default async function LoginPage({
 
     // Await searchParams as it's a Promise in Next.js 15+
     const params = await searchParams;
+    const callbackUrl = params.callbackUrl;
 
     return (
         <div className="flex items-center justify-center min-h-screen p-4 animate-fade-in">
-            <LoginForm setupComplete={params.setup === 'complete'} />
+            <LoginForm setupComplete={params.setup === 'complete'} callbackUrl={callbackUrl} />
         </div>
     );
 }

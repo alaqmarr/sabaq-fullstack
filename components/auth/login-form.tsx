@@ -31,7 +31,7 @@ function LoginButton() {
     );
 }
 
-export function LoginForm({ setupComplete }: { setupComplete?: boolean }) {
+export function LoginForm({ setupComplete, callbackUrl }: { setupComplete?: boolean; callbackUrl?: string }) {
     const [errorMessage, dispatch] = useFormState(authenticate, undefined);
     const [guestIts, setGuestIts] = useState('');
     const [isGuestLoading, setIsGuestLoading] = useState(false);
@@ -129,6 +129,7 @@ export function LoginForm({ setupComplete }: { setupComplete?: boolean }) {
 
                 {/* Login Form */}
                 <form action={dispatch} className="space-y-4">
+                    {callbackUrl && <input type="hidden" name="redirectTo" value={callbackUrl} />}
                     <div className="space-y-2">
                         <Label htmlFor="itsNumber" className="lowercase">its number</Label>
                         <Input

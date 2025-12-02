@@ -7,7 +7,7 @@ type Role = keyof typeof permissionsConfig.roles;
 type Resource = keyof typeof permissionsConfig.roles.SUPERADMIN;
 
 export function usePermissions() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const role = session?.user?.role as Role | undefined;
 
   const hasPermission = (resource: Resource, action: string): boolean => {
@@ -23,5 +23,5 @@ export function usePermissions() {
     return (resourcePermissions as string[]).includes(action);
   };
 
-  return { hasPermission, role, isLoading: !session };
+  return { hasPermission, role, isLoading: status === "loading" };
 }

@@ -127,15 +127,13 @@ const navItems = [
     },
 ];
 
-export function MobileNav() {
+export function MobileNav({ userRole }: { userRole: string }) {
     const pathname = usePathname();
-    const { data: session } = useSession();
-    const userRole = session?.user?.role;
     const [open, setOpen] = useState(false);
 
     if (!userRole) return null;
 
-    const filteredNavItems = navItems.filter((item) => item.roles.includes(userRole));
+    const filteredNavItems = navItems.filter((item) => item.roles.includes(userRole as Role));
 
     return (
         <Sheet open={open} onOpenChange={setOpen}>

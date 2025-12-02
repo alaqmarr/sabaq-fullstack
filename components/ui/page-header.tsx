@@ -3,7 +3,7 @@
 import { PermissionGuard } from "@/components/permission-guard";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { ReactNode } from "react";
+import { ReactNode, useEffect } from "react";
 import permissionsConfig from "@/config/permissions.json";
 import { usePermissions } from "@/hooks/use-permissions";
 
@@ -29,6 +29,16 @@ interface PageHeaderProps {
 export function PageHeader({ title, description, actions, children }: PageHeaderProps) {
     const { isLoading } = usePermissions();
 
+    // Auto-refresh if stuck on initializing
+    useEffect(() => {
+        if (isLoading) {
+            const timer = setTimeout(() => {
+                window.location.reload();
+            }, 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [isLoading]);
+
     return (
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <div>
@@ -37,8 +47,8 @@ export function PageHeader({ title, description, actions, children }: PageHeader
                         {title}
                     </h1>
                     <div className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border flex items-center gap-1.5 ${isLoading
-                            ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 animate-pulse"
-                            : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
+                        ? "bg-yellow-500/10 text-yellow-600 border-yellow-500/20 animate-pulse"
+                        : "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
                         }`}>
                         <div className={`w-1.5 h-1.5 rounded-full ${isLoading ? "bg-yellow-500" : "bg-emerald-500 animate-pulse"
                             }`} />

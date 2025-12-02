@@ -122,17 +122,15 @@ const navItems = [
     },
 ];
 
-export function DashboardNav() {
+export function DashboardNav({ userRole }: { userRole: string }) {
     const pathname = usePathname();
-    const { data: session } = useSession();
-    const userRole = session?.user?.role;
 
     if (!userRole) return null;
 
     return (
         <nav className="grid items-start gap-1">
             {navItems.map((item, index) => {
-                if (!item.roles.includes(userRole)) return null;
+                if (!item.roles.includes(userRole as Role)) return null;
 
                 const Icon = item.icon;
                 const isActive = pathname === item.href;

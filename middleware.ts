@@ -18,11 +18,17 @@ export default auth((req) => {
 
       // If admin is not verified and tries to access dashboard (except verify page), redirect to verify
       if (!adminSession && !isVerifyPage) {
-        return NextResponse.redirect(new URL("/dashboard/verify", req.nextUrl));
+        const verifyUrl = new URL("/dashboard/verify", req.nextUrl);
+        verifyUrl.searchParams.set("callbackUrl", req.nextUrl.pathname);
+        return NextResponse.redirect(verifyUrl);
       }
 
       // If admin is already verified and tries to access verify page, redirect to dashboard
       if (adminSession && isVerifyPage) {
+        const callbackUrl = req.nextUrl.searchParams.get("callbackUrl");
+        if (callbackUrl) {
+          return NextResponse.redirect(new URL(callbackUrl, req.nextUrl));
+        }
         return NextResponse.redirect(new URL("/dashboard", req.nextUrl));
       }
     }
