@@ -22,7 +22,14 @@
         "create",
         "read_self"
       ],
-      "questions": ["read", "delete", "answer", "create", "upvote"],
+      "questions": [
+        "read",
+        "delete",
+        "answer",
+        "create",
+        "upvote",
+        "read_self"
+      ],
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
       "scan": ["read"],
@@ -36,11 +43,10 @@
       "sessions": ["create", "read", "update", "delete", "start", "end"],
       "attendance": ["create", "read", "update", "verify"],
       "enrollments": ["read", "approve", "reject", "bulk_enroll"],
-      "questions": ["read", "answer"],
+      "questions": ["read", "answer", "read_self"],
       "analytics": ["read", "export"],
       "emails": ["read", "send"],
-      "scan": ["read"],
-      "settings": ["manage"]
+      "scan": ["read"]
     },
     "MANAGER": {
       "users": [],
@@ -49,7 +55,7 @@
       "sessions": ["read"],
       "attendance": ["read"],
       "enrollments": ["read"],
-      "questions": ["read"],
+      "questions": ["read", "read_self"],
       "analytics": ["read", "export"],
       "emails": [],
       "scan": ["read"]
@@ -61,7 +67,7 @@
       "sessions": ["read"],
       "attendance": ["create", "read", "verify"],
       "enrollments": [],
-      "questions": [],
+      "questions": ["read_self"],
       "analytics": [],
       "emails": [],
       "scan": ["read"]
@@ -73,7 +79,7 @@
       "sessions": ["read"],
       "attendance": ["read"],
       "enrollments": ["read", "approve", "reject", "bulk_enroll"],
-      "questions": ["read"],
+      "questions": ["read", "read_self"],
       "analytics": ["read", "export"],
       "emails": [],
       "scan": ["read"]
@@ -85,7 +91,7 @@
       "sessions": ["read"],
       "attendance": ["read_self", "mark_self"],
       "enrollments": ["create", "read_self"],
-      "questions": ["create", "read", "upvote"],
+      "questions": ["create", "read", "upvote", "read_self"],
       "analytics": [],
       "emails": [],
       "scan": []
