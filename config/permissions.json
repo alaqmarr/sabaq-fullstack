@@ -1,7 +1,15 @@
 {
   "roles": {
     "SUPERADMIN": {
-      "users": ["create", "read", "update", "delete", "manage_roles"],
+      "users": [
+        "create",
+        "read",
+        "update",
+        "delete",
+        "manage_roles",
+        "promote",
+        "demote"
+      ],
       "locations": ["create", "read", "update", "delete"],
       "sabaqs": ["create", "read", "update", "delete", "assign_admin"],
       "sessions": ["create", "read", "update", "delete", "start", "end"],
