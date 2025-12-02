@@ -703,8 +703,6 @@ export async function getActiveSessions() {
     });
 
     const result = { success: true, sessions };
-    await cache.set(cacheKey, result, 60); // Cache for 1 minute
-
     return result;
   } catch (error: any) {
     return {
@@ -831,5 +829,49 @@ export async function getPublicSessionInfo(sessionId: string) {
   } catch (error: any) {
     console.error("Failed to fetch public session info:", error);
     return { success: false, error: "Failed to fetch session info" };
+  }
+}
+
+export async function getSessionUsers(sessionId: string) {
+  try {
+    await requirePermission("sessions", "read");
+
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { sabaqId: true },
+    });
+
+    if (!session) {
+      return { success: false, error: "Session not found" };
+    }
+
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        sabaqId: session.sabaqId,
+        status: "APPROVED",
+      },
+      select: {
+        user: {
+          select: {
+            id: true,
+            itsNumber: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    const users = enrollments.map((e) => ({
+      id: e.user.id,
+      itsNumber: e.user.itsNumber,
+      name: e.user.name,
+    }));
+
+    return { success: true, users };
+  } catch (error: any) {
+    return {
+      success: false,
+      error: error.message || "Failed to fetch session users",
+    };
   }
 }

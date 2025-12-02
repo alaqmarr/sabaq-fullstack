@@ -141,6 +141,17 @@ export function QRScanner({ onScan, onError, scanResult, onClearResult }: QRScan
         <div className="space-y-4">
             {/* Scanner Container */}
             <div className="relative w-full aspect-square max-w-[400px] mx-auto bg-black rounded-2xl overflow-hidden shadow-2xl ring-1 ring-white/10">
+                <style jsx global>{`
+                    #qr-reader video {
+                        object-fit: cover !important;
+                        width: 100% !important;
+                        height: 100% !important;
+                        border-radius: 1rem !important;
+                    }
+                    #qr-reader {
+                        border: none !important;
+                    }
+                `}</style>
                 <div id={qrCodeRegionId} className="w-full h-full" />
 
                 {/* Scanning Overlay (Animation) */}

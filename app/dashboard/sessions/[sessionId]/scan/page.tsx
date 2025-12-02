@@ -29,7 +29,7 @@ export default async function SessionScanPage({ params }: { params: Promise<{ se
     const sessionData = sessionResult.session;
 
     return (
-        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6 max-w-4xl mx-auto">
+        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6 max-w-7xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
                 <Link href={`/dashboard/sessions/${sessionId}`}>
                     <Button variant="ghost" size="sm">

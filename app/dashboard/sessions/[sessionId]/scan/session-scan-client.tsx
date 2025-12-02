@@ -2,132 +2,202 @@
 
 import { useState, useEffect } from 'react';
 import { QRScanner } from '@/components/attendance/qr-scanner';
-import { markAttendanceManual } from '@/actions/attendance';
-import { lookupUserByITS } from '@/actions/users';
+import { markAttendanceManual, getSessionAttendance } from '@/actions/attendance';
+import { getSessionUsers } from '@/actions/sessions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, UserCheck, Loader2 } from 'lucide-react';
+import { Search, UserCheck, Loader2, Keyboard, CheckCircle, XCircle, AlertTriangle, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { database } from '@/lib/firebase';
+import { ref, onValue, off } from 'firebase/database';
+import { format } from 'date-fns';
+import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { playSuccessSound, playErrorSound } from '@/lib/sounds';
 
 interface SessionScanClientProps {
     sessionId: string;
     sessionName: string;
 }
 
+interface AttendanceRecord {
+    id: string;
+    userName: string;
+    itsNumber: string;
+    markedAt: number;
+    isLate: boolean;
+    markerName?: string;
+    error?: string;
+    pending?: boolean;
+}
+
 export function SessionScanClient({ sessionId, sessionName }: SessionScanClientProps) {
     const [processing, setProcessing] = useState(false);
     const [scanResult, setScanResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
-
-    // Manual Entry State
     const [manualIts, setManualIts] = useState('');
-    const [lookedUpUser, setLookedUpUser] = useState<{ id: string; name: string; itsNumber: string } | null>(null);
-    const [isLookingUp, setIsLookingUp] = useState(false);
+    const [liveAttendance, setLiveAttendance] = useState<AttendanceRecord[]>([]);
+    const [sessionUsers, setSessionUsers] = useState<Map<string, string>>(new Map());
+    const [highlightedId, setHighlightedId] = useState<string | null>(null);
+    const [matchedUserName, setMatchedUserName] = useState<string | null>(null);
 
-    const handleScan = async (decodedText: string) => {
+    // Load Session Users and Initial Attendance
+    useEffect(() => {
+        const loadData = async () => {
+            // 1. Load Users
+            const usersRes = await getSessionUsers(sessionId);
+            if (usersRes.success && usersRes.users) {
+                const userMap = new Map<string, string>();
+                usersRes.users.forEach((u: any) => userMap.set(u.itsNumber, u.name));
+                setSessionUsers(userMap);
+            }
+
+            // 2. Load Initial Attendance
+            const attendanceRes = await getSessionAttendance(sessionId);
+            if (attendanceRes.success && attendanceRes.attendances) {
+                const mapped: AttendanceRecord[] = attendanceRes.attendances.map((a: any) => ({
+                    id: a.id,
+                    userName: a.user.name,
+                    itsNumber: a.user.itsNumber,
+                    markedAt: new Date(a.markedAt).getTime(),
+                    isLate: a.isLate,
+                    markerName: a.marker?.name,
+                }));
+                setLiveAttendance(mapped);
+            }
+        };
+        loadData();
+    }, [sessionId]);
+
+    // Firebase Listener
+    useEffect(() => {
+        const attendanceRef = ref(database, `sessions/${sessionId}/attendance`);
+
+        const unsubscribe = onValue(attendanceRef, (snapshot) => {
+            if (snapshot.exists()) {
+                const data = snapshot.val();
+                const firebaseRecords: AttendanceRecord[] = Object.values(data);
+
+                setLiveAttendance(prev => {
+                    const currentMap = new Map(prev.map(r => [r.id, r]));
+
+                    firebaseRecords.forEach(r => {
+                        currentMap.set(r.id, { ...r, pending: false });
+                    });
+
+                    const merged = Array.from(currentMap.values());
+                    merged.sort((a, b) => b.markedAt - a.markedAt);
+                    return merged;
+                });
+            }
+        });
+
+        return () => off(attendanceRef);
+    }, [sessionId]);
+
+    // Clear highlight after 2 seconds
+    useEffect(() => {
+        if (highlightedId) {
+            const timer = setTimeout(() => setHighlightedId(null), 2000);
+            return () => clearTimeout(timer);
+        }
+    }, [highlightedId]);
+
+    const processAttendance = async (its: string) => {
         if (processing) return;
 
-        // Basic validation: ITS number should be 8 digits
-        if (!/^\d{8}$/.test(decodedText)) {
+        // Basic validation
+        if (!/^\d{8}$/.test(its)) {
             setScanResult({ type: 'error', message: 'Invalid ITS: Must be 8 digits' });
+            playErrorSound();
+            setManualIts('');
+            setMatchedUserName(null);
+            return;
+        }
+
+        // Check enrollment (Client-side validation)
+        if (sessionUsers.size > 0 && !sessionUsers.has(its)) {
+            setScanResult({ type: 'error', message: 'User not enrolled in this Sabaq' });
+            playErrorSound();
+            setManualIts('');
+            setMatchedUserName(null);
+            return;
+        }
+
+        // Smart Duplicate Check
+        const existingRecord = liveAttendance.find(r => r.itsNumber === its && !r.error && !r.pending);
+        if (existingRecord) {
+            setScanResult({ type: 'error', message: 'Already marked!' });
+            playErrorSound();
+            toast.info(`${existingRecord.userName} is already marked.`);
+            setHighlightedId(existingRecord.id);
+            setManualIts('');
+            setMatchedUserName(null);
+
+            const element = document.getElementById(`record-${existingRecord.id}`);
+            if (element) {
+                element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
             return;
         }
 
         setProcessing(true);
+        setManualIts(''); // Clear immediately
+        setMatchedUserName(null);
+
+        // Optimistic Update
+        const tempId = `temp-${Date.now()}`;
+        const userName = sessionUsers.get(its) || "Unknown User";
+
+        const optimisticRecord: AttendanceRecord = {
+            id: tempId,
+            userName: userName,
+            itsNumber: its,
+            markedAt: Date.now(),
+            isLate: false,
+            pending: true,
+            markerName: "You"
+        };
+
+        setLiveAttendance(prev => [optimisticRecord, ...prev]);
 
         try {
-            // decodedText is the User's ITS Number
-            const result = await markAttendanceManual(sessionId, decodedText);
+            const result = await markAttendanceManual(sessionId, its);
 
             if (result.success) {
-                setScanResult({ type: 'success', message: `Marked: ${decodedText}` });
-                toast.success(`Attendance marked for ${decodedText}`);
+                setScanResult({ type: 'success', message: `Marked: ${userName} (${its})` });
+                playSuccessSound();
             } else {
                 setScanResult({ type: 'error', message: result.error || 'Failed to mark' });
-                toast.error(result.error || 'Failed to mark');
+                playErrorSound();
+                setLiveAttendance(prev => prev.map(r =>
+                    r.id === tempId ? { ...r, error: result.error || 'Failed', pending: false } : r
+                ));
             }
         } catch (error) {
             setScanResult({ type: 'error', message: 'System Error' });
+            playErrorSound();
+            setLiveAttendance(prev => prev.map(r =>
+                r.id === tempId ? { ...r, error: 'System Error', pending: false } : r
+            ));
         } finally {
             setProcessing(false);
         }
     };
 
-    // Auto-lookup when ITS is 8 digits
-    useEffect(() => {
-        const lookup = async () => {
-            if (manualIts.length === 8) {
-                setIsLookingUp(true);
-                setLookedUpUser(null);
-                try {
-                    const result = await lookupUserByITS(manualIts);
-                    if (result.success && result.user) {
-                        setLookedUpUser(result.user);
-                    } else {
-                        // Don't show error immediately, maybe they are still typing? 
-                        // But it's exactly 8 digits.
-                        // Let's just not set the user.
-                    }
-                } catch (error) {
-                    console.error("Lookup failed", error);
-                } finally {
-                    setIsLookingUp(false);
-                }
-            } else {
-                setLookedUpUser(null);
-            }
-        };
+    const handleScan = async (data: string) => {
+        if (data) await processAttendance(data);
+    };
 
-        const debounce = setTimeout(lookup, 300);
-        return () => clearTimeout(debounce);
-    }, [manualIts]);
-
-    const handleManualMark = async () => {
-        if (!manualIts || manualIts.length !== 8) return;
-
-        setProcessing(true);
-        try {
-            const result = await markAttendanceManual(sessionId, manualIts);
-            if (result.success) {
-                toast.success(`Attendance marked for ${lookedUpUser?.name || manualIts}`);
-                setManualIts('');
-                setLookedUpUser(null);
-                setScanResult({ type: 'success', message: `Marked: ${lookedUpUser?.name || manualIts}` });
-            } else {
-                toast.error(result.error || 'Failed to mark');
-                setScanResult({ type: 'error', message: result.error || 'Failed to mark' });
-            }
-        } catch (error) {
-            toast.error('System error');
-        } finally {
-            setProcessing(false);
-        }
+    const handleManualSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (manualIts) processAttendance(manualIts);
     };
 
     return (
-        <div className="grid gap-6 md:grid-cols-2 max-w-4xl mx-auto">
-            {/* QR Scanner Section */}
-            <Card className="glass-premium border-0 h-fit">
-                <CardHeader>
-                    <CardTitle className="text-center text-cred-heading">Scan QR Code</CardTitle>
-                    <CardDescription className="text-center text-cred-label">
-                        Scanning for: {sessionName}
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="space-y-4">
-                        <QRScanner
-                            onScan={handleScan}
-                            scanResult={scanResult}
-                            onClearResult={() => setScanResult(null)}
-                            onError={(err) => console.log('Scanner error:', err)}
-                        />
-                    </div>
-                </CardContent>
-            </Card>
-
+        <div className="grid gap-6 lg:grid-cols-3 max-w-7xl mx-auto">
             {/* Manual Entry Section */}
-            <Card className="glass-premium border-0 h-fit">
+            <Card className="lg:col-span-1 h-fit glass-premium border-0 order-1 lg:order-none">
                 <CardHeader>
                     <CardTitle className="text-center text-cred-heading">Manual Entry</CardTitle>
                     <CardDescription className="text-center text-cred-label">
@@ -135,59 +205,116 @@ export function SessionScanClient({ sessionId, sessionName }: SessionScanClientP
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
-                    <div className="space-y-4">
+                    <form onSubmit={handleManualSubmit} className="space-y-4">
                         <div className="relative">
-                            <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            <Keyboard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder="Enter 8-digit ITS..."
                                 value={manualIts}
                                 onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 8);
                                     setManualIts(val);
+
+                                    if (val.length === 8) {
+                                        processAttendance(val);
+                                    }
                                 }}
-                                className="pl-9 text-lg tracking-widest font-mono"
+                                className="pl-9 text-lg tracking-widest font-mono bg-white/5 border-white/10"
                                 inputMode="numeric"
+                                maxLength={8}
+                                autoFocus
                             />
-                            {isLookingUp && (
-                                <div className="absolute right-3 top-3">
-                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                                </div>
-                            )}
                         </div>
+                    </form>
 
-                        {lookedUpUser ? (
-                            <div className="bg-primary/10 border border-primary/20 rounded-lg p-4 flex items-center gap-3 animate-in fade-in slide-in-from-top-2">
-                                <div className="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center shrink-0">
-                                    <UserCheck className="h-5 w-5 text-primary" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-sm truncate">{lookedUpUser.name}</p>
-                                    <p className="text-xs text-muted-foreground font-mono">{lookedUpUser.itsNumber}</p>
-                                </div>
-                            </div>
-                        ) : manualIts.length === 8 && !isLookingUp ? (
-                            <div className="bg-destructive/10 border border-destructive/20 rounded-lg p-4 text-center animate-in fade-in slide-in-from-top-2">
-                                <p className="text-sm text-destructive font-medium">User not found</p>
-                            </div>
-                        ) : null}
-
-                        <Button
-                            className="w-full"
-                            size="lg"
-                            disabled={!lookedUpUser || processing}
-                            onClick={handleManualMark}
-                        >
-                            {processing ? (
-                                <>
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                    Marking...
-                                </>
-                            ) : (
-                                'Mark Attendance'
-                            )}
-                        </Button>
-                    </div>
+                    {scanResult && (
+                        <div className={`p-3 rounded-md text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${scanResult.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'
+                            }`}>
+                            {scanResult.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                            <span>{scanResult.message}</span>
+                        </div>
+                    )}
                 </CardContent>
+            </Card>
+
+            {/* QR Scanner Section */}
+            <Card className="lg:col-span-1 h-fit glass-premium border-0 order-3 lg:order-none">
+                <CardHeader>
+                    <CardTitle className="text-center text-cred-heading">Scan QR Code</CardTitle>
+                    <CardDescription className="text-center text-cred-label">
+                        Scanning for: {sessionName}
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="flex justify-center">
+                    <QRScanner
+                        onScan={handleScan}
+                    />
+                </CardContent>
+            </Card>
+
+            {/* Live Feed Section */}
+            <Card className="lg:col-span-1 h-[400px] lg:h-[600px] flex flex-col glass-premium border-0 order-2 lg:order-none">
+                <CardHeader className="pb-2">
+                    <div className="flex items-center justify-between">
+                        <CardTitle className="text-cred-heading">Live Feed</CardTitle>
+                        <Badge variant="secondary" className="font-mono">
+                            {liveAttendance.filter(r => !r.error).length} Present
+                        </Badge>
+                    </div>
+                </CardHeader>
+                <ScrollArea className="flex-1 px-4 pb-4">
+                    <div className="space-y-3">
+                        {liveAttendance.length === 0 ? (
+                            <div className="text-center text-muted-foreground py-8 text-sm">
+                                No attendance marked yet
+                            </div>
+                        ) : (
+                            liveAttendance.map((record) => (
+                                <div
+                                    key={record.id}
+                                    id={`record-${record.id}`}
+                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-500 ${highlightedId === record.id
+                                        ? 'bg-blue-500/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
+                                        : record.error
+                                            ? 'bg-destructive/10 border-destructive/30'
+                                            : record.pending
+                                                ? 'bg-yellow-500/10 border-yellow-500/20'
+                                                : 'bg-white/5 border-white/10'
+                                        }`}
+                                >
+                                    <div className="flex items-center gap-3 min-w-0">
+                                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${record.error ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/20 text-blue-400'
+                                            }`}>
+                                            {record.error ? <AlertTriangle className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                                        </div>
+                                        <div className="min-w-0">
+                                            <p className="text-sm font-medium text-foreground truncate">
+                                                {record.userName}
+                                                {record.pending && <span className="text-xs text-muted-foreground ml-2">(Syncing...)</span>}
+                                            </p>
+                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                <span className="font-mono">{record.itsNumber}</span>
+                                                <span>•</span>
+                                                <span className="truncate">{record.markerName ? `By ${record.markerName}` : 'System'}</span>
+                                            </div>
+                                            {record.error && (
+                                                <p className="text-xs text-destructive mt-0.5 truncate">{record.error}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col items-end gap-1 shrink-0">
+                                        <span className="text-xs text-muted-foreground">
+                                            {format(record.markedAt, 'h:mm:ss a')}
+                                        </span>
+                                        {record.isLate && (
+                                            <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Late</Badge>
+                                        )}
+                                    </div>
+                                </div>
+                            ))
+                        )}
+                    </div>
+                </ScrollArea>
             </Card>
         </div>
     );
