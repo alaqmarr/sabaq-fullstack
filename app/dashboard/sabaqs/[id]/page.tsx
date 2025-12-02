@@ -126,12 +126,6 @@ export default async function SabaqDetailsPage({ params }: { params: Promise<{ i
                             </CardTitle>
                             <CardDescription>View and approve enrollment requests</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button variant="ghost" className="w-full justify-between group">
-                                View Enrollments
-                                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </CardContent>
                     </Card>
                 </Link>
 
@@ -144,12 +138,6 @@ export default async function SabaqDetailsPage({ params }: { params: Promise<{ i
                             </CardTitle>
                             <CardDescription>Create and manage sabaq sessions</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button variant="ghost" className="w-full justify-between group">
-                                View Sessions
-                                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </CardContent>
                     </Card>
                 </Link>
 
@@ -163,21 +151,9 @@ export default async function SabaqDetailsPage({ params }: { params: Promise<{ i
                                 </CardTitle>
                                 <CardDescription>Download reports and attendance sheets</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Button variant="ghost" className="w-full justify-between group">
-                                    Go to Export
-                                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                </Button>
-                            </CardContent>
                         </Card>
                     </Link>
                 )}
-            </div>
-
-            {/* Enrolled Users List */}
-            <div className="space-y-4">
-                <h3 className="text-xl font-semibold tracking-tight">Enrolled Users</h3>
-                <SabaqEnrollmentCards enrollments={enrollments || []} />
             </div>
         </div>
     );

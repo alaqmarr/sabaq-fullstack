@@ -185,20 +185,20 @@ export function SabaqCard({
                             <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
                         <span className="text-xs sm:text-sm truncate">
-                            {sabaq.description || "No description"}
+                            {sabaq.kitaab || "-"}
                         </span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 text-primary shrink-0">
                             <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
-                        <span className="text-xs sm:text-sm truncate">{locationName}</span>
+                        <span className="text-xs sm:text-sm truncate">{locationName || "-"}</span>
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                         <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 text-primary shrink-0">
                             <UserCheck className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                         </div>
-                        <span className="text-xs sm:text-sm truncate">{janabName}</span>
+                        <span className="text-xs sm:text-sm truncate">{janabName || "-"}</span>
                     </div>
                 </CardContent>
 

@@ -30,19 +30,23 @@ export function RegistrationLink({ sabaqId }: RegistrationLinkProps) {
 
     return (
         <div className="flex flex-col gap-2 p-4 bg-muted/50 rounded-lg border">
-            <h3 className="text-sm font-medium text-muted-foreground">
-                Public Registration Link
-            </h3>
+            <div className="flex items-center justify-between">
+                <h3 className="text-sm font-medium text-muted-foreground">
+                    Public Registration Link
+                </h3>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" size="icon" onClick={copyToClipboard}>
+                        {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                    </Button>
+                    <Link href={`/sabaqs/${sabaqId}/register`} target="_blank">
+                        <Button variant="outline" size="icon">
+                            <ExternalLink className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                </div>
+            </div>
             <div className="flex gap-2">
                 <Input value={url} readOnly className="font-mono text-sm" />
-                <Button variant="outline" size="icon" onClick={copyToClipboard}>
-                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-                </Button>
-                <Link href={`/sabaqs/${sabaqId}/register`} target="_blank">
-                    <Button variant="outline" size="icon">
-                        <ExternalLink className="h-4 w-4" />
-                    </Button>
-                </Link>
             </div>
         </div>
     );

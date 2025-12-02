@@ -45,7 +45,7 @@ export default async function MyEnrollmentsPage() {
 
                         return (
                             <Link key={enrollment.id} href={`/dashboard/sabaqs/${enrollment.sabaq.id}`}>
-                                <Card className="glass-card hover-lift transition-all cursor-pointer h-full">
+                                <Card className="glass-card hover-lift transition-all cursor-pointer h-full uppercase">
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1">
@@ -53,9 +53,6 @@ export default async function MyEnrollmentsPage() {
                                                     <BookOpen className="h-5 w-5 text-primary shrink-0" />
                                                     {enrollment.sabaq.name}
                                                 </CardTitle>
-                                                <p className="text-sm text-muted-foreground mt-1 lowercase">
-                                                    {enrollment.sabaq.kitaab} • nisaab {enrollment.sabaq.level}
-                                                </p>
                                             </div>
                                             <Badge variant="outline" className={`${statusConfig[status].color} flex items-center gap-1 lowercase shrink-0`}>
                                                 <StatusIcon className="h-3 w-3" />

@@ -79,32 +79,38 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     };
 
     return (
-        <div className="flex-1 space-y-8 p-8 pt-6">
+        <div className="flex-1 space-y-6 p-4 md:p-8 pt-6">
             {/* Header */}
-            <PageHeader
-                title={sessionData.sabaq.name}
-                description={`${sessionData.sabaq.kitaab} • Nisaab ${sessionData.sabaq.level}`}
-                actions={canManageSession ? [
-                    {
-                        label: "Export",
-                        href: `/dashboard/sessions/${sessionId}/export`,
-                        variant: "outline"
-                    }
-                ] : []}
-            >
-                <div className="flex items-center gap-2">
-                    <Link href="/dashboard/sessions">
-                        <Button variant="ghost" size="icon">
-                            <ArrowLeft className="h-4 w-4" />
-                        </Button>
-                    </Link>
-                    {getStatusBadge()}
-                    <span className="text-sm text-muted-foreground hidden sm:inline">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                        <Link href="/dashboard/sessions">
+                            <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                        <h1 className="text-2xl font-bold tracking-tight">{sessionData.sabaq.name}</h1>
+                        {getStatusBadge()}
+                    </div>
+                    <p className="text-muted-foreground pl-8 md:pl-0">
+                        {sessionData.sabaq.kitaab} • Nisaab {sessionData.sabaq.level}
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground pl-8 md:pl-0">
+                        <Calendar className="h-4 w-4" />
                         {format(new Date(sessionData.scheduledAt), 'PPP')}
-                    </span>
-                    {canManageSession && <ExportButton type="session" id={sessionId} />}
+                    </div>
                 </div>
-            </PageHeader>
+                <div className="flex items-center gap-2 pl-8 md:pl-0">
+                    {canManageSession && (
+                        <>
+                            <ExportButton type="session" id={sessionId} />
+                            <Link href={`/dashboard/sessions/${sessionId}/export`}>
+                                <Button variant="outline" size="sm">Export</Button>
+                            </Link>
+                        </>
+                    )}
+                </div>
+            </div>
 
             {/* Quick Actions */}
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

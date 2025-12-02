@@ -146,7 +146,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                     <div className="p-4 sm:p-5 bg-muted/30 lg:bg-transparent lg:border-l border-t lg:border-t-0 flex flex-wrap lg:flex-col gap-2 justify-end lg:w-48 pointer-events-auto">
                         {/* Admin Controls */}
                         {canStartStop && !hasStarted && (
-                            <Button size="sm" variant="frosted-green" onClick={handleStartSession} disabled={loading} className="w-full justify-start">
+                            <Button size="sm" variant="frosted-green" onClick={handleStartSession} disabled={loading} className="w-fit justify-start">
                                 <Play className="h-3.5 w-3.5 mr-2" /> Start
                             </Button>
                         )}
@@ -158,14 +158,14 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                                     router.refresh();
                                 }}
                             >
-                                <Button size="sm" variant="frosted-red" disabled={loading} className="w-full justify-start">
+                                <Button size="sm" variant="frosted-red" disabled={loading} className="w-fit justify-start">
                                     <Square className="h-3.5 w-3.5 mr-2" /> End
                                 </Button>
                             </EndSessionDialog>
                         )}
 
                         {canScan && isActive && (
-                            <Button size="sm" variant="frosted-teal" asChild className="w-full justify-start">
+                            <Button size="sm" variant="frosted-teal" asChild className="w-fit justify-start">
                                 <Link href={`/dashboard/sessions/${session.id}/scan`}>
                                     <QrCode className="h-3.5 w-3.5 mr-2" /> Take Attendance
                                 </Link>
@@ -175,11 +175,11 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                         {/* Attendance Controls (All Roles) */}
                         {isActive && !isAttended && (
                             <>
-                                <Button size="sm" variant="frosted-green" onClick={() => setShowQR(true)} className="w-full justify-start">
+                                <Button size="sm" variant="frosted-green" onClick={() => setShowQR(true)} className="w-fit justify-start">
                                     <QrCode className="h-3.5 w-3.5 mr-2" /> My QR
                                 </Button>
                                 {allowLocation && (
-                                    <Button size="sm" variant="frosted-green" onClick={handleLocationAttendance} disabled={loading} className="w-full justify-start">
+                                    <Button size="sm" variant="frosted-green" onClick={handleLocationAttendance} disabled={loading} className="w-fit justify-start">
                                         <Navigation className="h-3.5 w-3.5 mr-2" /> Mark Present
                                     </Button>
                                 )}
@@ -187,7 +187,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                         )}
 
                         {isAttended && (
-                            <Button size="sm" variant="frosted-amber" asChild className="w-full justify-start">
+                            <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
                                 <Link href={`/sessions/${session.id}/ask`}>
                                     <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
                                 </Link>
@@ -196,7 +196,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
 
                         {!isActive && !hasStarted && <AddToCalendarBtn session={session} />}
 
-                        <Button size="sm" variant="ghost" asChild className="w-full justify-start">
+                        <Button size="sm" variant="ghost" asChild className="w-fit justify-start">
                             <Link href={`/dashboard/sessions/${session.id}`}>
                                 <Eye className="h-3.5 w-3.5 mr-2" /> View Details
                             </Link>

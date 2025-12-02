@@ -237,10 +237,10 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
             <div className="max-w-2xl mx-auto space-y-6">
                 <Alert variant="destructive" className="border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400">
                     <AlertTriangle className="h-5 w-5" />
-                    <AlertTitle className="text-lg font-semibold ml-2">Session Not Active</AlertTitle>
-                    <AlertDescription className="mt-2 ml-7">
+                    <AlertTitle className="text-lg font-semibold ml-6">Session Not Active</AlertTitle>
+                    <AlertDescription className="mt-2">
                         <p>This session has not started yet. Attendance cannot be marked until the session is active.</p>
-                        <div className="mt-4 flex items-center gap-4">
+                        <div className="mt-4 flex flex-col items-start gap-4">
                             <Button
                                 variant="outline"
                                 size="sm"
@@ -256,7 +256,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                     <AlertDialogTrigger asChild>
                                         <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0">
                                             <Play className="mr-2 h-4 w-4 fill-current" />
-                                            Start Session Now
+                                            Start Session
                                         </Button>
                                     </AlertDialogTrigger>
                                     <AlertDialogContent>
@@ -267,7 +267,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                                 <ul className="list-disc list-inside mt-2 space-y-1">
                                                     <li>Attendance marking will be enabled</li>
                                                     <li>"Session Started" emails will be sent to all enrolled participants</li>
-                                                    <li>Realtime attendance sync will begin</li>
+                                                    <li>Realtime module sync will begin</li>
                                                 </ul>
                                             </AlertDialogDescription>
                                         </AlertDialogHeader>
@@ -277,7 +277,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                                 {startingSession ? (
                                                     <>
                                                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                                        Starting...
+                                                        powering up...
                                                     </>
                                                 ) : (
                                                     "Yes, Start Session"
@@ -305,7 +305,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                             </CardContent>
                         </Card>
                         <Card className="lg:col-span-1 h-[400px] glass-premium border-0">
-                            <CardHeader><CardTitle>Live Feed</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>Live</CardTitle></CardHeader>
                             <CardContent><div className="text-center text-muted-foreground mt-10">Waiting for session start...</div></CardContent>
                         </Card>
                     </div>
@@ -321,7 +321,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                 <CardHeader>
                     <CardTitle className="text-center text-cred-heading">Manual Entry</CardTitle>
                     <CardDescription className="text-center text-cred-label">
-                        Enter ITS number manually
+                        Enter ITS number
                     </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">

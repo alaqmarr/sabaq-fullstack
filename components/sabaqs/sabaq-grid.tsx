@@ -52,8 +52,8 @@ export function SabaqGrid({ sabaqs, locations, users }: SabaqGridProps) {
         <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                 {sabaqs.map((sabaq) => {
-                    const locationName = locations.find(l => l.id === sabaq.locationId)?.name || 'unknown location';
-                    const janabName = users.find(u => u.id === sabaq.janabId)?.name || 'unknown janab';
+                    const locationName = locations.find(l => l.id === sabaq.locationId)?.name || '-';
+                    const janabName = users.find(u => u.id === sabaq.janabId)?.name || '-';
 
                     return (
                         <div key={sabaq.id}>
