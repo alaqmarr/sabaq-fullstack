@@ -15,6 +15,21 @@ import { SabaqEnrollmentCards } from '@/components/sabaqs/sabaq-enrollment-cards
 
 import { requireSabaqAccess } from '@/lib/rbac';
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const { sabaq } = await getSabaqById(id);
+
+    if (!sabaq) {
+        return {
+            title: "Sabaq Not Found",
+        };
+    }
+
+    return {
+        title: `${sabaq.name} | Asbaaq Management System`,
+    };
+}
+
 export default async function SabaqDetailsPage({ params }: { params: Promise<{ id: string }> }) {
     const { id } = await params;
     const session = await auth();

@@ -11,6 +11,23 @@ import { ChevronLeft, QrCode } from 'lucide-react';
 import { AttendanceStats } from '@/components/attendance/attendance-stats';
 import { AttendanceList } from '@/components/attendance/attendance-list';
 import { PageHeader } from '@/components/ui/page-header';
+import { format } from 'date-fns';
+
+export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }) {
+    const { sessionId } = await params;
+    const result = await getSessionById(sessionId);
+
+    if (!result.success || !result.session) {
+        return {
+            title: "Session Not Found",
+        };
+    }
+
+    const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
+    return {
+        title: `${date} | ${result.session.sabaq.name}`,
+    };
+}
 
 export default async function SessionAttendancePage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;

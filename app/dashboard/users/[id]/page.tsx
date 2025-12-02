@@ -18,6 +18,21 @@ import { IDCard } from '@/components/users/id-card';
 import { requirePermission } from '@/lib/rbac';
 import { isRedirectError } from '@/lib/utils';
 
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
+    const { id } = await params;
+    const result = await getUserProfile(id);
+
+    if (!result.success || !result.profile) {
+        return {
+            title: "User Not Found",
+        };
+    }
+
+    return {
+        title: result.profile.user.name,
+    };
+}
+
 export default async function UserProfilePage({ params }: { params: Promise<{ id: string }> }) {
     const session = await auth();
     const { id } = await params;

@@ -7,9 +7,20 @@ import { BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 
-export const metadata = {
-    title: "Sabaq Registration",
-};
+export async function generateMetadata({ params }: { params: Promise<{ sabaqId: string }> }) {
+    const { sabaqId } = await params;
+    const result = await getPublicSabaqInfo(sabaqId);
+
+    if (!result.success || !result.sabaq) {
+        return {
+            title: "Sabaq Not Found",
+        };
+    }
+
+    return {
+        title: `${result.sabaq.name} | Nisaab ${result.sabaq.level}`,
+    };
+}
 
 export default async function PublicRegistrationPage({ params }: { params: Promise<{ sabaqId: string }> }) {
     const { sabaqId } = await params;
