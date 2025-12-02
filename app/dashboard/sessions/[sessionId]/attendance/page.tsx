@@ -1,7 +1,7 @@
 
 import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
-import { requirePermission, requireSessionAccess } from '@/lib/rbac';
+import { requirePermission, requireSessionAccess, checkPermission } from '@/lib/rbac';
 import { isRedirectError } from '@/lib/utils';
 import { getSessionById } from '@/actions/sessions';
 import { getSessionAttendance, getAttendanceStats } from '@/actions/attendance';
@@ -37,27 +37,29 @@ export default async function SessionAttendancePage({ params }: { params: Promis
     const attendances = attendanceResult.success ? attendanceResult.attendances : [];
     const stats = statsResult.success ? statsResult.stats : null;
 
-    const isAdmin = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(session.user.role);
+    const canScan = await checkPermission(session.user.id, 'scan', 'read');
 
     return (
         <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6">
             <PageHeader
                 title="Attendance"
                 description={`Manage attendance for ${sessionData.sabaq.name}`}
-                actions={isAdmin ? [
-                    {
-                        label: "Take Attendance",
-                        icon: QrCode,
-                        href: `/dashboard/scan?sessionId=${sessionId}`,
-                        variant: "default"
-                    }
-                ] : []}
             >
-                <Link href={`/dashboard/sessions/${sessionId}`}>
-                    <Button variant="ghost" size="icon">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
+                <div className="flex items-center gap-2">
+                    <Link href={`/dashboard/sessions/${sessionId}`}>
+                        <Button variant="ghost" size="icon">
+                            <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                    </Link>
+                    {canScan && (
+                        <Link href={`/dashboard/sessions/${sessionId}/scan`}>
+                            <Button variant="default" size="sm" className="gap-2">
+                                <QrCode className="h-4 w-4" />
+                                <span className="hidden sm:inline">Take Attendance</span>
+                            </Button>
+                        </Link>
+                    )}
+                </div>
             </PageHeader>
 
             {stats && <AttendanceStats stats={stats} />}

@@ -195,7 +195,7 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                                         className="flex-1 glass-info border-0 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400"
                                         asChild
                                     >
-                                        <Link href={`/dashboard/sessions/${session.id}/attendance`}>
+                                        <Link href={`/dashboard/sessions/${session.id}/scan`}>
                                             <ClipboardCheck className="h-4 w-4 mr-2" /> Take Attendance
                                         </Link>
                                     </Button>

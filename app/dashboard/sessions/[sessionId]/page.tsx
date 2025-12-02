@@ -1,6 +1,6 @@
 import { auth } from '@/auth';
 import { redirect, notFound } from 'next/navigation';
-import { requirePermission, requireSessionAccess } from '@/lib/rbac';
+import { requirePermission, requireSessionAccess, checkPermission } from '@/lib/rbac';
 import { isRedirectError } from '@/lib/utils';
 import { getSessionById } from '@/actions/sessions';
 import { getAttendanceStats } from '@/actions/attendance';
@@ -19,7 +19,6 @@ import { PageHeader } from '@/components/ui/page-header';
 
 export default async function SessionDetailPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
-    // ... (rest of the function start)
     const session = await auth();
 
     if (!session?.user) redirect('/login');
@@ -44,7 +43,12 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     const stats = statsResult.success ? statsResult.stats : null;
     const questionStats = questionStatsResult.success ? questionStatsResult.stats : null;
 
-    const isAdmin = ['SUPERADMIN', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'JANAB'].includes(session.user.role);
+    // Check if user can update sessions (implies admin/manager rights for this session)
+    const canManageSession = await checkPermission(session.user.id, 'sessions', 'update');
+
+    // Also check if they can scan (for the scan button)
+    const canScan = await checkPermission(session.user.id, 'scan', 'read');
+
     const isActive = sessionData.isActive;
     const allowLocationAttendance = sessionData.sabaq.allowLocationAttendance;
 
@@ -61,20 +65,16 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
     return (
         <div className="flex-1 space-y-8 p-8 pt-6">
             {/* Header */}
-            {/* Header */}
             <PageHeader
                 title={sessionData.sabaq.name}
                 description={`${sessionData.sabaq.kitaab} • Nisaab ${sessionData.sabaq.level}`}
-                actions={isAdmin ? [
+                actions={canManageSession ? [
                     {
                         label: "Export",
-                        href: `/dashboard/sessions/${sessionId}/export`, // Assuming export route or similar, or just keep the component if it's complex
-                        // Actually ExportButton is a component, so I might need to keep it separate or adapt PageHeader to accept components.
-                        // PageHeader accepts children, so I can put ExportButton there.
-                        // But wait, the user wants PageHeader.
-                        // I will put ExportButton in children.
+                        href: `/dashboard/sessions/${sessionId}/export`,
+                        variant: "outline"
                     }
-                ].filter(Boolean) as any : []}
+                ] : []}
             >
                 <div className="flex items-center gap-2">
                     <Link href="/dashboard/sessions">
@@ -86,7 +86,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     <span className="text-sm text-muted-foreground hidden sm:inline">
                         {format(new Date(sessionData.scheduledAt), 'PPP')}
                     </span>
-                    {isAdmin && <ExportButton type="session" id={sessionId} />}
+                    {canManageSession && <ExportButton type="session" id={sessionId} />}
                 </div>
             </PageHeader>
 
@@ -99,7 +99,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                         isActive={sessionData.isActive}
                         isEnded={!!sessionData.endedAt}
                         hasStarted={!!sessionData.startedAt}
-                        isAdmin={isAdmin}
+                        isAdmin={canManageSession}
                     />
                 </div>
             </div>
@@ -177,8 +177,8 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     </Card>
                 </Link>
 
-                {isAdmin && (
-                    <Link href={`/dashboard/scan?sessionId=${sessionId}`}>
+                {canScan && (
+                    <Link href={`/dashboard/sessions/${sessionId}/scan`}>
                         <Card className="hover:bg-accent/50 transition-colors cursor-pointer h-full">
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">

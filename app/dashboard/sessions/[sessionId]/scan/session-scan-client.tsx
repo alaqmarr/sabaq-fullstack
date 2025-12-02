@@ -3,11 +3,11 @@
 import { useState, useEffect } from 'react';
 import { QRScanner } from '@/components/attendance/qr-scanner';
 import { markAttendanceManual, getSessionAttendance } from '@/actions/attendance';
-import { getSessionUsers } from '@/actions/sessions';
+import { getSessionUsers, startSession } from '@/actions/sessions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Search, UserCheck, Loader2, Keyboard, CheckCircle, XCircle, AlertTriangle, User } from 'lucide-react';
+import { Search, UserCheck, Loader2, Keyboard, CheckCircle, XCircle, AlertTriangle, User, Play, RefreshCw } from 'lucide-react';
 import { toast } from 'sonner';
 import { database } from '@/lib/firebase';
 import { ref, onValue, off } from 'firebase/database';
@@ -15,10 +15,25 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { playSuccessSound, playErrorSound } from '@/lib/sounds';
+import { useRouter } from 'next/navigation';
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface SessionScanClientProps {
     sessionId: string;
     sessionName: string;
+    isActive: boolean;
+    isAdmin: boolean;
 }
 
 interface AttendanceRecord {
@@ -32,7 +47,7 @@ interface AttendanceRecord {
     pending?: boolean;
 }
 
-export function SessionScanClient({ sessionId, sessionName }: SessionScanClientProps) {
+export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }: SessionScanClientProps) {
     const [processing, setProcessing] = useState(false);
     const [scanResult, setScanResult] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
     const [manualIts, setManualIts] = useState('');
@@ -40,9 +55,13 @@ export function SessionScanClient({ sessionId, sessionName }: SessionScanClientP
     const [sessionUsers, setSessionUsers] = useState<Map<string, string>>(new Map());
     const [highlightedId, setHighlightedId] = useState<string | null>(null);
     const [matchedUserName, setMatchedUserName] = useState<string | null>(null);
+    const [startingSession, setStartingSession] = useState(false);
+    const router = useRouter();
 
     // Load Session Users and Initial Attendance
     useEffect(() => {
+        if (!isActive) return;
+
         const loadData = async () => {
             // 1. Load Users
             const usersRes = await getSessionUsers(sessionId);
@@ -67,10 +86,12 @@ export function SessionScanClient({ sessionId, sessionName }: SessionScanClientP
             }
         };
         loadData();
-    }, [sessionId]);
+    }, [sessionId, isActive]);
 
     // Firebase Listener
     useEffect(() => {
+        if (!isActive) return;
+
         const attendanceRef = ref(database, `sessions/${sessionId}/attendance`);
 
         const unsubscribe = onValue(attendanceRef, (snapshot) => {
@@ -93,7 +114,7 @@ export function SessionScanClient({ sessionId, sessionName }: SessionScanClientP
         });
 
         return () => off(attendanceRef);
-    }, [sessionId]);
+    }, [sessionId, isActive]);
 
     // Clear highlight after 2 seconds
     useEffect(() => {
@@ -193,6 +214,105 @@ export function SessionScanClient({ sessionId, sessionName }: SessionScanClientP
         e.preventDefault();
         if (manualIts) processAttendance(manualIts);
     };
+
+    const handleStartSession = async () => {
+        setStartingSession(true);
+        try {
+            const result = await startSession(sessionId);
+            if (result.success) {
+                toast.success("Session started successfully");
+                router.refresh();
+            } else {
+                toast.error(result.error || "Failed to start session");
+            }
+        } catch (error) {
+            toast.error("An error occurred");
+        } finally {
+            setStartingSession(false);
+        }
+    };
+
+    if (!isActive) {
+        return (
+            <div className="max-w-2xl mx-auto space-y-6">
+                <Alert variant="destructive" className="border-red-500/50 bg-red-500/10 text-red-600 dark:text-red-400">
+                    <AlertTriangle className="h-5 w-5" />
+                    <AlertTitle className="text-lg font-semibold ml-2">Session Not Active</AlertTitle>
+                    <AlertDescription className="mt-2 ml-7">
+                        <p>This session has not started yet. Attendance cannot be marked until the session is active.</p>
+                        <div className="mt-4 flex items-center gap-4">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => router.refresh()}
+                                className="border-red-200 hover:bg-red-100 hover:text-red-700 dark:border-red-800 dark:hover:bg-red-900/50"
+                            >
+                                <RefreshCw className="mr-2 h-4 w-4" />
+                                Check Status
+                            </Button>
+
+                            {isAdmin && (
+                                <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                        <Button size="sm" className="bg-red-600 hover:bg-red-700 text-white border-0">
+                                            <Play className="mr-2 h-4 w-4 fill-current" />
+                                            Start Session Now
+                                        </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                            <AlertDialogTitle>Start Session?</AlertDialogTitle>
+                                            <AlertDialogDescription>
+                                                This will make the session active immediately.
+                                                <ul className="list-disc list-inside mt-2 space-y-1">
+                                                    <li>Attendance marking will be enabled</li>
+                                                    <li>"Session Started" emails will be sent to all enrolled participants</li>
+                                                    <li>Realtime attendance sync will begin</li>
+                                                </ul>
+                                            </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                            <AlertDialogAction onClick={handleStartSession} disabled={startingSession}>
+                                                {startingSession ? (
+                                                    <>
+                                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                                        Starting...
+                                                    </>
+                                                ) : (
+                                                    "Yes, Start Session"
+                                                )}
+                                            </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                </AlertDialog>
+                            )}
+                        </div>
+                    </AlertDescription>
+                </Alert>
+
+                <div className="opacity-50 pointer-events-none filter blur-[2px] select-none">
+                    {/* Blurred preview of the scanner UI */}
+                    <div className="grid gap-6 lg:grid-cols-3">
+                        <Card className="lg:col-span-1 h-fit glass-premium border-0">
+                            <CardHeader><CardTitle>Manual Entry</CardTitle></CardHeader>
+                            <CardContent><Input placeholder="Disabled..." /></CardContent>
+                        </Card>
+                        <Card className="lg:col-span-1 h-fit glass-premium border-0">
+                            <CardHeader><CardTitle>Scan QR Code</CardTitle></CardHeader>
+                            <CardContent className="h-48 flex items-center justify-center bg-muted/20 rounded-md">
+                                <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+                            </CardContent>
+                        </Card>
+                        <Card className="lg:col-span-1 h-[400px] glass-premium border-0">
+                            <CardHeader><CardTitle>Live Feed</CardTitle></CardHeader>
+                            <CardContent><div className="text-center text-muted-foreground mt-10">Waiting for session start...</div></CardContent>
+                        </Card>
+                    </div>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="grid gap-6 lg:grid-cols-3 max-w-7xl mx-auto">
