@@ -1,5 +1,7 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
@@ -19,6 +21,7 @@ export function UserGrid({ users }: UserGridProps) {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState<string | null>(null);
+    const router = useRouter();
 
     const handlePromote = async (userId: string) => {
         if (!confirm('Are you sure you want to promote this user?')) return;
@@ -29,7 +32,8 @@ export function UserGrid({ users }: UserGridProps) {
             const result = await promoteUser(userId);
             if (result.success) {
                 toast.success(`User promoted to ${(result as any).newRole}`);
-                window.location.reload();
+                toast.success(`User promoted to ${(result as any).newRole}`);
+                router.refresh();
             } else {
                 toast.error(result.error || 'Failed to promote user');
             }
@@ -48,7 +52,8 @@ export function UserGrid({ users }: UserGridProps) {
             const result = await demoteUser(userId);
             if (result.success) {
                 toast.success(`User demoted to ${(result as any).newRole}`);
-                window.location.reload();
+                toast.success(`User demoted to ${(result as any).newRole}`);
+                router.refresh();
             } else {
                 toast.error(result.error || 'Failed to demote user');
             }

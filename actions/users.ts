@@ -208,7 +208,6 @@ export async function promoteUser(userId: string) {
     const roleHierarchy = [
       "MUMIN",
       "ATTENDANCE_INCHARGE",
-      "JANAB",
       "MANAGER",
       "ADMIN",
       "SUPERADMIN",
@@ -272,7 +271,6 @@ export async function demoteUser(userId: string) {
     const roleHierarchy = [
       "MUMIN",
       "ATTENDANCE_INCHARGE",
-      "JANAB",
       "MANAGER",
       "ADMIN",
       "SUPERADMIN",
