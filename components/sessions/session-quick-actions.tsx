@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { startSession, endSession, resumeSession } from "@/actions/sessions";
+import { startSession, resumeSession } from "@/actions/sessions";
 import { toast } from "sonner";
 import { Play, Square, RotateCcw, Loader2 } from "lucide-react";
 import {
@@ -17,10 +17,12 @@ import {
     AlertDialogTitle,
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { EndSessionDialog } from "./end-session-dialog";
 import { useRouter } from "next/navigation";
 
 interface SessionQuickActionsProps {
     sessionId: string;
+    sabaqName: string;
     isActive: boolean;
     isEnded: boolean;
     hasStarted: boolean;
@@ -29,6 +31,7 @@ interface SessionQuickActionsProps {
 
 export function SessionQuickActions({
     sessionId,
+    sabaqName,
     isActive,
     isEnded,
     hasStarted,
@@ -36,6 +39,7 @@ export function SessionQuickActions({
 }: SessionQuickActionsProps) {
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+
 
     if (!isAdmin) return null;
 
@@ -48,23 +52,6 @@ export function SessionQuickActions({
                 router.refresh();
             } else {
                 toast.error(result.error || "Failed to start session");
-            }
-        } catch (error) {
-            toast.error("Something went wrong");
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleEnd = async () => {
-        setLoading(true);
-        try {
-            const result = await endSession(sessionId);
-            if (result.success) {
-                toast.success("Session ended successfully");
-                router.refresh();
-            } else {
-                toast.error(result.error || "Failed to end session");
             }
         } catch (error) {
             toast.error("Something went wrong");
@@ -89,6 +76,10 @@ export function SessionQuickActions({
             setLoading(false);
         }
     };
+
+
+
+
 
     return (
         <Card>
@@ -126,39 +117,26 @@ export function SessionQuickActions({
                 )}
 
                 {isActive && (
-                    <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                            <Button
-                                variant="destructive"
-                                className="w-full sm:w-auto justify-start"
-                                disabled={loading}
-                            >
-                                {loading ? (
-                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Square className="mr-2 h-4 w-4 fill-current" />
-                                )}
-                                End Session
-                            </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                            <AlertDialogHeader>
-                                <AlertDialogTitle>End Session?</AlertDialogTitle>
-                                <AlertDialogDescription>
-                                    This will stop attendance marking. You can resume it later if needed.
-                                </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                <AlertDialogAction
-                                    onClick={handleEnd}
-                                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                >
-                                    End Session
-                                </AlertDialogAction>
-                            </AlertDialogFooter>
-                        </AlertDialogContent>
-                    </AlertDialog>
+                    <EndSessionDialog
+                        sessionId={sessionId}
+                        sabaqName={sabaqName}
+                        onSuccess={() => {
+                            router.refresh();
+                        }}
+                    >
+                        <Button
+                            variant="destructive"
+                            className="w-full sm:w-auto justify-start"
+                            disabled={loading}
+                        >
+                            {loading ? (
+                                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            ) : (
+                                <Square className="mr-2 h-4 w-4 fill-current" />
+                            )}
+                            End Session
+                        </Button>
+                    </EndSessionDialog>
                 )}
 
                 {isEnded && (
@@ -193,6 +171,8 @@ export function SessionQuickActions({
                         </AlertDialogContent>
                     </AlertDialog>
                 )}
+
+
             </CardContent>
         </Card>
     );

@@ -4,12 +4,16 @@ import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Edit, Trash, Play, StopCircle, Calendar, Clock, Users, BookOpen } from 'lucide-react';
+import { Edit, Trash, Play, StopCircle, Calendar, Clock, Users, BookOpen, ClipboardCheck, Eye, RotateCcw } from 'lucide-react';
 import { SessionDialog } from './session-dialog';
-import { deleteSession, startSession, endSession } from '@/actions/sessions';
+import { deleteSession, startSession } from '@/actions/sessions';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import Link from 'next/link';
+
+import { EndSessionDialog } from './end-session-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { useRouter } from 'next/navigation';
 
 interface SessionGridProps {
     sessions: any[];
@@ -17,21 +21,21 @@ interface SessionGridProps {
 }
 
 export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
+    const router = useRouter();
     const [editingSession, setEditingSession] = useState<any>(null);
+    const [endingSession, setEndingSession] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this session?')) {
-            setLoading(id);
-            const result = await deleteSession(id);
-            if (result.success) {
-                toast.success('Session deleted');
-            } else {
-                toast.error(result.error || 'Failed to delete session');
-            }
-            setLoading(null);
+        setLoading(id);
+        const result = await deleteSession(id);
+        if (result.success) {
+            toast.success('Session deleted');
+        } else {
+            toast.error(result.error || 'Failed to delete session');
         }
+        setLoading(null);
     };
 
     const handleStart = async (id: string) => {
@@ -39,24 +43,14 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
         const result = await startSession(id);
         if (result.success) {
             toast.success('Session started');
+            router.refresh();
         } else {
             toast.error(result.error || 'Failed to start session');
         }
         setLoading(null);
     };
 
-    const handleEnd = async (id: string) => {
-        if (confirm('Are you sure you want to end this session?')) {
-            setLoading(id);
-            const result = await endSession(id);
-            if (result.success) {
-                toast.success('Session ended');
-            } else {
-                toast.error(result.error || 'Failed to end session');
-            }
-            setLoading(null);
-        }
-    };
+
 
     const getStatusBadge = (session: any) => {
         if (session.isActive) {
@@ -158,19 +152,22 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                                     >
                                         <Edit className="h-4 w-4 mr-2" /> Edit
                                     </Button>
-                                    <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            e.preventDefault();
-                                            handleDelete(session.id);
-                                        }}
-                                        disabled={loading === session.id}
+                                    <ConfirmDialog
+                                        title="Delete Session"
+                                        description="Are you sure you want to delete this session? This action cannot be undone."
+                                        onConfirm={() => handleDelete(session.id)}
+                                        variant="destructive"
+                                        confirmText="Delete"
                                     >
-                                        <Trash className="h-4 w-4 mr-2" /> Delete
-                                    </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="flex-1 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            disabled={loading === session.id}
+                                        >
+                                            <Trash className="h-4 w-4 mr-2" /> Delete
+                                        </Button>
+                                    </ConfirmDialog>
                                 </div>
                             )}
 
@@ -191,46 +188,63 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                             )}
 
                             {session.isActive && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full glass-warning border-0 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        handleEnd(session.id);
-                                    }}
-                                    disabled={loading === session.id}
-                                >
-                                    <StopCircle className="h-4 w-4 mr-2" /> End Session
-                                </Button>
+                                <div className="flex gap-2 w-full">
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 glass-info border-0 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                                        asChild
+                                    >
+                                        <Link href={`/dashboard/sessions/${session.id}/attendance`}>
+                                            <ClipboardCheck className="h-4 w-4 mr-2" /> Take Attendance
+                                        </Link>
+                                    </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="flex-1 glass-warning border-0 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            e.preventDefault();
+                                            setEndingSession(session);
+                                        }}
+                                        disabled={loading === session.id}
+                                    >
+                                        <StopCircle className="h-4 w-4 mr-2" /> End
+                                    </Button>
+                                </div>
                             )}
 
                             {session.endedAt && (
-                                <Button
-                                    variant="outline"
-                                    size="sm"
-                                    className="w-full glass-info border-0 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400"
-                                    onClick={async (e) => {
-                                        e.stopPropagation();
-                                        e.preventDefault();
-                                        if (confirm('Are you sure you want to resume this session?')) {
-                                            setLoading(session.id);
-                                            const { resumeSession } = await import('@/actions/sessions');
-                                            const result = await resumeSession(session.id);
-                                            if (result.success) {
-                                                toast.success('Session resumed');
-                                            } else {
-                                                toast.error(result.error || 'Failed to resume session');
-                                            }
-                                            setLoading(null);
+                                <ConfirmDialog
+                                    title="Resume Session"
+                                    description="Are you sure you want to resume this session? This will allow attendance to be marked again."
+                                    onConfirm={async () => {
+                                        setLoading(session.id);
+                                        const { resumeSession } = await import('@/actions/sessions');
+                                        const result = await resumeSession(session.id);
+                                        if (result.success) {
+                                            toast.success('Session resumed');
+                                            router.refresh();
+                                        } else {
+                                            toast.error(result.error || 'Failed to resume session');
                                         }
+                                        setLoading(null);
                                     }}
-                                    disabled={loading === session.id}
+                                    confirmText="Resume"
                                 >
-                                    <Play className="h-4 w-4 mr-2" /> Resume Session
-                                </Button>
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
+                                        className="w-full glass-info border-0 hover:bg-blue-500/20 text-blue-700 dark:text-blue-400"
+                                        disabled={loading === session.id}
+                                    >
+                                        <RotateCcw className="h-4 w-4 mr-2" /> Resume Session
+                                    </Button>
+                                </ConfirmDialog>
                             )}
+
+
                         </CardFooter>
                     </Card>
                 ))}
@@ -244,6 +258,20 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                     onOpenChange={(open) => {
                         setIsDialogOpen(open);
                         if (!open) setEditingSession(null);
+                    }}
+                />
+            )}
+
+            {endingSession && (
+                <EndSessionDialog
+                    sessionId={endingSession.id}
+                    sabaqName={endingSession.sabaq?.name || 'Unknown'}
+                    open={true}
+                    onOpenChange={(open) => {
+                        if (!open) setEndingSession(null);
+                    }}
+                    onSuccess={() => {
+                        router.refresh();
                     }}
                 />
             )}

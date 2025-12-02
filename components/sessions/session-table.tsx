@@ -10,13 +10,16 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash, Play, StopCircle } from 'lucide-react';
+import { Edit, Trash, Play, StopCircle, RotateCcw, ClipboardCheck, Eye } from 'lucide-react';
 import { SessionDialog } from './session-dialog';
-import { deleteSession, startSession, endSession } from '@/actions/sessions';
+import { EndSessionDialog } from './end-session-dialog';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { deleteSession, startSession, endSession, resumeSession } from '@/actions/sessions';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface SessionTableProps {
     sessions: any[];
@@ -24,21 +27,20 @@ interface SessionTableProps {
 }
 
 export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
+    const router = useRouter();
     const [editingSession, setEditingSession] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState<string | null>(null);
 
     const handleDelete = async (id: string) => {
-        if (confirm('Are you sure you want to delete this session?')) {
-            setLoading(id);
-            const result = await deleteSession(id);
-            if (result.success) {
-                toast.success('Session deleted');
-            } else {
-                toast.error(result.error || 'Failed to delete session');
-            }
-            setLoading(null);
+        setLoading(id);
+        const result = await deleteSession(id);
+        if (result.success) {
+            toast.success('Session deleted');
+        } else {
+            toast.error(result.error || 'Failed to delete session');
         }
+        setLoading(null);
     };
 
     const handleStart = async (id: string) => {
@@ -46,24 +48,26 @@ export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
         const result = await startSession(id);
         if (result.success) {
             toast.success('Session started');
+            router.refresh();
         } else {
             toast.error(result.error || 'Failed to start session');
         }
         setLoading(null);
     };
 
-    const handleEnd = async (id: string) => {
-        if (confirm('Are you sure you want to end this session?')) {
-            setLoading(id);
-            const result = await endSession(id);
-            if (result.success) {
-                toast.success('Session ended');
-            } else {
-                toast.error(result.error || 'Failed to end session');
-            }
-            setLoading(null);
+    const handleResume = async (id: string) => {
+        setLoading(id);
+        const result = await resumeSession(id);
+        if (result.success) {
+            toast.success('Session resumed');
+            router.refresh();
+        } else {
+            toast.error(result.error || 'Failed to resume session');
         }
+        setLoading(null);
     };
+
+
 
     const getStatusBadge = (session: any) => {
         if (session.isActive) {
@@ -115,6 +119,17 @@ export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
                                 <TableCell>{session._count?.attendances || 0}</TableCell>
                                 <TableCell className="text-right">
                                     <div className="flex justify-end gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            asChild
+                                            title="View Attendance"
+                                        >
+                                            <Link href={`/dashboard/sessions/${session.id}`}>
+                                                <Eye className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+
                                         {!session.startedAt && (
                                             <>
                                                 <Button
@@ -129,16 +144,23 @@ export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
                                                 >
                                                     <Edit className="h-4 w-4" />
                                                 </Button>
-                                                <Button
-                                                    variant="ghost"
-                                                    size="icon"
-                                                    className="text-red-500"
-                                                    onClick={() => handleDelete(session.id)}
-                                                    disabled={loading === session.id}
-                                                    title="Delete"
+                                                <ConfirmDialog
+                                                    title="Delete Session"
+                                                    description="Are you sure you want to delete this session? This action cannot be undone."
+                                                    onConfirm={() => handleDelete(session.id)}
+                                                    variant="destructive"
+                                                    confirmText="Delete"
                                                 >
-                                                    <Trash className="h-4 w-4" />
-                                                </Button>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-red-500"
+                                                        disabled={loading === session.id}
+                                                        title="Delete"
+                                                    >
+                                                        <Trash className="h-4 w-4" />
+                                                    </Button>
+                                                </ConfirmDialog>
                                             </>
                                         )}
                                         {!session.startedAt && !session.isActive && (
@@ -154,16 +176,54 @@ export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
                                             </Button>
                                         )}
                                         {session.isActive && (
-                                            <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-orange-600"
-                                                onClick={() => handleEnd(session.id)}
-                                                disabled={loading === session.id}
-                                                title="End Session"
+                                            <>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-blue-600"
+                                                    asChild
+                                                    title="Take Attendance"
+                                                >
+                                                    <Link href={`/dashboard/sessions/${session.id}/attendance`}>
+                                                        <ClipboardCheck className="h-4 w-4" />
+                                                    </Link>
+                                                </Button>
+                                                <EndSessionDialog
+                                                    sessionId={session.id}
+                                                    sabaqName={session.sabaq?.name || 'Unknown'}
+                                                    onSuccess={() => {
+                                                        router.refresh();
+                                                    }}
+                                                >
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="text-orange-600"
+                                                        disabled={loading === session.id}
+                                                        title="End Session"
+                                                    >
+                                                        <StopCircle className="h-4 w-4" />
+                                                    </Button>
+                                                </EndSessionDialog>
+                                            </>
+                                        )}
+                                        {session.endedAt && (
+                                            <ConfirmDialog
+                                                title="Resume Session"
+                                                description="Are you sure you want to resume this session? This will allow attendance to be marked again."
+                                                onConfirm={() => handleResume(session.id)}
+                                                confirmText="Resume"
                                             >
-                                                <StopCircle className="h-4 w-4" />
-                                            </Button>
+                                                <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-blue-600"
+                                                    disabled={loading === session.id}
+                                                    title="Resume Session"
+                                                >
+                                                    <RotateCcw className="h-4 w-4" />
+                                                </Button>
+                                            </ConfirmDialog>
                                         )}
                                     </div>
                                 </TableCell>

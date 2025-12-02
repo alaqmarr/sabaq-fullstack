@@ -15,6 +15,7 @@ import { playSuccessSound, playErrorSound } from '@/lib/sounds';
 import { cn } from '@/lib/utils';
 import { formatDate, formatTime } from '@/lib/date-utils';
 import { AddToCalendarBtn } from '@/components/calendar/add-to-calendar-btn';
+import { EndSessionDialog } from '@/components/sessions/end-session-dialog';
 
 interface SessionCardProps {
     session: any;
@@ -48,18 +49,7 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
         setLoading(false);
     };
 
-    const handleEndSession = async () => {
-        if (!confirm('Are you sure you want to end this session?')) return;
-        setLoading(true);
-        const result = await endSession(session.id);
-        if (result.success) {
-            toast.success('Session ended successfully');
-            router.refresh();
-        } else {
-            toast.error(result.error || 'Failed to end session');
-        }
-        setLoading(false);
-    };
+
 
     const handleLocationAttendance = async () => {
         if (!navigator.geolocation) {
@@ -161,9 +151,17 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                             </Button>
                         )}
                         {canStartStop && isActive && (
-                            <Button size="sm" variant="frosted-red" onClick={handleEndSession} disabled={loading} className="w-full justify-start">
-                                <Square className="h-3.5 w-3.5 mr-2" /> End
-                            </Button>
+                            <EndSessionDialog
+                                sessionId={session.id}
+                                sabaqName={session.sabaq.name}
+                                onSuccess={() => {
+                                    router.refresh();
+                                }}
+                            >
+                                <Button size="sm" variant="frosted-red" disabled={loading} className="w-full justify-start">
+                                    <Square className="h-3.5 w-3.5 mr-2" /> End
+                                </Button>
+                            </EndSessionDialog>
                         )}
 
                         {canScan && isActive && (

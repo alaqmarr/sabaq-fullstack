@@ -26,7 +26,7 @@ interface ParsedUser {
 export function BulkUploadForm() {
     const [users, setUsers] = useState<ParsedUser[]>([]);
     const [loading, setLoading] = useState(false);
-    const [result, setResult] = useState<{ success: boolean; message: string; count?: number; skipped?: number } | null>(null);
+    const [result, setResult] = useState<{ success: boolean; message: string; count?: number; skipped?: number; errors?: { its: string; name: string; error: string }[] } | null>(null);
     const [mode, setMode] = useState<'create' | 'update'>('create');
     const [progress, setProgress] = useState(0);
     const [processedCount, setProcessedCount] = useState(0);
@@ -88,7 +88,7 @@ export function BulkUploadForm() {
         const totalUsers = users.length;
         let totalSuccess = 0;
         let totalSkipped = 0;
-        let allErrors: string[] = [];
+        let allErrors: { its: string; name: string; error: string }[] = [];
 
         try {
             const action = mode === 'create' ? bulkCreateUsers : bulkUpdateUsers;
@@ -102,7 +102,15 @@ export function BulkUploadForm() {
                     totalSkipped += res.skipped || 0;
                     if (res.errors) allErrors = [...allErrors, ...res.errors];
                 } else {
-                    allErrors.push(`Batch ${i / BATCH_SIZE + 1} failed: ${res.error}`);
+                    // If the entire batch fails (e.g. server error), mark all as failed
+                    batch.forEach(u => {
+                        allErrors.push({
+                            its: u.itsNumber,
+                            name: u.name,
+                            error: typeof res.error === 'string' ? res.error : 'Batch failed'
+                        });
+                    });
+                    totalSkipped += batch.length;
                 }
 
                 const currentProcessed = Math.min(i + BATCH_SIZE, totalUsers);
@@ -114,24 +122,26 @@ export function BulkUploadForm() {
 
             setResult({
                 success: isSuccess,
-                message: `Processed ${totalUsers} users. Success: ${totalSuccess}, Skipped/Failed: ${totalSkipped + allErrors.length}`,
+                message: `Processed ${totalUsers} users. Success: ${totalSuccess}, Skipped/Failed: ${totalSkipped}`,
                 count: totalSuccess,
-                skipped: totalSkipped
+                skipped: totalSkipped,
+                errors: allErrors
             });
 
-            if (isSuccess) {
-                toast.success(`Bulk ${mode} completed`);
+            if (isSuccess && allErrors.length === 0) {
+                toast.success(`Bulk ${mode} completed successfully`);
                 if (totalSuccess === totalUsers) {
                     setUsers([]); // Clear table only if fully successful
                 }
             } else {
-                toast.error(`Bulk ${mode} completed with errors`);
+                toast.warning(`Bulk ${mode} completed with ${allErrors.length} errors`);
             }
 
         } catch (error) {
             setResult({
                 success: false,
-                message: 'An unexpected error occurred'
+                message: 'An unexpected error occurred',
+                errors: []
             });
             toast.error('An unexpected error occurred');
         } finally {
@@ -265,11 +275,46 @@ function UploadSection({
             )}
 
             {result && !loading && (
-                <Alert variant={result.success ? "default" : "destructive"}>
-                    {result.success ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
-                    <AlertTitle>{result.success ? 'Success' : 'Error'}</AlertTitle>
-                    <AlertDescription>{result.message}</AlertDescription>
-                </Alert>
+                <div className="space-y-4">
+                    <Alert variant={result.success && (!result.errors || result.errors.length === 0) ? "default" : "destructive"}>
+                        {result.success && (!result.errors || result.errors.length === 0) ? <CheckCircle className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                        <AlertTitle>
+                            {result.success && (!result.errors || result.errors.length === 0) ? 'Success' : 'Completed with Errors'}
+                        </AlertTitle>
+                        <AlertDescription>{result.message}</AlertDescription>
+                    </Alert>
+
+                    {result.errors && result.errors.length > 0 && (
+                        <Card className="border-destructive/50 bg-destructive/5">
+                            <CardHeader>
+                                <CardTitle className="text-destructive text-lg">Skipped / Failed Records</CardTitle>
+                                <CardDescription>The following records were not processed.</CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="rounded-md border border-destructive/20 bg-background">
+                                    <Table>
+                                        <TableHeader>
+                                            <TableRow>
+                                                <TableHead className="text-destructive">ITS Number</TableHead>
+                                                <TableHead className="text-destructive">Name</TableHead>
+                                                <TableHead className="text-destructive">Reason</TableHead>
+                                            </TableRow>
+                                        </TableHeader>
+                                        <TableBody>
+                                            {result.errors.map((err: any, idx: number) => (
+                                                <TableRow key={idx}>
+                                                    <TableCell className="font-mono">{err.its}</TableCell>
+                                                    <TableCell>{err.name}</TableCell>
+                                                    <TableCell className="text-destructive font-medium">{err.error}</TableCell>
+                                                </TableRow>
+                                            ))}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    )}
+                </div>
             )}
 
             {users.length > 0 && (

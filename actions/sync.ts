@@ -28,7 +28,10 @@ export async function syncSessionAttendance(sessionId: string) {
       // No data in Firebase, maybe just mark as ended?
       await prisma.session.update({
         where: { id: sessionId },
-        data: { isActive: false },
+        data: {
+          isActive: false,
+          endedAt: new Date(),
+        },
       });
       revalidatePath(`/dashboard/sessions/${sessionId}`);
       return {
@@ -120,7 +123,10 @@ export async function syncSessionAttendance(sessionId: string) {
     // Mark session as ended
     await prisma.session.update({
       where: { id: sessionId },
-      data: { isActive: false },
+      data: {
+        isActive: false,
+        endedAt: new Date(),
+      },
     });
 
     // Finalize status

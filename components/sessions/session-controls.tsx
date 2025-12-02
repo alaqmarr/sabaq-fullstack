@@ -1,10 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { startSession, endSession } from '@/actions/sessions';
+import { startSession, resumeSession } from '@/actions/sessions';
 import { toast } from 'sonner';
-import { Play, Square, Loader2 } from 'lucide-react';
+import { Play, Square, Loader2, RotateCcw } from 'lucide-react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -16,16 +17,36 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
+import { EndSessionDialog } from './end-session-dialog';
 
 interface SessionControlsProps {
   sessionId: string;
+  sabaqName: string;
   isActive: boolean;
   isEnded: boolean;
   hasStarted: boolean;
 }
 
-export function SessionControls({ sessionId, isActive, isEnded, hasStarted }: SessionControlsProps) {
+export function SessionControls({ sessionId, sabaqName, isActive, isEnded, hasStarted }: SessionControlsProps) {
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleResume = async () => {
+    setLoading(true);
+    try {
+      const result = await resumeSession(sessionId);
+      if (result.success) {
+        toast.success('Session resumed successfully');
+        router.refresh();
+      } else {
+        toast.error(result.error || 'Failed to resume session');
+      }
+    } catch (error) {
+      toast.error('Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleStart = async () => {
     setLoading(true);
@@ -43,54 +64,45 @@ export function SessionControls({ sessionId, isActive, isEnded, hasStarted }: Se
     }
   };
 
-  const handleEnd = async () => {
-    setLoading(true);
-    try {
-      const result = await endSession(sessionId);
-      if (result.success) {
-        toast.success('Session ended successfully');
-      } else {
-        toast.error(result.error || 'Failed to end session');
-      }
-    } catch (error) {
-      toast.error('Something went wrong');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   if (isEnded) {
     return (
-      <Button variant="secondary" disabled className="w-full sm:w-auto">
-        Session Ended
-      </Button>
+      <AlertDialog>
+        <AlertDialogTrigger asChild>
+          <Button variant="outline" className="w-full sm:w-auto" disabled={loading}>
+            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+            Resume Session
+          </Button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Resume Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will re-enable attendance marking.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResume}>
+              Resume Session
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     );
   }
 
   if (isActive) {
     return (
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="frosted-red" disabled={loading} className="w-full sm:w-auto">
-            {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />}
-            End Session
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>End Session?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will stop attendance marking. You cannot restart a session once ended.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleEnd} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-              End Session
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <EndSessionDialog
+        sessionId={sessionId}
+        sabaqName={sabaqName}
+        onSuccess={() => router.refresh()}
+      >
+        <Button variant="frosted-red" disabled={loading} className="w-full sm:w-auto">
+          {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4" />}
+          End Session
+        </Button>
+      </EndSessionDialog>
     );
   }
 

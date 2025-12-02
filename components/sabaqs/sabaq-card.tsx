@@ -29,7 +29,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
-import { startSession, endSession } from "@/actions/sessions";
+import { startSession } from "@/actions/sessions";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import {
@@ -44,6 +44,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { SessionDialog } from "@/components/sessions/session-dialog";
+import { EndSessionDialog } from "@/components/sessions/end-session-dialog";
 
 interface SabaqCardProps {
     sabaq: any;
@@ -93,22 +94,7 @@ export function SabaqCard({
         }
     };
 
-    const handleEndSession = async (sessionId: string) => {
-        setLoading(true);
-        try {
-            const result = await endSession(sessionId);
-            if (result.success) {
-                toast.success("Session ended successfully");
-                router.refresh();
-            } else {
-                toast.error(result.error || "Failed to end session");
-            }
-        } catch (error) {
-            toast.error("Something went wrong");
-        } finally {
-            setLoading(false);
-        }
-    };
+
 
     return (
         <>
@@ -218,35 +204,24 @@ export function SabaqCard({
 
                 <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex flex-col gap-2 pointer-events-auto relative z-20 mt-auto">
                     {activeSession ? (
-                        <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                                <Button
-                                    variant="destructive"
-                                    size="sm"
-                                    className="w-full"
-                                    disabled={loading}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4 fill-current" />}
-                                    End Ongoing Session
-                                </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent>
-                                <AlertDialogHeader>
-                                    <AlertDialogTitle>End Session?</AlertDialogTitle>
-                                    <AlertDialogDescription>
-                                        This will stop attendance marking.
-                                    </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Cancel</AlertDialogCancel>
-                                    <AlertDialogAction onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleEndSession(activeSession.id);
-                                    }}>End Session</AlertDialogAction>
-                                </AlertDialogFooter>
-                            </AlertDialogContent>
-                        </AlertDialog>
+                        <EndSessionDialog
+                            sessionId={activeSession.id}
+                            sabaqName={sabaq.name}
+                            onSuccess={() => {
+                                router.refresh();
+                            }}
+                        >
+                            <Button
+                                variant="destructive"
+                                size="sm"
+                                className="w-full"
+                                disabled={loading}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Square className="mr-2 h-4 w-4 fill-current" />}
+                                End Ongoing Session
+                            </Button>
+                        </EndSessionDialog>
                     ) : upcomingSession ? (
                         <AlertDialog>
                             <AlertDialogTrigger asChild>

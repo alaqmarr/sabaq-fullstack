@@ -354,7 +354,7 @@ export async function bulkCreateUsers(users: any[]) {
     await requirePermission("users", "create");
 
     let createdCount = 0;
-    let errors: string[] = [];
+    let errors: { its: string; name: string; error: string }[] = [];
 
     for (const userData of users) {
       try {
@@ -363,7 +363,11 @@ export async function bulkCreateUsers(users: any[]) {
         });
 
         if (existingUser) {
-          errors.push(`User with ITS ${userData.itsNumber} already exists`);
+          errors.push({
+            its: userData.itsNumber,
+            name: userData.name,
+            error: `User with ITS ${userData.itsNumber} already exists`,
+          });
           continue;
         }
 
@@ -385,7 +389,11 @@ export async function bulkCreateUsers(users: any[]) {
         });
         createdCount++;
       } catch (error: any) {
-        errors.push(`Failed to create user ${userData.name}: ${error.message}`);
+        errors.push({
+          its: userData.itsNumber,
+          name: userData.name,
+          error: error.message || "Unknown error",
+        });
       }
     }
 
@@ -428,7 +436,7 @@ export async function bulkUpdateUsers(users: any[]) {
     await requirePermission("users", "update");
 
     let updatedCount = 0;
-    let errors: string[] = [];
+    let errors: { its: string; name: string; error: string }[] = [];
 
     for (const userData of users) {
       try {
@@ -437,7 +445,11 @@ export async function bulkUpdateUsers(users: any[]) {
         });
 
         if (!existingUser) {
-          errors.push(`User with ITS ${userData.itsNumber} not found`);
+          errors.push({
+            its: userData.itsNumber,
+            name: userData.name || "Unknown",
+            error: `User with ITS ${userData.itsNumber} not found`,
+          });
           continue;
         }
 
@@ -456,9 +468,11 @@ export async function bulkUpdateUsers(users: any[]) {
         });
         updatedCount++;
       } catch (error: any) {
-        errors.push(
-          `Failed to update user ${userData.itsNumber}: ${error.message}`
-        );
+        errors.push({
+          its: userData.itsNumber,
+          name: userData.name || "Unknown",
+          error: error.message || "Unknown error",
+        });
       }
     }
 

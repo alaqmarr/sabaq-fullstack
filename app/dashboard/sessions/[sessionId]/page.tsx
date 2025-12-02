@@ -95,6 +95,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                 <div className="col-span-full md:col-span-2 lg:col-span-4">
                     <SessionQuickActions
                         sessionId={sessionId}
+                        sabaqName={sessionData.sabaq.name}
                         isActive={sessionData.isActive}
                         isEnded={!!sessionData.endedAt}
                         hasStarted={!!sessionData.startedAt}

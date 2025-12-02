@@ -13,7 +13,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, HardDrive, ArrowRight } from "lucide-react";
 import { syncSessionAttendance } from "@/actions/sync";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -43,20 +43,29 @@ interface EndSessionDialogProps {
     sessionId: string;
     sabaqName: string;
     onSuccess?: () => void;
+    open?: boolean;
+    onOpenChange?: (open: boolean) => void;
+    children?: React.ReactNode;
 }
 
 export function EndSessionDialog({
     sessionId,
     sabaqName,
     onSuccess,
+    open: controlledOpen,
+    onOpenChange: controlledOnOpenChange,
+    children,
 }: EndSessionDialogProps) {
-    const [isOpen, setIsOpen] = useState(false);
-    const [status, setStatus] = useState<"idle" | "syncing" | "success" | "error">(
-        "idle"
-    );
+    const [internalOpen, setInternalOpen] = useState(false);
+    const [status, setStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
     const [progress, setProgress] = useState(0);
     const [syncStats, setSyncStats] = useState({ current: 0, total: 0 });
+    const [resultStats, setResultStats] = useState<{ count: number; errors: number } | null>(null);
     const [resultMessage, setResultMessage] = useState("");
+
+    const isControlled = controlledOpen !== undefined;
+    const isOpen = isControlled ? controlledOpen : internalOpen;
+    const onOpenChange = isControlled ? controlledOnOpenChange : setInternalOpen;
 
     // Listen to Firebase sync status
     useEffect(() => {
@@ -95,6 +104,7 @@ export function EndSessionDialog({
             if (result.success) {
                 setStatus("success");
                 setProgress(100);
+                setResultStats({ count: result.count || 0, errors: result.errors || 0 });
                 setResultMessage(result.message || "Session finalized successfully.");
                 toast.success("Session ended and attendance synced.");
                 if (onSuccess) onSuccess();
@@ -112,11 +122,12 @@ export function EndSessionDialog({
 
     const handleClose = () => {
         if (status === "syncing") return; // Prevent closing while syncing
-        setIsOpen(false);
+        if (onOpenChange) onOpenChange(false);
         setTimeout(() => {
             setStatus("idle");
             setProgress(0);
             setResultMessage("");
+            setResultStats(null);
         }, 500);
     };
 
@@ -124,16 +135,30 @@ export function EndSessionDialog({
         <AlertDialog open={isOpen} onOpenChange={(open) => {
             // Prevent closing if syncing
             if (status === "syncing" && !open) return;
-            setIsOpen(open);
+            if (onOpenChange) onOpenChange(open);
         }}>
-            <AlertDialogTrigger asChild>
-                <Button variant="destructive">End Session</Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent className="sm:max-w-md">
+            {children && (
+                <AlertDialogTrigger asChild>
+                    {children}
+                </AlertDialogTrigger>
+            )}
+            {!children && !isControlled && (
+                <AlertDialogTrigger asChild>
+                    <Button variant="destructive">End Session</Button>
+                </AlertDialogTrigger>
+            )}
+            <AlertDialogContent className="sm:max-w-lg">
                 <AlertDialogHeader>
-                    <AlertDialogTitle>End Session: {sabaqName}</AlertDialogTitle>
+                    <AlertDialogTitle>
+                        {status === "idle" ? `End Session: ${sabaqName}` :
+                            status === "syncing" ? "Syncing Attendance Data" :
+                                status === "success" ? "Sync Complete" : "Sync Failed"}
+                    </AlertDialogTitle>
                     <AlertDialogDescription>
-                        This will finalize the session and sync all realtime attendance data to the main database.
+                        {status === "idle" && "This will finalize the session and sync all realtime attendance data to the main database."}
+                        {status === "syncing" && "Please wait while we sync attendance records from the realtime database to the primary storage."}
+                        {status === "success" && "Session has been successfully ended and all data has been synchronized."}
+                        {status === "error" && "There was an error syncing the data. Please try again or contact support."}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
 
@@ -145,9 +170,11 @@ export function EndSessionDialog({
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
+                                className="flex flex-col items-center justify-center py-4 text-center"
                             >
-                                <p className="text-sm text-muted-foreground">
-                                    Are you sure you want to end this session? This action cannot be undone.
+                                <AlertCircle className="h-12 w-12 text-yellow-500 mb-4" />
+                                <p className="text-sm text-muted-foreground max-w-xs">
+                                    Are you sure? This action cannot be undone.
                                 </p>
                             </motion.div>
                         )}
@@ -158,26 +185,44 @@ export function EndSessionDialog({
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
                                 exit={{ opacity: 0, scale: 0.95 }}
-                                className="space-y-6 text-center"
+                                className="space-y-8"
                             >
-                                <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
-                                    <motion.div
-                                        className="absolute inset-0 rounded-full border-4 border-blue-100"
-                                        animate={{ scale: [1, 1.1, 1], opacity: [0.5, 1, 0.5] }}
-                                        transition={{ duration: 2, repeat: Infinity }}
-                                    />
-                                    <motion.div
-                                        animate={{ rotate: 360 }}
-                                        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-                                    >
-                                        <RefreshCw className="h-10 w-10 text-blue-600" />
-                                    </motion.div>
+                                <div className="flex items-center justify-center gap-4 sm:gap-8">
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="p-4 bg-orange-100 dark:bg-orange-900/20 rounded-full text-orange-600 dark:text-orange-400 relative">
+                                            <HardDrive className="w-8 h-8" />
+                                            <div className="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-black animate-pulse" />
+                                        </div>
+                                        <span className="text-xs font-medium text-muted-foreground">Realtime DB</span>
+                                    </div>
+
+                                    <div className="flex-1 flex flex-col items-center gap-2 max-w-[120px]">
+                                        <div className="relative w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                                            <motion.div
+                                                className="absolute inset-0 bg-blue-500"
+                                                initial={{ x: '-100%' }}
+                                                animate={{ x: '100%' }}
+                                                transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                                            />
+                                        </div>
+                                        <span className="text-[10px] text-blue-500 font-medium animate-pulse">Syncing...</span>
+                                    </div>
+
+                                    <div className="flex flex-col items-center gap-2">
+                                        <div className="p-4 bg-blue-100 dark:bg-blue-900/20 rounded-full text-blue-600 dark:text-blue-400">
+                                            <HardDrive className="w-8 h-8" />
+                                        </div>
+                                        <span className="text-xs font-medium text-muted-foreground">Primary DB</span>
+                                    </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <h3 className="font-medium text-blue-600">Syncing Attendance...</h3>
+                                    <div className="flex justify-between text-xs text-muted-foreground">
+                                        <span>Progress</span>
+                                        <span>{syncStats.total > 0 ? `${Math.round((syncStats.current / syncStats.total) * 100)}%` : '0%'}</span>
+                                    </div>
                                     <Progress value={progress} className="h-2 w-full" />
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-xs text-center text-muted-foreground">
                                         {syncStats.total > 0
                                             ? `Processed ${syncStats.current} of ${syncStats.total} records`
                                             : "Initializing sync..."}
@@ -191,14 +236,29 @@ export function EndSessionDialog({
                                 key="success"
                                 initial={{ opacity: 0, scale: 0.95 }}
                                 animate={{ opacity: 1, scale: 1 }}
-                                className="space-y-4 text-center"
+                                className="space-y-6"
                             >
-                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-                                    <CheckCircle2 className="h-8 w-8 text-green-600" />
+                                <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/20">
+                                    <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
                                 </div>
-                                <div>
-                                    <h3 className="text-lg font-medium text-green-600">Sync Complete!</h3>
-                                    <p className="text-sm text-muted-foreground">{resultMessage}</p>
+
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                                            {resultStats?.count || 0}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                                            Records Synced
+                                        </div>
+                                    </div>
+                                    <div className="bg-muted/50 p-4 rounded-lg text-center">
+                                        <div className={`text-2xl font-bold ${resultStats?.errors ? 'text-red-500' : 'text-muted-foreground'}`}>
+                                            {resultStats?.errors || 0}
+                                        </div>
+                                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
+                                            Failed
+                                        </div>
+                                    </div>
                                 </div>
                             </motion.div>
                         )}
@@ -210,11 +270,11 @@ export function EndSessionDialog({
                                 animate={{ opacity: 1, scale: 1 }}
                                 className="space-y-4 text-center"
                             >
-                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100">
-                                    <AlertCircle className="h-8 w-8 text-red-600" />
+                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                                    <AlertCircle className="h-8 w-8 text-red-600 dark:text-red-400" />
                                 </div>
                                 <div>
-                                    <h3 className="text-lg font-medium text-red-600">Sync Failed</h3>
+                                    <h3 className="text-lg font-medium text-red-600 dark:text-red-400">Sync Failed</h3>
                                     <p className="text-sm text-muted-foreground">{resultMessage}</p>
                                 </div>
                             </motion.div>
@@ -226,14 +286,22 @@ export function EndSessionDialog({
                     {status === "idle" && (
                         <>
                             <AlertDialogCancel onClick={handleClose}>Cancel</AlertDialogCancel>
-                            <AlertDialogAction onClick={handleEndSession} className="bg-destructive hover:bg-destructive/90">
+                            <AlertDialogAction
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    handleEndSession();
+                                }}
+                                className="bg-destructive hover:bg-destructive/90"
+                            >
                                 End Session & Sync
                             </AlertDialogAction>
                         </>
                     )}
 
                     {(status === "success" || status === "error") && (
-                        <AlertDialogAction onClick={handleClose}>Close</AlertDialogAction>
+                        <AlertDialogAction onClick={handleClose} className="w-full sm:w-auto">
+                            Close
+                        </AlertDialogAction>
                     )}
                 </AlertDialogFooter>
             </AlertDialogContent>

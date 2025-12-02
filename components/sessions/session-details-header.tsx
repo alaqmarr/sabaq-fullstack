@@ -86,6 +86,7 @@ export function SessionDetailsHeader({ session, isAdmin }: SessionDetailsHeaderP
                     <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                         <SessionControls
                             sessionId={session.id}
+                            sabaqName={session.sabaq.name}
                             isActive={session.isActive}
                             isEnded={!!session.endedAt}
                             hasStarted={!!session.startedAt}
