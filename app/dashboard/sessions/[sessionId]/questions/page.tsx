@@ -66,17 +66,10 @@ export default async function SessionQuestionsPage({ params }: { params: Promise
     return (
         <div className="flex-1 space-y-6 p-8 pt-6">
             <div className="flex items-center gap-4">
-                <Link href={`/dashboard/sessions/${sessionId}`}>
-                    <Button variant="ghost" size="icon">
-                        <ChevronLeft className="h-4 w-4" />
-                    </Button>
-                </Link>
-                <div>
-                    <h2 className="text-3xl font-bold tracking-tight">Questions</h2>
-                    <p className="text-muted-foreground">
-                        Q&A for {sessionData.sabaq.name}
-                    </p>
-                </div>
+                <h2 className="text-3xl font-bold tracking-tight">Questions</h2>
+                <p className="text-muted-foreground">
+                    Q&A for {sessionData.sabaq.name}
+                </p>
             </div>
 
             {questionStats && <QuestionStats stats={questionStats} />}

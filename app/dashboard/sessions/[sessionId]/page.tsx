@@ -84,11 +84,6 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
             <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1.5">
                     <div className="flex items-center gap-2">
-                        <Link href="/dashboard/sessions">
-                            <Button variant="ghost" size="icon" className="-ml-2 h-8 w-8">
-                                <ArrowLeft className="h-4 w-4" />
-                            </Button>
-                        </Link>
                         <h1 className="text-2xl font-bold tracking-tight">{sessionData.sabaq.name}</h1>
                         {getStatusBadge()}
                     </div>
@@ -104,9 +99,6 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     {canManageSession && (
                         <>
                             <ExportButton type="session" id={sessionId} />
-                            <Link href={`/dashboard/sessions/${sessionId}/export`}>
-                                <Button variant="outline" size="sm">Export</Button>
-                            </Link>
                         </>
                     )}
                 </div>
@@ -172,12 +164,6 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                             </CardTitle>
                             <CardDescription>Mark and view attendance</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button variant="ghost" className="w-full justify-between group">
-                                Manage Attendance
-                                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </CardContent>
                     </Card>
                 </Link>
 
@@ -190,12 +176,6 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                             </CardTitle>
                             <CardDescription>View and manage Q&A</CardDescription>
                         </CardHeader>
-                        <CardContent>
-                            <Button variant="ghost" className="w-full justify-between group">
-                                View Questions
-                                <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                            </Button>
-                        </CardContent>
                     </Card>
                 </Link>
 
@@ -205,16 +185,10 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                             <CardHeader>
                                 <CardTitle className="flex items-center gap-2">
                                     <QrCode className="h-5 w-5" />
-                                    Scan QR
+                                    Scan
                                 </CardTitle>
-                                <CardDescription>Scan attendee QR codes</CardDescription>
+                                <CardDescription>Take mumineen attendance</CardDescription>
                             </CardHeader>
-                            <CardContent>
-                                <Button variant="ghost" className="w-full justify-between group">
-                                    Open Scanner
-                                    <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-                                </Button>
-                            </CardContent>
                         </Card>
                     </Link>
                 )}

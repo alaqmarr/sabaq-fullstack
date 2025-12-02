@@ -63,16 +63,11 @@ export default async function SessionAttendancePage({ params }: { params: Promis
                 description={`Manage attendance for ${sessionData.sabaq.name}`}
             >
                 <div className="flex items-center gap-2">
-                    <Link href={`/dashboard/sessions/${sessionId}`}>
-                        <Button variant="ghost" size="icon">
-                            <ChevronLeft className="h-4 w-4" />
-                        </Button>
-                    </Link>
                     {canScan && (
                         <Link href={`/dashboard/sessions/${sessionId}/scan`}>
                             <Button variant="default" size="sm" className="gap-2">
                                 <QrCode className="h-4 w-4" />
-                                <span className="hidden sm:inline">Take Attendance</span>
+                                <span className='inline'>Take Attendance</span>
                             </Button>
                         </Link>
                     )}
