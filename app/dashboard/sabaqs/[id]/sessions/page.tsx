@@ -4,6 +4,8 @@ import { SessionTable } from '@/components/sessions/session-table';
 import { SessionHeader } from '@/components/sessions/session-header';
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { Role } from '@prisma/client';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';

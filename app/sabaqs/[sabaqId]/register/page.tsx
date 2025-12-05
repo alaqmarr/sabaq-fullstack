@@ -7,6 +7,8 @@ import { BookOpen } from 'lucide-react';
 import { format } from 'date-fns';
 import Image from 'next/image';
 
+export const preferredRegion = ["sin1"];
+
 export async function generateMetadata({ params }: { params: Promise<{ sabaqId: string }> }) {
     const { sabaqId } = await params;
     const result = await getPublicSabaqInfo(sabaqId);

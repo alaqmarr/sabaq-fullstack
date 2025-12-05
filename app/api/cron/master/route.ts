@@ -5,6 +5,7 @@ import { processEmailQueue } from "@/actions/email-queue";
 import { adminDb } from "@/lib/firebase-admin";
 
 export const dynamic = "force-dynamic";
+export const preferredRegion = ["sin1"];
 
 export async function GET(request: Request) {
   try {

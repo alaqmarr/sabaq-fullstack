@@ -2,6 +2,8 @@ import { getSabaqById } from '@/actions/sabaqs';
 import { ExportButton } from '@/components/exports/export-button';
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { Role } from '@prisma/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';

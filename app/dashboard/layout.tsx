@@ -9,6 +9,8 @@ import { NotificationBell } from '@/components/notifications/notification-bell';
 import { auth } from '@/auth';
 import Link from 'next/link';
 
+export const preferredRegion = ["sin1"];
+
 export default async function DashboardLayout({
     children,
 }: {

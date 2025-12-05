@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { BookOpen, MapPin, UserCheck, Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
+export const preferredRegion = ["sin1"];
 
 export default async function MyEnrollmentsPage() {
     const { enrollments } = await getMyEnrollments();

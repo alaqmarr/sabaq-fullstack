@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ActiveSessionsSection } from '@/components/dashboard/active-sessions';

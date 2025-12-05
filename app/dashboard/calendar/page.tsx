@@ -1,4 +1,6 @@
 import { Metadata } from "next";
+
+export const preferredRegion = ["sin1"];
 import { CalendarView } from "@/components/calendar/calendar-view";
 
 export const metadata: Metadata = {

@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { requirePermission, requireSessionAccess, checkPermission } from '@/lib/rbac';
 import { getSessionById } from '@/actions/sessions';

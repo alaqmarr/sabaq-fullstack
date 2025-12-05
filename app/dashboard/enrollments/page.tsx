@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { EnrollmentRequestsAdmin } from '@/components/enrollments/enrollment-requests-admin';

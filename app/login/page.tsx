@@ -1,4 +1,6 @@
 import { redirect } from 'next/navigation';
+
+export const preferredRegion = ["sin1"];
 import { checkSetupRequired } from '@/actions/setup';
 import { LoginForm } from '@/components/auth/login-form';
 

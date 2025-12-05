@@ -1,5 +1,7 @@
 import { VerifyForm } from '@/components/auth/verify-form';
 
+export const preferredRegion = ["sin1"];
+
 export default function VerifyPage() {
     return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">

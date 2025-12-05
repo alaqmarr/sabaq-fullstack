@@ -4,6 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { CheckCircle, XCircle, AlertTriangle, Server, Shield, Activity, Globe } from "lucide-react";
 
 export const revalidate = 60;
+export const preferredRegion = ["sin1"];
 
 export default async function SystemStatusPage() {
     const { config } = await getAppConfig();

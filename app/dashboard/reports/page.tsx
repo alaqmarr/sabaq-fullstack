@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { getAttendanceTrends, getEnrollmentDistribution, getTopStudents, getSabaqPerformance } from '@/actions/analytics';
 import { AttendanceChart } from '@/components/analytics/attendance-chart';

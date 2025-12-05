@@ -5,6 +5,8 @@ import { notFound } from 'next/navigation';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { Role } from '@prisma/client';
 import Link from 'next/link';
 import { Users, Calendar, FileDown, ChevronRight } from 'lucide-react';

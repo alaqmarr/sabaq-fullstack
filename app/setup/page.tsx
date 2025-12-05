@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { checkSetupRequired } from '@/actions/setup';
 import { SetupForm } from '@/components/setup/setup-form';
 
+export const preferredRegion = ["sin1"];
+
 export default async function SetupPage() {
     const result = await checkSetupRequired();
 

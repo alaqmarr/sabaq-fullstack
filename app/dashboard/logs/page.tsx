@@ -1,6 +1,8 @@
 import { getEmailLogs, getSecurityLogs } from '@/actions/logs';
 import { LogsViewer } from '@/components/logs/logs-viewer';
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { ShieldAlert } from 'lucide-react';
 import { PageHeader } from '@/components/ui/page-header';

@@ -1,20 +1,20 @@
-'use server';
+"use server";
 
-import { prisma } from '@/lib/prisma';
-import bcrypt from 'bcryptjs';
+import { prisma } from "@/lib/prisma";
+import bcrypt from "bcryptjs";
 
 export async function checkSetupRequired() {
   try {
     const superAdminExists = await prisma.user.findFirst({
-      where: { role: 'SUPERADMIN' },
+      where: { role: "SUPERADMIN" },
     });
 
-    return { 
-      success: true, 
-      setupRequired: !superAdminExists 
+    return {
+      success: true,
+      setupRequired: !superAdminExists,
     };
   } catch (error) {
-    return { success: false, error: 'Failed to check setup status' };
+    return { success: false, error: "Failed to check setup status" };
   }
 }
 
@@ -28,13 +28,13 @@ export async function createInitialSuperAdmin(data: {
   try {
     // Double-check no SuperAdmin exists
     const superAdminExists = await prisma.user.findFirst({
-      where: { role: 'SUPERADMIN' },
+      where: { role: "SUPERADMIN" },
     });
 
     if (superAdminExists) {
-      return { 
-        success: false, 
-        error: 'Setup already completed. A SuperAdmin account already exists.' 
+      return {
+        success: false,
+        error: "Setup already completed. A SuperAdmin account already exists.",
       };
     }
 
@@ -44,15 +44,15 @@ export async function createInitialSuperAdmin(data: {
     });
 
     if (existingUser) {
-      return { 
-        success: false, 
-        error: 'An account with this ITS Number already exists.' 
+      return {
+        success: false,
+        error: "An account with this ITS Number already exists.",
       };
     }
 
     // Create the SuperAdmin account
     const hashedPassword = await bcrypt.hash(data.password, 12);
-    
+
     const user = await prisma.user.create({
       data: {
         id: data.itsNumber,
@@ -61,17 +61,17 @@ export async function createInitialSuperAdmin(data: {
         email: data.email,
         phone: data.phone,
         password: hashedPassword,
-        role: 'SUPERADMIN',
+        role: "SUPERADMIN",
       },
     });
 
-    return { 
-      success: true, 
+    return {
+      success: true,
       user,
-      message: 'Initial SuperAdmin account created successfully!' 
+      message: "Initial SuperAdmin account created successfully!",
     };
   } catch (error) {
-    console.error('Setup error:', error);
-    return { success: false, error: 'Failed to create SuperAdmin account' };
+    console.error("Setup error:", error);
+    return { success: false, error: "Failed to create SuperAdmin account" };
   }
 }

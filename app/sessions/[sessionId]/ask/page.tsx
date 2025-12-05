@@ -5,6 +5,8 @@ import { QuestionsList } from '@/components/questions/questions-list';
 import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 
+export const preferredRegion = ["sin1"];
+
 export const metadata = {
     title: "Ask a Question",
 };

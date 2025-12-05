@@ -6,6 +6,8 @@ import { FeedbackForm } from "@/components/feedback/feedback-form";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatDate, formatTime } from "@/lib/date-utils";
 
+export const preferredRegion = ["sin1"];
+
 interface FeedbackPageProps {
   params: Promise<{
     sessionId: string;

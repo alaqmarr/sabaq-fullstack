@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { checkPermission } from '@/lib/rbac';
 import { Card, CardContent } from '@/components/ui/card';

@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { getLocations } from '@/actions/locations';
 import { LocationsClientWrapper } from '@/components/locations/locations-client-wrapper';

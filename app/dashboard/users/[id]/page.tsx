@@ -10,6 +10,8 @@ import {
     Activity, Percent, MessageCircle
 } from 'lucide-react';
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { CircularProgress } from '@/components/ui/circular-progress';
 import { getItsImageUrl } from '@/lib/its';

@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { getAllSessions } from '@/actions/sessions';
 import { getSabaqs } from '@/actions/sabaqs';

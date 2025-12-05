@@ -1,4 +1,6 @@
 import { auth } from '@/auth';
+
+export const preferredRegion = ["sin1"];
 import { redirect } from 'next/navigation';
 import { BulkUploadForm } from '@/components/users/bulk-upload-form';
 import { ArrowLeft } from 'lucide-react';

@@ -7,6 +7,8 @@ import { SessionProvider } from "next-auth/react";
 import { AppHeader } from "@/components/layout/app-header";
 import { SmoothScrollProvider } from "@/components/providers/smooth-scroll-provider";
 
+export const preferredRegion = ["sin1"];
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
