@@ -395,7 +395,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
 
             {/* Live Feed Section */}
             <Card className="lg:col-span-1 h-[300px] sm:h-[400px] lg:h-[600px] flex flex-col glass-premium border-0 order-2 lg:order-none overflow-hidden">
-                <CardHeader className="pb-2 px-3 sm:px-6">
+                <CardHeader className="pb-2 px-3 sm:px-6 shrink-0">
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-cred-heading text-sm sm:text-base">Live Feed</CardTitle>
                         <Badge variant="secondary" className="font-mono text-xs">
@@ -403,7 +403,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                         </Badge>
                     </div>
                 </CardHeader>
-                <ScrollArea className="flex-1 px-2 sm:px-4 pb-4">
+                <div className="flex-1 min-h-0 overflow-y-auto px-2 sm:px-4 pb-4">
                     <div className="space-y-2 sm:space-y-3">
                         {isLoading ? (
                             <div className="flex flex-col items-center justify-center py-8 gap-2">
@@ -459,7 +459,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                             ))
                         )}
                     </div>
-                </ScrollArea>
+                </div>
             </Card>
         </div>
     );
