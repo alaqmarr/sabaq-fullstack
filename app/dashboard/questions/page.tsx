@@ -191,12 +191,6 @@ export default async function QuestionsPage() {
                                                 <Badge variant="secondary">Pending</Badge>
                                             )}
                                         </div>
-                                        {q.isAnswered && q.answer && (
-                                            <div className="bg-muted/50 p-3 rounded-md text-sm mt-2">
-                                                <p className="font-medium text-xs text-muted-foreground mb-1">Answer:</p>
-                                                {q.answer}
-                                            </div>
-                                        )}
                                     </CardContent>
                                 </Card>
                             ))}

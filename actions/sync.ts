@@ -4,6 +4,7 @@ import { adminDb } from "@/lib/firebase-admin";
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
 import { revalidatePath } from "next/cache";
+import { endSession } from "./sessions";
 
 export async function syncSessionAttendance(sessionId: string) {
   try {
@@ -25,19 +26,14 @@ export async function syncSessionAttendance(sessionId: string) {
     const snapshot = await ref.get();
 
     if (!snapshot.exists()) {
-      // No data in Firebase, maybe just mark as ended?
-      await prisma.session.update({
-        where: { id: sessionId },
-        data: {
-          isActive: false,
-          endedAt: new Date(),
-        },
-      });
+      // No data in Firebase, call endSession to send emails
+      const endResult = await endSession(sessionId);
       revalidatePath(`/dashboard/sessions/${sessionId}`);
       return {
         success: true,
         count: 0,
         message: "No attendance data to sync.",
+        reportData: endResult.reportData,
       };
     }
 
@@ -57,10 +53,6 @@ export async function syncSessionAttendance(sessionId: string) {
     });
 
     // Process in chunks or sequentially to handle errors gracefully
-    // Using createMany is faster but skipDuplicates is needed.
-    // However, we need to update User stats (attendedCount, lateCount) too.
-    // So we might need to loop.
-
     for (const record of records) {
       try {
         // Check if exists in Neon
@@ -120,14 +112,8 @@ export async function syncSessionAttendance(sessionId: string) {
       }
     }
 
-    // Mark session as ended
-    await prisma.session.update({
-      where: { id: sessionId },
-      data: {
-        isActive: false,
-        endedAt: new Date(),
-      },
-    });
+    // Call endSession to finalize, send emails, and get report data
+    const endResult = await endSession(sessionId);
 
     // Finalize status
     await statusRef.set({
@@ -138,16 +124,13 @@ export async function syncSessionAttendance(sessionId: string) {
       completedAt: Date.now(),
     });
 
-    // Optional: Clear Firebase data after successful sync?
-    // Or keep it for history/backup?
-    // Let's keep it for now, maybe clean up via Cron later.
-
     revalidatePath(`/dashboard/sessions/${sessionId}`);
     return {
       success: true,
       count: syncedCount,
       errors: errorCount,
       message: `Synced ${syncedCount} records. ${errorCount} errors.`,
+      reportData: endResult.reportData,
     };
   } catch (error: any) {
     console.error("Sync failed:", error);

@@ -40,6 +40,7 @@ export function SettingsClient() {
     const [maintenanceStatus, setMaintenanceStatus] = useState<{ redis: string; firebase: string; lastSync: string | null } | null>(null);
     const [loadingStatus, setLoadingStatus] = useState(false);
     const [selectedTemplate, setSelectedTemplate] = useState("session-reminder");
+    const [customEmail, setCustomEmail] = useState("");
     const [sendingEmail, setSendingEmail] = useState(false);
     const [sendingAllEmails, setSendingAllEmails] = useState(false);
     const [processingAction, setProcessingAction] = useState<string | null>(null);
@@ -138,9 +139,9 @@ export function SettingsClient() {
 
     const handleSendTestEmail = async () => {
         setSendingEmail(true);
-        const result = await sendTestEmail(selectedTemplate);
+        const result = await sendTestEmail(selectedTemplate, customEmail || undefined);
         if (result.success) {
-            toast.success("Test email queued successfully");
+            toast.success(`Test email queued${customEmail ? ` to ${customEmail}` : ""}`);
         } else {
             toast.error("Failed to queue test email");
         }
@@ -149,9 +150,9 @@ export function SettingsClient() {
 
     const handleSendAllTestEmails = async () => {
         setSendingAllEmails(true);
-        const result = await sendAllTestEmails();
+        const result = await sendAllTestEmails(customEmail || undefined);
         if (result.success) {
-            toast.success("All test emails queued successfully");
+            toast.success(`All test emails queued${customEmail ? ` to ${customEmail}` : ""}`);
         } else {
             toast.error("Failed to queue all test emails");
         }
@@ -183,17 +184,27 @@ export function SettingsClient() {
     const templates = [
         { value: "enrollment-approved", label: "Enrollment Approved" },
         { value: "enrollment-rejected", label: "Enrollment Rejected" },
+        { value: "enrollment-request", label: "Enrollment Request (Admin)" },
         { value: "session-reminder", label: "Session Reminder" },
+        { value: "session-cancelled", label: "Session Cancelled" },
         { value: "attendance-marked", label: "Attendance Marked" },
+        { value: "login-alert", label: "Login Alert" },
         { value: "admin-otp", label: "Admin OTP" },
+        { value: "password-reset", label: "Password Reset" },
         { value: "session-summary", label: "Session Summary" },
         { value: "session-absent", label: "Session Absent" },
+        { value: "low-attendance-warning", label: "Low Attendance Warning" },
         { value: "question-answered", label: "Question Answered" },
+        { value: "feedback-response", label: "Feedback Response" },
         { value: "security-flagged-user", label: "Security Alert (User)" },
         { value: "security-flagged-admin", label: "Security Alert (Admin)" },
         { value: "profile-updated", label: "Profile Updated" },
         { value: "role-promoted", label: "Role Promoted" },
         { value: "role-demoted", label: "Role Demoted" },
+        { value: "admin-assigned", label: "Admin Assigned" },
+        { value: "sync-success", label: "Sync Success" },
+        { value: "sync-failed", label: "Sync Failed" },
+        { value: "session-report", label: "Session Report" },
     ];
 
     return (
@@ -563,9 +574,18 @@ export function SettingsClient() {
                             <Mail className="h-5 w-5" />
                             Email Template Testing
                         </CardTitle>
-                        <CardDescription>Send test emails to your registered address</CardDescription>
+                        <CardDescription>Send test emails to preview templates</CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Custom Email (optional)</Label>
+                            <Input
+                                type="email"
+                                placeholder="Leave empty to send to your registered email"
+                                value={customEmail}
+                                onChange={(e) => setCustomEmail(e.target.value)}
+                            />
+                        </div>
                         <div className="space-y-2">
                             <Label>Select Template</Label>
                             <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
@@ -615,3 +635,5 @@ export function SettingsClient() {
         </div>
     );
 }
+
+

@@ -186,12 +186,20 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                             </>
                         )}
 
+                        {/* Actions for attended users */}
                         {isAttended && (
-                            <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
-                                <Link href={`/sessions/${session.id}/ask`}>
-                                    <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
-                                </Link>
-                            </Button>
+                            <>
+                                <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
+                                    <Link href={`/sessions/${session.id}/ask`}>
+                                        <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
+                                    </Link>
+                                </Button>
+                                <Button size="sm" variant="frosted-blue" asChild className="w-fit justify-start">
+                                    <Link href={`/sessions/${session.id}/feedback`}>
+                                        <MessageCircle className="h-3.5 w-3.5 mr-2" /> Add Feedback
+                                    </Link>
+                                </Button>
+                            </>
                         )}
 
                         {!isActive && !hasStarted && <AddToCalendarBtn session={session} />}

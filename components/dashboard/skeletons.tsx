@@ -85,6 +85,36 @@ export function UpcomingSessionsSkeleton() {
     );
 }
 
+export function RecentlyEndedSessionsSkeleton() {
+    return (
+        <div>
+            <Skeleton className="h-7 w-[180px] mb-4" />
+            <div className="flex flex-col gap-4">
+                {[...Array(2)].map((_, i) => (
+                    <Card key={i}>
+                        <CardContent className="p-4">
+                            <div className="flex flex-col lg:flex-row lg:items-center gap-4">
+                                <div className="flex-1 space-y-3">
+                                    <Skeleton className="h-6 w-[200px]" />
+                                    <div className="grid grid-cols-2 gap-2">
+                                        <Skeleton className="h-4 w-[100px]" />
+                                        <Skeleton className="h-4 w-[80px]" />
+                                    </div>
+                                    <Skeleton className="h-8 w-[120px]" />
+                                </div>
+                                <div className="flex flex-wrap gap-2 lg:w-48">
+                                    <Skeleton className="h-9 w-[100px]" />
+                                    <Skeleton className="h-9 w-[100px]" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    );
+}
+
 export function SabaqSkeleton() {
     return (
         <div className="space-y-6">

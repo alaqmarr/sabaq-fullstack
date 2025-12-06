@@ -46,7 +46,7 @@ const navItems = [
         title: 'users',
         href: '/dashboard/users',
         icon: UsersRound,
-        roles: [Role.SUPERADMIN, Role.ADMIN],
+        roles: [Role.SUPERADMIN],  // Only SUPERADMIN can manage users
     },
     {
         title: 'locations',
@@ -64,7 +64,7 @@ const navItems = [
         title: 'enrollments',
         href: '/dashboard/enrollments',
         icon: FileSignature,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB],  // Removed MANAGER and ATTENDANCE_INCHARGE - they don't have enrollment permissions
     },
     {
         title: 'my enrollments',
@@ -76,7 +76,7 @@ const navItems = [
         title: 'sessions',
         href: '/dashboard/sessions',
         icon: CalendarClock,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE],  // Added ATTENDANCE_INCHARGE - they mark attendance
     },
     {
         title: 'attendance',
@@ -88,7 +88,7 @@ const navItems = [
         title: 'questions',
         href: '/dashboard/questions',
         icon: MessageSquareText,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB],  // Removed MUMIN - they only have read_self, go to session Q&A instead
     },
     {
         title: 'calendar',

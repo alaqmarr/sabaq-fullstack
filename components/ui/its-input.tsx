@@ -110,12 +110,13 @@ export function ITSInput({
                             </Avatar>
                             <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium truncate">{foundUser.name}</p>
-                                <p className="text-xs text-muted-foreground truncate">{foundUser.email || 'No email'}</p>
-                            </div>
-                            <div className="shrink-0">
-                                <span className="inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 border-transparent bg-primary text-primary-foreground hover:bg-primary/80">
-                                    {foundUser.role}
-                                </span>
+                                <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                                    <span className="font-mono">{foundUser.itsNumber}</span>
+                                    <span className="w-1 h-1 rounded-full bg-muted-foreground/50" />
+                                    <span className="inline-flex items-center rounded-full bg-primary/10 text-primary px-2 py-0.5 text-[10px] font-semibold">
+                                        {foundUser.role}
+                                    </span>
+                                </div>
                             </div>
                         </CardContent>
                     </Card>

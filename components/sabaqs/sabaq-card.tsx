@@ -18,6 +18,7 @@ import {
     ClipboardList,
     Calendar,
     Loader2,
+    Link2,
 } from "lucide-react";
 import Link from "next/link";
 import {
@@ -203,6 +204,44 @@ export function SabaqCard({
                 </CardContent>
 
                 <div className="px-4 sm:px-5 pb-4 sm:pb-5 pt-0 flex flex-col gap-2 pointer-events-auto relative z-20 mt-auto">
+                    {/* Quick Action Buttons */}
+                    <div className="grid grid-cols-3 gap-2">
+                        <Link href={`/dashboard/sabaqs/${sabaq.id}/enrollments`} className="w-full">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <ClipboardList className="h-3.5 w-3.5 mr-1" />
+                                <span className="hidden sm:inline">Enroll</span>
+                            </Button>
+                        </Link>
+                        <Link href={`/dashboard/sabaqs/${sabaq.id}/admins`} className="w-full">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Users className="h-3.5 w-3.5 mr-1" />
+                                <span className="hidden sm:inline">Admins</span>
+                            </Button>
+                        </Link>
+                        <Link href={`/dashboard/sabaqs/${sabaq.id}/links`} className="w-full">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="w-full text-xs"
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <Link2 className="h-3.5 w-3.5 mr-1" />
+                                <span className="hidden sm:inline">Links</span>
+                            </Button>
+                        </Link>
+                    </div>
+
+                    {/* Session Action Button */}
                     {activeSession ? (
                         <EndSessionDialog
                             sessionId={activeSession.id}

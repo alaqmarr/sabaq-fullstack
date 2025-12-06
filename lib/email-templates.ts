@@ -305,14 +305,16 @@ const createRow = (label: string, value: string | number) => `
 // 1. Enrollment Approved
 export const enrollmentApprovedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   approvedAt: string;
   whatsappGroupLink?: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Mubarak, ${data.userName}!</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
-      We are pleased to inform you that your enrollment request has been approved. You are now officially a member of the class.
+      Mubarak! We are pleased to inform you that your enrollment request has been approved. You are now officially a member of the class.
     </div>
     
     <table class="info-table">
@@ -362,12 +364,14 @@ export const enrollmentApprovedTemplate = (data: {
 // 2. Enrollment Rejected
 export const enrollmentRejectedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   reason?: string;
   rejectedAt: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Dear ${data.userName},</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Thank you for your interest in <strong>${
         data.sabaqName
@@ -398,16 +402,16 @@ export const enrollmentRejectedTemplate = (data: {
 // 3. Session Reminder
 export const sessionReminderTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   scheduledAt: string;
   location?: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Upcoming Session Reminder</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
-      Assalamu Alaikum ${
-        data.userName
-      }, this is a friendly reminder about your upcoming session.
+      This is a friendly reminder about your upcoming session.
     </div>
     
     <table class="info-table">
@@ -436,6 +440,7 @@ export const sessionReminderTemplate = (data: {
 // 4. Attendance Marked
 export const attendanceMarkedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   status: string;
   markedAt: string;
@@ -443,9 +448,10 @@ export const attendanceMarkedTemplate = (data: {
 }) => {
   const isLate = data.status.toLowerCase() === "late";
   const badgeClass = isLate ? "badge-warning" : "badge-success";
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
 
   const content = `
-    <div class="greeting">Attendance Recorded</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Your attendance has been recorded for the session on <strong>${
         data.sessionDate
@@ -481,14 +487,16 @@ export const attendanceMarkedTemplate = (data: {
 // 5. Login Alert
 export const loginAlertTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   time: string;
   ip?: string;
   device?: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">New Login Detected</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
-      We detected a new login to your account <strong>${data.userName}</strong>.
+      We detected a new login to your account.
     </div>
     
     <table class="info-table">
@@ -537,16 +545,22 @@ export const adminOtpTemplate = (data: {
 // 7. Session Summary
 export const sessionSummaryTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   scheduledAt: string;
   status: string;
   minutesLate?: number;
+  attendedCount?: number;
+  totalSessions?: number;
+  attendancePercent?: number;
+  reportErrorLink?: string;
 }) => {
   const isLate = data.status.toLowerCase() === "late";
   const badgeClass = isLate ? "badge-warning" : "badge-success";
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
 
   const content = `
-    <div class="greeting">Session Summary</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Thank you for your participation. Here is your session summary.
     </div>
@@ -574,6 +588,37 @@ export const sessionSummaryTemplate = (data: {
     `
         : ""
     }
+
+    ${
+      data.attendedCount !== undefined && data.totalSessions !== undefined
+        ? `
+      <div class="highlight-box">
+        <strong>Your Attendance Record:</strong><br/>
+        You have attended <strong>${
+          data.attendedCount
+        }</strong> out of <strong>${data.totalSessions}</strong> sessions (${
+            data.attendancePercent || 0
+          }%)
+      </div>
+    `
+        : ""
+    }
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View Dashboard</a>
+    </div>
+
+    ${
+      data.reportErrorLink
+        ? `
+      <div class="message" style="margin-top: 20px; font-size: 12px; color: #718096;">
+        Notice something wrong? <a href="${data.reportErrorLink}" style="color: #3182ce;">Report an error</a>
+      </div>
+    `
+        : ""
+    }
   `;
   return baseEmailTemplate({
     title: `Session Summary: ${data.sabaqName}`,
@@ -585,11 +630,18 @@ export const sessionSummaryTemplate = (data: {
 // 8. Session Absent
 export const sessionAbsentTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   scheduledAt: string;
+  attendedCount?: number;
+  totalSessions?: number;
+  attendancePercent?: number;
+  reportErrorLink?: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
   const content = `
-    <div class="greeting">Absence Notification</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       You were marked absent for the recent session. Regular attendance is essential for your learning progress.
     </div>
@@ -600,9 +652,40 @@ export const sessionAbsentTemplate = (data: {
       ${createRow("Status", `<span class="badge badge-error">Absent</span>`)}
     </table>
 
+    ${
+      data.attendedCount !== undefined && data.totalSessions !== undefined
+        ? `
+      <div class="alert-box">
+        <strong>Your Attendance Record:</strong><br/>
+        You have attended <strong>${
+          data.attendedCount
+        }</strong> out of <strong>${data.totalSessions}</strong> sessions (${
+            data.attendancePercent || 0
+          }%)
+      </div>
+    `
+        : ""
+    }
+
     <div class="message" style="margin-top: 20px;">
       If you missed this session due to an unavoidable reason, please inform your instructor.
     </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View Dashboard</a>
+    </div>
+
+    ${
+      data.reportErrorLink
+        ? `
+      <div class="message" style="margin-top: 20px; font-size: 12px; color: #718096;">
+        This is incorrect? <a href="${data.reportErrorLink}" style="color: #3182ce;">Report an error</a>
+      </div>
+    `
+        : ""
+    }
   `;
   return baseEmailTemplate({
     title: `Absence Notice: ${data.sabaqName}`,
@@ -614,13 +697,15 @@ export const sessionAbsentTemplate = (data: {
 // 9. Question Answered
 export const questionAnsweredTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   questionText: string;
   answerText: string;
   answeredAt: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">New Answer Received</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Your question in <strong>${data.sabaqName}</strong> has been answered.
     </div>
@@ -653,12 +738,16 @@ export const questionAnsweredTemplate = (data: {
 // 10. Security Flagged (User)
 export const securityFlaggedUserTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   action: string;
   time: string;
   ip?: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting" style="color: #c53030;">Action Flagged</div>
+    <div class="greeting" style="color: #c53030;">Salaams, ${
+      data.userName
+    }${itsDisplay}</div>
     <div class="message">
       We have detected unauthorized activity associated with your account. This incident has been reported.
     </div>
@@ -736,11 +825,13 @@ export const securityFlaggedAdminTemplate = (data: {
 // 12. Profile Updated
 export const profileUpdatedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   updatedFields: string[];
   time: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Profile Updated</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Your profile details have been successfully updated.
     </div>
@@ -770,15 +861,15 @@ export const profileUpdatedTemplate = (data: {
 // 13. Role Promoted
 export const rolePromotedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   newRole: string;
   features: string[];
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Role Promotion</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
-      Congratulations! You have been promoted to <strong>${
-        data.newRole
-      }</strong>.
+      Mubarak! You have been promoted to <strong>${data.newRole}</strong>.
     </div>
     
     <div class="highlight-box" style="background-color: #ebf8ff; border-color: #4299e1; color: #2c5282;">
@@ -813,11 +904,13 @@ export const rolePromotedTemplate = (data: {
 // 14. Role Demoted
 export const roleDemotedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   newRole: string;
   lostAccess: string[];
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">Role Update</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       Your role has been updated to <strong>${data.newRole}</strong>.
     </div>
@@ -848,12 +941,14 @@ export const roleDemotedTemplate = (data: {
 // 15. Admin Assigned
 export const adminAssignedTemplate = (data: {
   userName: string;
+  userItsNumber?: string;
   sabaqName: string;
   role: string;
   assignedBy: string;
 }) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
-    <div class="greeting">New Responsibility Assigned</div>
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
     <div class="message">
       You have been assigned as <strong>${data.role}</strong> for <strong>${
     data.sabaqName
@@ -961,6 +1056,8 @@ export const sessionReportTemplate = (data: {
   attendanceRate: string;
   topStudents: string[]; // List of names
   lowAttendanceStudents: string[]; // List of names
+  noShowStudents?: string[]; // List of names who never attended any session
+  noShowCount?: number;
 }) => {
   const content = `
     <div class="greeting">Session Report</div>
@@ -970,25 +1067,35 @@ export const sessionReportTemplate = (data: {
       }</strong> for <strong>${data.sabaqName}</strong>.
     </div>
     
-    <div style="display: flex; justify-content: space-between; margin-bottom: 20px;">
-      <div style="text-align: center; width: 30%; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
+    <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-bottom: 20px;">
+      <div style="text-align: center; flex: 1; min-width: 70px; background: #f0fdf4; padding: 10px; border-radius: 6px; border: 1px solid #bbf7d0;">
         <div style="font-size: 24px; font-weight: 700; color: #166534;">${
           data.presentCount
         }</div>
         <div style="font-size: 11px; text-transform: uppercase; color: #166534;">Present</div>
       </div>
-      <div style="text-align: center; width: 30%; background: #fff1f2; padding: 10px; border-radius: 6px; border: 1px solid #fecdd3;">
+      <div style="text-align: center; flex: 1; min-width: 70px; background: #fff1f2; padding: 10px; border-radius: 6px; border: 1px solid #fecdd3;">
         <div style="font-size: 24px; font-weight: 700; color: #9f1239;">${
           data.absentCount
         }</div>
         <div style="font-size: 11px; text-transform: uppercase; color: #9f1239;">Absent</div>
       </div>
-      <div style="text-align: center; width: 30%; background: #fffbeb; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
+      <div style="text-align: center; flex: 1; min-width: 70px; background: #fffbeb; padding: 10px; border-radius: 6px; border: 1px solid #fde68a;">
         <div style="font-size: 24px; font-weight: 700; color: #92400e;">${
           data.lateCount
         }</div>
         <div style="font-size: 11px; text-transform: uppercase; color: #92400e;">Late</div>
       </div>
+      ${
+        data.noShowCount !== undefined
+          ? `
+      <div style="text-align: center; flex: 1; min-width: 70px; background: #fef3c7; padding: 10px; border-radius: 6px; border: 1px solid #fcd34d;">
+        <div style="font-size: 24px; font-weight: 700; color: #b45309;">${data.noShowCount}</div>
+        <div style="font-size: 11px; text-transform: uppercase; color: #b45309;">No-Show</div>
+      </div>
+      `
+          : ""
+      }
     </div>
 
     <table class="info-table">
@@ -1026,6 +1133,19 @@ export const sessionReportTemplate = (data: {
         : ""
     }
 
+    ${
+      data.noShowStudents && data.noShowStudents.length > 0
+        ? `
+      <div style="margin-bottom: 20px;">
+        <div style="font-size: 12px; font-weight: 600; color: #b45309; text-transform: uppercase; margin-bottom: 5px;">No-Shows (Never Attended Any Session)</div>
+        <ul style="background-color: #fffbeb; border: 1px solid #fcd34d; border-radius: 6px; padding: 10px 10px 10px 30px; margin: 0; font-size: 13px; color: #b45309;">
+          ${data.noShowStudents.map((name) => `<li>${name}</li>`).join("")}
+        </ul>
+      </div>
+    `
+        : ""
+    }
+
     <div class="button-container">
       <a href="${
         process.env.NEXT_PUBLIC_APP_URL
@@ -1035,6 +1155,326 @@ export const sessionReportTemplate = (data: {
   return baseEmailTemplate({
     title: `Session Report: ${data.sabaqName}`,
     previewText: `Attendance Report for ${data.sabaqName} on ${data.sessionDate}. Rate: ${data.attendanceRate}`,
+    content,
+  });
+};
+
+// 20. Feedback Response
+export const feedbackResponseTemplate = (data: {
+  userName: string;
+  userItsNumber?: string;
+  sabaqName: string;
+  originalFeedback: string;
+  adminResponse: string;
+  respondedBy: string;
+  respondedAt: string;
+}) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
+  const content = `
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
+    <div class="message">
+      Your feedback for <strong>${
+        data.sabaqName
+      }</strong> has received a response.
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; font-weight: 600; color: #718096; text-transform: uppercase; margin-bottom: 5px;">Your Feedback</div>
+      <div style="background-color: #f1f5f9; padding: 15px; border-radius: 6px; font-style: italic; color: #4a5568;">
+        "${data.originalFeedback}"
+      </div>
+    </div>
+
+    <div style="margin-bottom: 20px;">
+      <div style="font-size: 11px; font-weight: 600; color: #047857; text-transform: uppercase; margin-bottom: 5px;">Response from ${
+        data.respondedBy
+      }</div>
+      <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; padding: 15px; border-radius: 6px; color: #064e3b; font-weight: 500;">
+        ${data.adminResponse}
+      </div>
+    </div>
+
+    <table class="info-table">
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow("Responded At", data.respondedAt)}
+    </table>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View Dashboard</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Feedback Response Received",
+    previewText: `Your feedback for ${data.sabaqName} has been addressed.`,
+    content,
+  });
+};
+
+// 21. Password Reset
+export const passwordResetTemplate = (data: {
+  userName: string;
+  userItsNumber?: string;
+  resetLink: string;
+  expiryMinutes: number;
+  requestedAt: string;
+  ip?: string;
+}) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
+  const content = `
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
+    <div class="message">
+      We received a request to reset your password. Click the button below to create a new password.
+    </div>
+    
+    <div class="button-container">
+      <a href="${data.resetLink}" class="button">Reset Password</a>
+    </div>
+
+    <table class="info-table">
+      ${createRow("Requested At", data.requestedAt)}
+      ${createRow("Expires In", `${data.expiryMinutes} minutes`)}
+      ${data.ip ? createRow("IP Address", data.ip) : ""}
+    </table>
+
+    <div class="alert-box">
+      <strong>Security Notice:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>This link will expire in ${data.expiryMinutes} minutes.</li>
+        <li>If you did not request this reset, please ignore this email.</li>
+        <li>Never share your password or this link with anyone.</li>
+      </ul>
+    </div>
+
+    <div class="message" style="margin-top: 20px; font-size: 12px; color: #718096;">
+      Can't click the button? Copy and paste this link into your browser:<br/>
+      <span style="word-break: break-all; color: #3182ce;">${
+        data.resetLink
+      }</span>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: "Password Reset Request",
+    previewText: `Reset your password. This link expires in ${data.expiryMinutes} minutes.`,
+    content,
+  });
+};
+
+// 22. Session Cancelled
+export const sessionCancelledTemplate = (data: {
+  userName: string;
+  userItsNumber?: string;
+  sabaqName: string;
+  originalDate: string;
+  reason?: string;
+  cancelledBy: string;
+  rescheduledTo?: string;
+}) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
+  const content = `
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
+    <div class="message">
+      We regret to inform you that the scheduled session for <strong>${
+        data.sabaqName
+      }</strong> has been cancelled.
+    </div>
+    
+    <table class="info-table">
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow("Original Date", data.originalDate)}
+      ${createRow("Status", `<span class="badge badge-error">Cancelled</span>`)}
+      ${createRow("Cancelled By", data.cancelledBy)}
+      ${data.reason ? createRow("Reason", data.reason) : ""}
+    </table>
+
+    ${
+      data.rescheduledTo
+        ? `
+      <div class="success-box">
+        <strong>Rescheduled:</strong> The session has been rescheduled to <strong>${data.rescheduledTo}</strong>. Please mark your calendar.
+      </div>
+    `
+        : `
+      <div class="highlight-box">
+        We apologize for any inconvenience. Please check the dashboard for updates on the next session.
+      </div>
+    `
+    }
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View Dashboard</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `Session Cancelled: ${data.sabaqName}`,
+    previewText: `The session for ${data.sabaqName} on ${data.originalDate} has been cancelled.`,
+    content,
+  });
+};
+
+// 23. Enrollment Request (for Admins)
+export const enrollmentRequestTemplate = (data: {
+  adminName: string;
+  adminItsNumber?: string;
+  studentName: string;
+  studentItsNumber: string;
+  studentEmail: string;
+  sabaqName: string;
+  requestedAt: string;
+  pendingCount: number;
+}) => {
+  const itsDisplay = data.adminItsNumber ? ` (${data.adminItsNumber})` : "";
+
+  const content = `
+    <div class="greeting">Salaams, ${data.adminName}${itsDisplay}</div>
+    <div class="message">
+      A new enrollment request has been submitted for <strong>${
+        data.sabaqName
+      }</strong> and requires your review.
+    </div>
+    
+    <table class="info-table">
+      ${createRow("Student Name", data.studentName)}
+      ${createRow("ITS Number", data.studentItsNumber)}
+      ${createRow("Email", data.studentEmail)}
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow("Requested At", data.requestedAt)}
+    </table>
+
+    <div class="highlight-box">
+      <strong>Pending Requests:</strong> There are currently <strong>${
+        data.pendingCount
+      }</strong> pending enrollment request(s) for this sabaq.
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard/sabaqs" class="button">Review Enrollments</a>
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `New Enrollment Request: ${data.sabaqName}`,
+    previewText: `${data.studentName} has requested enrollment in ${data.sabaqName}.`,
+    content,
+  });
+};
+
+// 24. Low Attendance Warning
+export const lowAttendanceWarningTemplate = (data: {
+  userName: string;
+  userItsNumber?: string;
+  sabaqName: string;
+  attendedCount: number;
+  totalSessions: number;
+  attendancePercent: number;
+  missedStreak?: number;
+  warningLevel: "MILD" | "MODERATE" | "SEVERE";
+}) => {
+  const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
+  const warningStyles = {
+    MILD: {
+      color: "#b45309",
+      bg: "#fffbeb",
+      border: "#fcd34d",
+      title: "Attendance Reminder",
+      message:
+        "Your attendance has dipped slightly. Regular attendance is key to your learning progress.",
+    },
+    MODERATE: {
+      color: "#c2410c",
+      bg: "#fff7ed",
+      border: "#fb923c",
+      title: "Attendance Warning",
+      message:
+        "Your attendance is below expectations. Please prioritize attending upcoming sessions.",
+    },
+    SEVERE: {
+      color: "#b91c1c",
+      bg: "#fef2f2",
+      border: "#fca5a5",
+      title: "Urgent: Low Attendance Alert",
+      message:
+        "Your attendance has dropped significantly. Continued absence may affect your enrollment status.",
+    },
+  };
+
+  const style = warningStyles[data.warningLevel];
+
+  const content = `
+    <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
+    <div class="message">
+      ${style.message}
+    </div>
+    
+    <div style="background-color: ${style.bg}; border: 1px solid ${
+    style.border
+  }; border-left: 4px solid ${
+    style.color
+  }; padding: 15px; border-radius: 4px; margin-bottom: 25px;">
+      <strong style="color: ${style.color};">Your Attendance Status</strong>
+      <div style="margin-top: 10px; color: ${style.color};">
+        You have attended <strong>${
+          data.attendedCount
+        }</strong> out of <strong>${
+    data.totalSessions
+  }</strong> sessions (<strong>${data.attendancePercent}%</strong>)
+      </div>
+      ${
+        data.missedStreak && data.missedStreak > 1
+          ? `<div style="margin-top: 5px; color: ${style.color};">Consecutive sessions missed: <strong>${data.missedStreak}</strong></div>`
+          : ""
+      }
+    </div>
+
+    <table class="info-table">
+      ${createRow("Sabaq", data.sabaqName)}
+      ${createRow(
+        "Sessions Attended",
+        `${data.attendedCount} / ${data.totalSessions}`
+      )}
+      ${createRow("Attendance Rate", `${data.attendancePercent}%`)}
+      ${createRow(
+        "Status",
+        `<span class="badge ${
+          data.warningLevel === "SEVERE"
+            ? "badge-error"
+            : data.warningLevel === "MODERATE"
+            ? "badge-warning"
+            : "badge-info"
+        }">${style.title}</span>`
+      )}
+    </table>
+
+    <div class="highlight-box">
+      <strong>Tips to Improve:</strong>
+      <ul style="margin: 10px 0 0 0; padding-left: 20px;">
+        <li>Set reminders for upcoming sessions</li>
+        <li>Inform your instructor if you have unavoidable conflicts</li>
+        <li>Regular attendance helps you stay connected with your learning journey</li>
+      </ul>
+    </div>
+
+    <div class="button-container">
+      <a href="${
+        process.env.NEXT_PUBLIC_APP_URL
+      }/dashboard" class="button">View My Attendance</a>
+    </div>
+
+    <div class="message" style="margin-top: 20px; font-size: 12px; color: #718096;">
+      If you believe this is an error or have legitimate reasons for absence, please contact your sabaq administrator.
+    </div>
+  `;
+  return baseEmailTemplate({
+    title: `${style.title}: ${data.sabaqName}`,
+    previewText: `Your attendance for ${data.sabaqName} is at ${data.attendancePercent}%. Action required.`,
     content,
   });
 };

@@ -51,7 +51,7 @@ const navItems = [
         title: 'users',
         href: '/dashboard/users',
         icon: UsersRound,
-        roles: [Role.SUPERADMIN, Role.ADMIN],
+        roles: [Role.SUPERADMIN],  // Only SUPERADMIN can manage users
     },
     {
         title: 'locations',
@@ -63,13 +63,13 @@ const navItems = [
         title: 'sabaqs',
         href: '/dashboard/sabaqs',
         icon: BookOpenText,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MUMIN],
+        roles: [Role.SUPERADMIN, Role.ADMIN],  // Removed MUMIN - they browse via enrollments
     },
     {
         title: 'enrollments',
         href: '/dashboard/enrollments',
         icon: FileSignature,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.JANAB, Role.MUMIN],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB],  // Only roles with enrollment permissions
     },
     {
         title: 'my enrollments',
@@ -81,19 +81,19 @@ const navItems = [
         title: 'sessions',
         href: '/dashboard/sessions',
         icon: CalendarClock,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE],  // Added ATTENDANCE_INCHARGE
     },
     {
         title: 'attendance',
         href: '/dashboard/attendance',
         icon: CheckCircle2,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE, Role.MUMIN],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.MANAGER, Role.ATTENDANCE_INCHARGE],  // Removed MUMIN - they see their own in profile
     },
     {
         title: 'questions',
         href: '/dashboard/questions',
         icon: MessageSquareText,
-        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB, Role.MUMIN],
+        roles: [Role.SUPERADMIN, Role.ADMIN, Role.JANAB],  // Removed MUMIN - they only have read_self
     },
     {
         title: 'calendar',

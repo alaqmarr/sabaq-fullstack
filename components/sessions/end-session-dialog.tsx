@@ -13,7 +13,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Loader2, CheckCircle2, AlertCircle, HardDrive, ArrowRight } from "lucide-react";
+import { Loader2, CheckCircle2, AlertCircle, HardDrive, Download } from "lucide-react";
 import { syncSessionAttendance } from "@/actions/sync";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
@@ -48,6 +48,19 @@ interface EndSessionDialogProps {
     children?: React.ReactNode;
 }
 
+interface ReportData {
+    excelBase64: string;
+    filename: string;
+    stats: {
+        totalStudents: number;
+        presentCount: number;
+        lateCount: number;
+        absentCount: number;
+        noShowCount: number;
+        attendanceRate: string;
+    };
+}
+
 export function EndSessionDialog({
     sessionId,
     sabaqName,
@@ -62,6 +75,7 @@ export function EndSessionDialog({
     const [syncStats, setSyncStats] = useState({ current: 0, total: 0 });
     const [resultStats, setResultStats] = useState<{ count: number; errors: number } | null>(null);
     const [resultMessage, setResultMessage] = useState("");
+    const [reportData, setReportData] = useState<ReportData | null>(null);
 
     const isControlled = controlledOpen !== undefined;
     const isOpen = isControlled ? controlledOpen : internalOpen;
@@ -97,6 +111,7 @@ export function EndSessionDialog({
         setStatus("syncing");
         setProgress(0);
         setSyncStats({ current: 0, total: 0 });
+        setReportData(null);
 
         try {
             const result = await syncSessionAttendance(sessionId);
@@ -106,6 +121,12 @@ export function EndSessionDialog({
                 setProgress(100);
                 setResultStats({ count: result.count || 0, errors: result.errors || 0 });
                 setResultMessage(result.message || "Session finalized successfully.");
+
+                // Store report data for download
+                if (result.reportData) {
+                    setReportData(result.reportData as ReportData);
+                }
+
                 toast.success("Session ended and attendance synced.");
                 if (onSuccess) onSuccess();
             } else {
@@ -120,6 +141,31 @@ export function EndSessionDialog({
         }
     };
 
+    const handleDownloadReport = () => {
+        if (!reportData) return;
+
+        // Convert base64 to blob and download
+        const byteCharacters = atob(reportData.excelBase64);
+        const byteNumbers = new Array(byteCharacters.length);
+        for (let i = 0; i < byteCharacters.length; i++) {
+            byteNumbers[i] = byteCharacters.charCodeAt(i);
+        }
+        const byteArray = new Uint8Array(byteNumbers);
+        const blob = new Blob([byteArray], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        // Create download link
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = reportData.filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+
+        toast.success("Report downloaded!");
+    };
+
     const handleClose = () => {
         if (status === "syncing") return; // Prevent closing while syncing
         if (onOpenChange) onOpenChange(false);
@@ -128,6 +174,7 @@ export function EndSessionDialog({
             setProgress(0);
             setResultMessage("");
             setResultStats(null);
+            setReportData(null);
         }, 500);
     };
 
@@ -156,8 +203,8 @@ export function EndSessionDialog({
                     </AlertDialogTitle>
                     <AlertDialogDescription>
                         {status === "idle" && "This will finalize the session and sync all realtime attendance data to the main database."}
-                        {status === "syncing" && "Please wait while we sync attendance records from the realtime database to the primary storage."}
-                        {status === "success" && "Session has been successfully ended and all data has been synchronized."}
+                        {status === "syncing" && "Please wait while we sync attendance records and send email reports..."}
+                        {status === "success" && "Session has been successfully ended and all data has been synchronized. Email reports have been sent."}
                         {status === "error" && "There was an error syncing the data. Please try again or contact support."}
                     </AlertDialogDescription>
                 </AlertDialogHeader>
@@ -225,7 +272,7 @@ export function EndSessionDialog({
                                     <p className="text-xs text-center text-muted-foreground">
                                         {syncStats.total > 0
                                             ? `Processed ${syncStats.current} of ${syncStats.total} records`
-                                            : "Initializing sync..."}
+                                            : "Initializing sync and sending emails..."}
                                     </p>
                                 </div>
                             </motion.div>
@@ -242,24 +289,52 @@ export function EndSessionDialog({
                                     <CheckCircle2 className="h-10 w-10 text-green-600 dark:text-green-400" />
                                 </div>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div className="bg-muted/50 p-4 rounded-lg text-center">
-                                        <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                                            {resultStats?.count || 0}
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                    <div className="bg-green-50 dark:bg-green-900/20 p-3 rounded-lg text-center">
+                                        <div className="text-xl font-bold text-green-600 dark:text-green-400">
+                                            {reportData?.stats.presentCount || resultStats?.count || 0}
                                         </div>
-                                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                                            Records Synced
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                            Present
                                         </div>
                                     </div>
-                                    <div className="bg-muted/50 p-4 rounded-lg text-center">
-                                        <div className={`text-2xl font-bold ${resultStats?.errors ? 'text-red-500' : 'text-muted-foreground'}`}>
-                                            {resultStats?.errors || 0}
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg text-center">
+                                        <div className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                                            {reportData?.stats.lateCount || 0}
                                         </div>
-                                        <div className="text-xs text-muted-foreground uppercase tracking-wider font-medium">
-                                            Failed
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                            Late
+                                        </div>
+                                    </div>
+                                    <div className="bg-red-50 dark:bg-red-900/20 p-3 rounded-lg text-center">
+                                        <div className="text-xl font-bold text-red-600 dark:text-red-400">
+                                            {reportData?.stats.absentCount || resultStats?.errors || 0}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                            Absent
+                                        </div>
+                                    </div>
+                                    <div className="bg-orange-50 dark:bg-orange-900/20 p-3 rounded-lg text-center">
+                                        <div className="text-xl font-bold text-orange-600 dark:text-orange-400">
+                                            {reportData?.stats.noShowCount || 0}
+                                        </div>
+                                        <div className="text-[10px] text-muted-foreground uppercase tracking-wider font-medium">
+                                            No-Show
                                         </div>
                                     </div>
                                 </div>
+
+                                {/* Download Button */}
+                                {reportData && (
+                                    <Button
+                                        onClick={handleDownloadReport}
+                                        className="w-full bg-blue-600 hover:bg-blue-700"
+                                    >
+                                        <Download className="w-4 h-4 mr-2" />
+                                        Download Report (Excel)
+                                    </Button>
+                                )}
                             </motion.div>
                         )}
 
@@ -308,3 +383,4 @@ export function EndSessionDialog({
         </AlertDialog>
     );
 }
+

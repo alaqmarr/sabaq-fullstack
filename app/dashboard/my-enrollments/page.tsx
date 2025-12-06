@@ -44,9 +44,19 @@ export default async function MyEnrollmentsPage() {
                         const status = enrollment.status as keyof typeof statusConfig;
                         const StatusIcon = statusConfig[status].icon;
 
+                        // Only approved enrollments link to my-sabaqs detail page
+                        const href = enrollment.status === 'APPROVED'
+                            ? `/dashboard/my-sabaqs/${enrollment.sabaq.id}`
+                            : '#';
+                        const isClickable = enrollment.status === 'APPROVED';
+
                         return (
-                            <Link key={enrollment.id} href={`/dashboard/sabaqs/${enrollment.sabaq.id}`}>
-                                <Card className="glass-card hover-lift transition-all cursor-pointer h-full uppercase">
+                            <Link
+                                key={enrollment.id}
+                                href={href}
+                                className={!isClickable ? 'pointer-events-none' : ''}
+                            >
+                                <Card className={`glass-card transition-all h-full uppercase ${isClickable ? 'hover-lift cursor-pointer' : 'opacity-80'}`}>
                                     <CardHeader className="pb-3">
                                         <div className="flex items-start justify-between gap-2">
                                             <div className="flex-1">

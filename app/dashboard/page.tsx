@@ -5,7 +5,8 @@ import { redirect } from 'next/navigation';
 import { Suspense } from 'react';
 import { ActiveSessionsSection } from '@/components/dashboard/active-sessions';
 import { UpcomingSessionsSection } from '@/components/dashboard/upcoming-sessions';
-import { ActiveSessionsSkeleton, UpcomingSessionsSkeleton } from '@/components/dashboard/skeletons';
+import { RecentlyEndedSessionsSection } from '@/components/dashboard/recently-ended-sessions';
+import { ActiveSessionsSkeleton, UpcomingSessionsSkeleton, RecentlyEndedSessionsSkeleton } from '@/components/dashboard/skeletons';
 import { AdminQuickActions } from '@/components/dashboard/admin-quick-actions';
 import { requirePermission } from '@/lib/rbac';
 import { isRedirectError } from '@/lib/utils';
@@ -48,6 +49,11 @@ export default async function DashboardPage() {
                     <ActiveSessionsSection />
                 </Suspense>
 
+                {/* Recently Ended Sessions - Shows quick actions for feedback/questions */}
+                <Suspense fallback={<RecentlyEndedSessionsSkeleton />}>
+                    <RecentlyEndedSessionsSection />
+                </Suspense>
+
                 {/* Upcoming Sessions - Second Priority */}
                 <Suspense fallback={<UpcomingSessionsSkeleton />}>
                     <UpcomingSessionsSection />
@@ -59,3 +65,4 @@ export default async function DashboardPage() {
         </div>
     );
 }
+
