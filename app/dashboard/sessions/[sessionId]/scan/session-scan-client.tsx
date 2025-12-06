@@ -56,33 +56,42 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
     const [highlightedId, setHighlightedId] = useState<string | null>(null);
     const [matchedUserName, setMatchedUserName] = useState<string | null>(null);
     const [startingSession, setStartingSession] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
     const router = useRouter();
 
     // Load Session Users and Initial Attendance
     useEffect(() => {
-        if (!isActive) return;
+        if (!isActive) {
+            setIsLoading(false);
+            return;
+        }
 
         const loadData = async () => {
-            // 1. Load Users
-            const usersRes = await getSessionUsers(sessionId);
-            if (usersRes.success && usersRes.users) {
-                const userMap = new Map<string, string>();
-                usersRes.users.forEach((u: any) => userMap.set(u.itsNumber, u.name));
-                setSessionUsers(userMap);
-            }
+            setIsLoading(true);
+            try {
+                // 1. Load Users
+                const usersRes = await getSessionUsers(sessionId);
+                if (usersRes.success && usersRes.users) {
+                    const userMap = new Map<string, string>();
+                    usersRes.users.forEach((u: any) => userMap.set(u.itsNumber, u.name));
+                    setSessionUsers(userMap);
+                }
 
-            // 2. Load Initial Attendance
-            const attendanceRes = await getSessionAttendance(sessionId);
-            if (attendanceRes.success && attendanceRes.attendances) {
-                const mapped: AttendanceRecord[] = attendanceRes.attendances.map((a: any) => ({
-                    id: a.id,
-                    userName: a.user.name,
-                    itsNumber: a.user.itsNumber,
-                    markedAt: new Date(a.markedAt).getTime(),
-                    isLate: a.isLate,
-                    markerName: a.marker?.name,
-                }));
-                setLiveAttendance(mapped);
+                // 2. Load Initial Attendance
+                const attendanceRes = await getSessionAttendance(sessionId);
+                if (attendanceRes.success && attendanceRes.attendances) {
+                    const mapped: AttendanceRecord[] = attendanceRes.attendances.map((a: any) => ({
+                        id: a.id,
+                        userName: a.user.name,
+                        itsNumber: a.user.itsNumber,
+                        markedAt: new Date(a.markedAt).getTime(),
+                        isLate: a.isLate,
+                        markerName: a.marker?.name,
+                    }));
+                    setLiveAttendance(mapped);
+                }
+            } finally {
+                setIsLoading(false);
             }
         };
         loadData();
@@ -315,7 +324,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
     }
 
     return (
-        <div className="grid gap-6 lg:grid-cols-3 max-w-7xl mx-auto">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-3 max-w-7xl mx-auto w-full overflow-hidden px-1 sm:px-0">
             {/* Manual Entry Section */}
             <Card className="lg:col-span-1 h-fit glass-premium border-0 order-1 lg:order-none">
                 <CardHeader>
@@ -324,12 +333,16 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                         Enter ITS number
                     </CardDescription>
                 </CardHeader>
-                <CardContent className="space-y-6">
+                <CardContent className="space-y-4 sm:space-y-6">
                     <form onSubmit={handleManualSubmit} className="space-y-4">
                         <div className="relative">
-                            <Keyboard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            {processing ? (
+                                <Loader2 className="absolute left-3 top-3 h-4 w-4 text-muted-foreground animate-spin" />
+                            ) : (
+                                <Keyboard className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                            )}
                             <Input
-                                placeholder="Enter 8-digit ITS..."
+                                placeholder={processing ? "Marking..." : "Enter 8-digit ITS..."}
                                 value={manualIts}
                                 onChange={(e) => {
                                     const val = e.target.value.replace(/\D/g, '').slice(0, 8);
@@ -343,12 +356,20 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                 inputMode="numeric"
                                 maxLength={8}
                                 autoFocus
+                                disabled={processing}
                             />
                         </div>
                     </form>
 
+                    {processing && (
+                        <div className="p-2 sm:p-3 rounded-md text-xs sm:text-sm flex items-center gap-2 bg-blue-500/10 text-blue-400 border border-blue-500/20 animate-pulse">
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Marking attendance...</span>
+                        </div>
+                    )}
+
                     {scanResult && (
-                        <div className={`p-3 rounded-md text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${scanResult.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'
+                        <div className={`p-2 sm:p-3 rounded-md text-xs sm:text-sm flex items-center gap-2 animate-in fade-in slide-in-from-top-2 ${scanResult.type === 'success' ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-destructive/10 text-destructive border border-destructive/20'
                             }`}>
                             {scanResult.type === 'success' ? <CheckCircle className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
                             <span>{scanResult.message}</span>
@@ -373,18 +394,23 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
             </Card>
 
             {/* Live Feed Section */}
-            <Card className="lg:col-span-1 h-[400px] lg:h-[600px] flex flex-col glass-premium border-0 order-2 lg:order-none">
-                <CardHeader className="pb-2">
+            <Card className="lg:col-span-1 h-[300px] sm:h-[400px] lg:h-[600px] flex flex-col glass-premium border-0 order-2 lg:order-none overflow-hidden">
+                <CardHeader className="pb-2 px-3 sm:px-6">
                     <div className="flex items-center justify-between">
-                        <CardTitle className="text-cred-heading">Live Feed</CardTitle>
-                        <Badge variant="secondary" className="font-mono">
+                        <CardTitle className="text-cred-heading text-sm sm:text-base">Live Feed</CardTitle>
+                        <Badge variant="secondary" className="font-mono text-xs">
                             {liveAttendance.filter(r => !r.error).length} Present
                         </Badge>
                     </div>
                 </CardHeader>
-                <ScrollArea className="flex-1 px-4 pb-4">
-                    <div className="space-y-3">
-                        {liveAttendance.length === 0 ? (
+                <ScrollArea className="flex-1 px-2 sm:px-4 pb-4">
+                    <div className="space-y-2 sm:space-y-3">
+                        {isLoading ? (
+                            <div className="flex flex-col items-center justify-center py-8 gap-2">
+                                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                                <span className="text-xs text-muted-foreground">Loading attendance...</span>
+                            </div>
+                        ) : liveAttendance.length === 0 ? (
                             <div className="text-center text-muted-foreground py-8 text-sm">
                                 No attendance marked yet
                             </div>
@@ -393,7 +419,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                 <div
                                     key={record.id}
                                     id={`record-${record.id}`}
-                                    className={`flex items-center justify-between p-3 rounded-lg border transition-all duration-500 ${highlightedId === record.id
+                                    className={`flex items-center gap-2 p-2 sm:p-3 rounded-lg border transition-all duration-500 overflow-hidden ${highlightedId === record.id
                                         ? 'bg-blue-500/20 border-blue-500/50 shadow-[0_0_15px_rgba(59,130,246,0.3)]'
                                         : record.error
                                             ? 'bg-destructive/10 border-destructive/30'
@@ -402,33 +428,32 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                                 : 'bg-white/5 border-white/10'
                                         }`}
                                 >
-                                    <div className="flex items-center gap-3 min-w-0">
-                                        <div className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${record.error ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/20 text-blue-400'
-                                            }`}>
-                                            {record.error ? <AlertTriangle className="h-4 w-4" /> : <User className="h-4 w-4" />}
-                                        </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium text-foreground truncate">
-                                                {record.userName}
-                                                {record.pending && <span className="text-xs text-muted-foreground ml-2">(Syncing...)</span>}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                                                <span className="font-mono">{record.itsNumber}</span>
-                                                <span>•</span>
-                                                <span className="truncate">{record.markerName ? `By ${record.markerName}` : 'System'}</span>
-                                            </div>
-                                            {record.error && (
-                                                <p className="text-xs text-destructive mt-0.5 truncate">{record.error}</p>
+                                    {/* Avatar - hidden on very small screens */}
+                                    <div className={`hidden xs:flex h-8 w-8 rounded-full items-center justify-center shrink-0 ${record.error ? 'bg-destructive/20 text-destructive' : 'bg-blue-500/20 text-blue-400'
+                                        }`}>
+                                        {record.error ? <AlertTriangle className="h-4 w-4" /> : <User className="h-4 w-4" />}
+                                    </div>
+                                    {/* Content - flex-1 with overflow hidden */}
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                        <p className="text-xs sm:text-sm font-medium text-foreground truncate max-w-[120px] xs:max-w-[150px] sm:max-w-none">
+                                            {record.userName}
+                                            {record.pending && <span className="text-[10px] sm:text-xs text-muted-foreground ml-1">(Sync)</span>}
+                                        </p>
+                                        <div className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs text-muted-foreground">
+                                            <span className="font-mono shrink-0">{record.itsNumber}</span>
+                                            {record.isLate && (
+                                                <Badge variant="destructive" className="text-[8px] sm:text-[10px] h-4 px-1">Late</Badge>
                                             )}
                                         </div>
-                                    </div>
-                                    <div className="flex flex-col items-end gap-1 shrink-0">
-                                        <span className="text-xs text-muted-foreground">
-                                            {format(record.markedAt, 'h:mm:ss a')}
-                                        </span>
-                                        {record.isLate && (
-                                            <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Late</Badge>
+                                        {record.error && (
+                                            <p className="text-[10px] sm:text-xs text-destructive mt-0.5 truncate">{record.error}</p>
                                         )}
+                                    </div>
+                                    {/* Time - compact on mobile */}
+                                    <div className="shrink-0 text-right">
+                                        <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+                                            {format(record.markedAt, 'h:mm a')}
+                                        </span>
                                     </div>
                                 </div>
                             ))
