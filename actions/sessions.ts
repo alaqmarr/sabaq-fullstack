@@ -234,7 +234,10 @@ export async function startSession(id: string) {
   }
 }
 
-export async function endSession(id: string) {
+export async function endSession(
+  id: string,
+  options?: { skipActiveCheck?: boolean }
+) {
   try {
     await requirePermission("sessions", "end");
 
@@ -260,26 +263,34 @@ export async function endSession(id: string) {
       return { success: false, error: "Session not found" };
     }
 
-    if (!existingSession.isActive) {
+    // Allow skipping active check when called from sync (session was just ended)
+    const skipActiveCheck = options?.skipActiveCheck ?? false;
+
+    if (!skipActiveCheck && !existingSession.isActive) {
       return { success: false, error: "Session is not active" };
     }
 
-    const [session] = await prisma.$transaction([
-      prisma.session.update({
-        where: { id },
-        data: {
-          endedAt: new Date(),
-          isActive: false,
-        },
-      }),
-      prisma.sabaq.update({
-        where: { id: existingSession.sabaqId },
-        data: {
-          activeSessionId: null,
-          conductedSessionsCount: { increment: 1 },
-        },
-      }),
-    ]);
+    // Only update session status if it's still active
+    let session = existingSession;
+    if (existingSession.isActive) {
+      const [updatedSession] = await prisma.$transaction([
+        prisma.session.update({
+          where: { id },
+          data: {
+            endedAt: new Date(),
+            isActive: false,
+          },
+        }),
+        prisma.sabaq.update({
+          where: { id: existingSession.sabaqId },
+          data: {
+            activeSessionId: null,
+            conductedSessionsCount: { increment: 1 },
+          },
+        }),
+      ]);
+      session = updatedSession as any;
+    }
 
     // 1. Fetch all approved enrollments with ITS number
     const enrollments = await prisma.enrollment.findMany({
@@ -503,7 +514,14 @@ export async function endSession(id: string) {
 
     const uniqueAdminEmails = [...new Set(adminEmails)];
 
-    // 10. Queue session report emails
+    // 10. Queue session report emails with Excel attachment
+    const excelAttachment = {
+      filename: excelFilename,
+      content: excelBuffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+
     for (const email of uniqueAdminEmails) {
       await queueEmail(
         email,
@@ -521,7 +539,8 @@ export async function endSession(id: string) {
           lowAttendanceStudents,
           noShowStudents,
           noShowCount: noShowUsers.length,
-        }
+        },
+        [excelAttachment] // Attach Excel report
       );
     }
 

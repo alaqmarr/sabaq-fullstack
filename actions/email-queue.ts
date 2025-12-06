@@ -1,7 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { sendEmail } from "@/lib/email";
+import { sendEmail, EmailAttachment } from "@/lib/email";
 import {
   enrollmentApprovedTemplate,
   enrollmentRejectedTemplate,
@@ -20,14 +20,21 @@ import {
   syncSuccessTemplate,
   syncFailedTemplate,
   sessionReportTemplate,
+  loginAlertTemplate,
+  feedbackResponseTemplate,
+  passwordResetTemplate,
+  sessionCancelledTemplate,
+  enrollmentRequestTemplate,
+  lowAttendanceWarningTemplate,
 } from "@/lib/email-templates";
 
-// Queue an email
+// Queue an email with optional attachments
 export async function queueEmail(
   to: string,
   subject: string,
   template: string,
-  templateData?: any
+  templateData?: any,
+  attachments?: EmailAttachment[]
 ) {
   try {
     await prisma.emailLog.create({
@@ -37,6 +44,7 @@ export async function queueEmail(
         template: JSON.stringify({
           templateName: template,
           data: templateData,
+          attachments: attachments || [],
         }),
         status: "PENDING",
       },
@@ -131,12 +139,36 @@ export async function processEmailQueue() {
           case "session-report":
             html = sessionReportTemplate(templateInfo.data);
             break;
+          case "login-alert":
+            html = loginAlertTemplate(templateInfo.data);
+            break;
+          case "feedback-response":
+            html = feedbackResponseTemplate(templateInfo.data);
+            break;
+          case "password-reset":
+            html = passwordResetTemplate(templateInfo.data);
+            break;
+          case "session-cancelled":
+            html = sessionCancelledTemplate(templateInfo.data);
+            break;
+          case "enrollment-request":
+            html = enrollmentRequestTemplate(templateInfo.data);
+            break;
+          case "low-attendance-warning":
+            html = lowAttendanceWarningTemplate(templateInfo.data);
+            break;
           default:
             throw new Error(`Unknown template: ${templateInfo.templateName}`);
         }
 
-        // Send email
-        const result = await sendEmail(email.to, email.subject, html);
+        // Send email with attachments if provided
+        const attachments = templateInfo.attachments || [];
+        const result = await sendEmail(
+          email.to,
+          email.subject,
+          html,
+          attachments
+        );
 
         if (result.success) {
           // Update status to SENT

@@ -27,7 +27,7 @@ export async function syncSessionAttendance(sessionId: string) {
 
     if (!snapshot.exists()) {
       // No data in Firebase, call endSession to send emails
-      const endResult = await endSession(sessionId);
+      const endResult = await endSession(sessionId, { skipActiveCheck: true });
       revalidatePath(`/dashboard/sessions/${sessionId}`);
       return {
         success: true,
@@ -113,7 +113,7 @@ export async function syncSessionAttendance(sessionId: string) {
     }
 
     // Call endSession to finalize, send emails, and get report data
-    const endResult = await endSession(sessionId);
+    const endResult = await endSession(sessionId, { skipActiveCheck: true });
 
     // Finalize status
     await statusRef.set({
