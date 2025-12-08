@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { syncSessionAttendance } from "@/actions/sync";
 import { processEmailQueue } from "@/actions/email-queue";
-import { adminDb } from "@/lib/firebase-admin";
+import { cache } from "@/lib/cache";
 
 export const dynamic = "force-dynamic";
 export const preferredRegion = ["sin1"];
@@ -16,52 +14,28 @@ export async function GET(request: Request) {
     }
 
     const results = {
-      syncedSessions: 0,
       emailsProcessed: 0,
       errors: [] as string[],
     };
 
-    // 1. Safety Net: Find sessions marked as ENDED but might have missing data
-    // Find sessions ended in the last 24 hours.
-    if (adminDb) {
-      const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const recentSessions = await prisma.session.findMany({
-        where: {
-          isActive: false,
-          scheduledAt: { gte: yesterday },
-        },
-      });
+    // NOTE: We no longer compare Firebase vs Neon counts because:
+    // 1. Direct/manual attendance only goes to Neon (not Firebase)
+    // 2. Sessions are already synced when they are ended
+    // 3. Count comparison would incorrectly trigger re-syncs
 
-      for (const session of recentSessions) {
-        try {
-          // Check Firebase count
-          const ref = adminDb.ref(`sessions/${session.id}/attendance`);
-          const snapshot = await ref.get();
-
-          if (snapshot.exists()) {
-            const firebaseCount = snapshot.numChildren();
-            // If Neon count is significantly less, re-sync
-            if (firebaseCount > session.attendanceCount) {
-              console.log(
-                `Re-syncing session ${session.id} (Firebase: ${firebaseCount}, Neon: ${session.attendanceCount})`
-              );
-              await syncSessionAttendance(session.id);
-              results.syncedSessions++;
-            }
-          }
-        } catch (err: any) {
-          results.errors.push(`Session ${session.id}: ${err.message}`);
-        }
-      }
-    }
-
-    // 2. Process Email Queue
+    // 1. Process Email Queue
     try {
-      // Process a batch
       await processEmailQueue();
-      results.emailsProcessed = 1; // Just a flag that it ran
+      results.emailsProcessed = 1;
     } catch (err: any) {
       results.errors.push(`Email Queue: ${err.message}`);
+    }
+
+    // 2. Update Last Sync Timestamp (so settings page shows correct time)
+    try {
+      await cache.set("system:last_sync", new Date().toISOString());
+    } catch (err) {
+      console.error("Failed to update last sync timestamp:", err);
     }
 
     return NextResponse.json({ success: true, results });

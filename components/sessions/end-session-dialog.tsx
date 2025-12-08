@@ -72,10 +72,12 @@ export function EndSessionDialog({
     const [internalOpen, setInternalOpen] = useState(false);
     const [status, setStatus] = useState<"idle" | "syncing" | "success" | "error">("idle");
     const [progress, setProgress] = useState(0);
+    const [phaseLabel, setPhaseLabel] = useState("Initializing...");
     const [syncStats, setSyncStats] = useState({ current: 0, total: 0 });
     const [resultStats, setResultStats] = useState<{ count: number; errors: number } | null>(null);
     const [resultMessage, setResultMessage] = useState("");
     const [reportData, setReportData] = useState<ReportData | null>(null);
+    const [wasSuccessful, setWasSuccessful] = useState(false);
 
     const isControlled = controlledOpen !== undefined;
     const isOpen = isControlled ? controlledOpen : internalOpen;
@@ -92,10 +94,15 @@ export function EndSessionDialog({
         const handleStatusChange = (snapshot: any) => {
             if (snapshot.exists()) {
                 const data = snapshot.val();
+                // Use current directly as percentage (0-100)
+                if (typeof data.current === 'number') {
+                    setProgress(data.current);
+                }
                 if (data.total > 0) {
-                    const percentage = Math.round((data.current / data.total) * 100);
-                    setProgress(percentage);
                     setSyncStats({ current: data.current, total: data.total });
+                }
+                if (data.phaseLabel) {
+                    setPhaseLabel(data.phaseLabel);
                 }
             }
         };
@@ -121,6 +128,7 @@ export function EndSessionDialog({
                 setProgress(100);
                 setResultStats({ count: result.count || 0, errors: result.errors || 0 });
                 setResultMessage(result.message || "Session finalized successfully.");
+                setWasSuccessful(true);
 
                 // Store report data for download
                 if (result.reportData) {
@@ -128,7 +136,7 @@ export function EndSessionDialog({
                 }
 
                 toast.success("Session ended and attendance synced.");
-                if (onSuccess) onSuccess();
+                // NOTE: Don't call onSuccess here - wait for user to close dialog
             } else {
                 setStatus("error");
                 setResultMessage(result.error || "Failed to sync attendance.");
@@ -168,6 +176,12 @@ export function EndSessionDialog({
 
     const handleClose = () => {
         if (status === "syncing") return; // Prevent closing while syncing
+
+        // Call onSuccess when user closes dialog after successful sync
+        if (wasSuccessful && onSuccess) {
+            onSuccess();
+        }
+
         if (onOpenChange) onOpenChange(false);
         setTimeout(() => {
             setStatus("idle");
@@ -175,6 +189,7 @@ export function EndSessionDialog({
             setResultMessage("");
             setResultStats(null);
             setReportData(null);
+            setWasSuccessful(false);
         }, 500);
     };
 
@@ -263,16 +278,15 @@ export function EndSessionDialog({
                                     </div>
                                 </div>
 
+
                                 <div className="space-y-2">
                                     <div className="flex justify-between text-xs text-muted-foreground">
                                         <span>Progress</span>
-                                        <span>{syncStats.total > 0 ? `${Math.round((syncStats.current / syncStats.total) * 100)}%` : '0%'}</span>
+                                        <span>{progress}%</span>
                                     </div>
                                     <Progress value={progress} className="h-2 w-full" />
                                     <p className="text-xs text-center text-muted-foreground">
-                                        {syncStats.total > 0
-                                            ? `Processed ${syncStats.current} of ${syncStats.total} records`
-                                            : "Initializing sync and sending emails..."}
+                                        {phaseLabel}
                                     </p>
                                 </div>
                             </motion.div>

@@ -429,10 +429,15 @@ export async function endSession(
       .slice(0, 5)
       .map((e) => e.user.name || "Unknown");
 
-    // 9. Fetch admins
+    // 9. Fetch admins - only ADMIN and SUPERADMIN roles (not ATTENDANCE_INCHARGE)
     const sabaqAdmins = await prisma.sabaqAdmin.findMany({
-      where: { sabaqId: existingSession.sabaqId },
-      include: { user: { select: { email: true } } },
+      where: {
+        sabaqId: existingSession.sabaqId,
+        user: {
+          role: { in: ["ADMIN", "SUPERADMIN"] },
+        },
+      },
+      include: { user: { select: { email: true, role: true } } },
     });
 
     const superAdmins = await prisma.user.findMany({
@@ -440,6 +445,7 @@ export async function endSession(
       select: { email: true },
     });
 
+    // Only send to Sabaq Admins (ADMIN role), SuperAdmins, and Janab (not ATTENDANCE_INCHARGE)
     const adminEmails = [
       ...sabaqAdmins.map((sa) => sa.user.email),
       ...superAdmins.map((sa) => sa.email),
@@ -480,6 +486,305 @@ export async function endSession(
 
     // 11. Process email queue and wait for completion
     await processEmailQueue();
+
+    await cache.invalidatePattern("sessions:*");
+    revalidatePath("/dashboard/sessions");
+    revalidatePath(`/dashboard/sessions/${id}`);
+
+    return {
+      success: true,
+      session,
+      reportData: {
+        excelBase64: excelBuffer,
+        filename: excelFilename,
+        stats: {
+          totalStudents,
+          presentCount,
+          lateCount,
+          absentCount,
+          noShowCount: noShowUsers.length,
+          attendanceRate,
+        },
+      },
+    };
+  } catch (error: any) {
+    console.error("Failed to end session:", error);
+    return { success: false, error: error.message || "Failed to end session" };
+  }
+}
+
+// Progress callback type
+type ProgressCallback = (
+  phase: string,
+  progress: number,
+  label: string
+) => Promise<void>;
+
+// Version of endSession with progress reporting for the dialog
+export async function endSessionWithProgress(
+  id: string,
+  options?: { skipActiveCheck?: boolean },
+  onProgress?: ProgressCallback
+) {
+  try {
+    await requirePermission("sessions", "end");
+
+    const existingSession = await prisma.session.findUnique({
+      where: { id },
+      include: {
+        sabaq: {
+          select: {
+            id: true,
+            name: true,
+            janab: {
+              select: {
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!existingSession) {
+      return { success: false, error: "Session not found" };
+    }
+
+    const skipActiveCheck = options?.skipActiveCheck ?? false;
+
+    if (!skipActiveCheck && !existingSession.isActive) {
+      return { success: false, error: "Session is not active" };
+    }
+
+    // Report progress: Starting
+    await onProgress?.("report", 0, "Starting session finalization...");
+
+    // Only update session status if it's still active
+    let session = existingSession;
+    if (existingSession.isActive) {
+      const [updatedSession] = await prisma.$transaction([
+        prisma.session.update({
+          where: { id },
+          data: {
+            endedAt: new Date(),
+            isActive: false,
+          },
+        }),
+        prisma.sabaq.update({
+          where: { id: existingSession.sabaqId },
+          data: {
+            activeSessionId: null,
+            conductedSessionsCount: { increment: 1 },
+          },
+        }),
+      ]);
+      session = updatedSession as any;
+    }
+
+    await onProgress?.("report", 10, "Fetching enrollment data...");
+
+    // 1. Fetch all approved enrollments with ITS number
+    const enrollments = await prisma.enrollment.findMany({
+      where: {
+        sabaqId: existingSession.sabaqId,
+        status: "APPROVED",
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            itsNumber: true,
+          },
+        },
+      },
+    });
+
+    await onProgress?.("report", 20, "Fetching attendance records...");
+
+    // 2. Fetch all attendance records for this session
+    const attendances = await prisma.attendance.findMany({
+      where: { sessionId: id },
+      select: {
+        userId: true,
+        isLate: true,
+        user: {
+          select: { name: true, itsNumber: true },
+        },
+      },
+    });
+
+    const attendanceMap = new Map(attendances.map((a) => [a.userId, a]));
+
+    await onProgress?.("report", 30, "Calculating attendance stats...");
+
+    // Calculate attendance stats
+    const totalStudents = enrollments.length;
+    const presentCount = attendances.filter((a) => !a.isLate).length;
+    const lateCount = attendances.filter((a) => a.isLate).length;
+    const absentCount = totalStudents - (presentCount + lateCount);
+    const attendanceRate =
+      totalStudents > 0
+        ? `${Math.round(((presentCount + lateCount) / totalStudents) * 100)}%`
+        : "0%";
+
+    await onProgress?.("report", 40, "Generating Excel report...");
+
+    // Generate Excel report (simplified - copy from main function)
+    const enrolledUserIds = enrollments.map((e) => e.user.id);
+    const allSabaqAttendances = await prisma.attendance.findMany({
+      where: {
+        session: { sabaqId: existingSession.sabaqId },
+        userId: { in: enrolledUserIds },
+      },
+      select: { userId: true },
+    });
+
+    const everAttendedUserIds = new Set(
+      allSabaqAttendances.map((a) => a.userId)
+    );
+    const noShowUsers = enrollments.filter(
+      (e) => !everAttendedUserIds.has(e.user.id)
+    );
+
+    // Build Excel data
+    const attendedList = attendances.map((a) => ({
+      Name: a.user.name || "Unknown",
+      ITS: a.user.itsNumber,
+      Status: a.isLate ? "Late" : "Present",
+    }));
+
+    const absentList = enrollments
+      .filter((e) => !attendanceMap.has(e.user.id))
+      .map((e) => ({
+        Name: e.user.name || "Unknown",
+        ITS: e.user.itsNumber,
+        Status: "Absent",
+      }));
+
+    const noShowList = noShowUsers.map((e) => ({
+      Name: e.user.name || "Unknown",
+      ITS: e.user.itsNumber,
+      Status: "No-Show (Never Attended)",
+    }));
+
+    const XLSX = await import("xlsx");
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(attendedList),
+      "Attended"
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(absentList),
+      "Absent"
+    );
+    XLSX.utils.book_append_sheet(
+      workbook,
+      XLSX.utils.json_to_sheet(noShowList),
+      "No-Shows"
+    );
+
+    const excelBuffer = XLSX.write(workbook, {
+      type: "base64",
+      bookType: "xlsx",
+    });
+    const dateStr = formatDate(existingSession.scheduledAt).replace(
+      /[/\\]/g,
+      "-"
+    );
+    const excelFilename = `${existingSession.sabaq.name}_${dateStr}_Report.xlsx`;
+
+    await onProgress?.("emails", 50, "Preparing email recipients...");
+
+    // Fetch admins
+    const sabaqAdmins = await prisma.sabaqAdmin.findMany({
+      where: {
+        sabaqId: existingSession.sabaqId,
+        user: { role: { in: ["ADMIN", "SUPERADMIN"] } },
+      },
+      include: { user: { select: { email: true } } },
+    });
+
+    const superAdmins = await prisma.user.findMany({
+      where: { role: "SUPERADMIN" },
+      select: { email: true },
+    });
+
+    const topStudents = attendances
+      .slice(0, 5)
+      .map((a) => a.user.name || "Unknown");
+    const lowAttendanceStudents = enrollments
+      .filter((e) => !attendanceMap.has(e.user.id))
+      .slice(0, 5)
+      .map((e) => e.user.name || "Unknown");
+    const noShowStudents = noShowUsers
+      .slice(0, 5)
+      .map((e) => e.user.name || "Unknown");
+
+    const adminEmails = [
+      ...sabaqAdmins.map((sa) => sa.user.email),
+      ...superAdmins.map((sa) => sa.email),
+      existingSession.sabaq.janab?.email,
+    ].filter((email): email is string => !!email);
+
+    const uniqueAdminEmails = [...new Set(adminEmails)];
+
+    await onProgress?.(
+      "emails",
+      60,
+      `Sending emails to ${uniqueAdminEmails.length} admins...`
+    );
+
+    // Queue session report emails
+    const excelAttachment = {
+      filename: excelFilename,
+      content: excelBuffer,
+      contentType:
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    };
+
+    for (let i = 0; i < uniqueAdminEmails.length; i++) {
+      const email = uniqueAdminEmails[i];
+      await queueEmail(
+        email,
+        `Session Report: ${existingSession.sabaq.name}`,
+        "session-report",
+        {
+          sabaqName: existingSession.sabaq.name,
+          sessionDate: formatDateTime(existingSession.scheduledAt),
+          totalStudents,
+          presentCount,
+          absentCount,
+          lateCount,
+          attendanceRate,
+          topStudents,
+          lowAttendanceStudents,
+          noShowStudents,
+          noShowCount: noShowUsers.length,
+        },
+        [excelAttachment]
+      );
+
+      // Update progress for each email queued
+      const emailProgress =
+        60 + Math.round(((i + 1) / uniqueAdminEmails.length) * 30);
+      await onProgress?.(
+        "emails",
+        emailProgress,
+        `Queued ${i + 1} of ${uniqueAdminEmails.length} emails`
+      );
+    }
+
+    await onProgress?.("processing", 90, "Processing email queue...");
+
+    // Process email queue
+    await processEmailQueue();
+
+    await onProgress?.("done", 100, "Complete!");
 
     await cache.invalidatePattern("sessions:*");
     revalidatePath("/dashboard/sessions");

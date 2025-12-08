@@ -1158,3 +1158,157 @@ export async function bulkMarkAttendance(
     };
   }
 }
+
+// Direct manual attendance for ADMIN/SUPERADMIN - writes to Neon DB directly
+export async function markAttendanceManualDirect(params: {
+  sessionId: string;
+  userId: string;
+  sabaqId: string;
+  scheduledAt: Date;
+}) {
+  try {
+    const authSession = await auth();
+    if (!authSession?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // STRICT: Only ADMIN and SUPERADMIN can use this
+    const currentUser = await prisma.user.findUnique({
+      where: { id: authSession.user.id },
+      select: { id: true, role: true },
+    });
+
+    if (!currentUser || !["SUPERADMIN", "ADMIN"].includes(currentUser.role)) {
+      return { success: false, error: "Unauthorized - Admin access required" };
+    }
+
+    // For ADMIN, verify they are a sabaq admin
+    if (currentUser.role === "ADMIN") {
+      const isSabaqAdmin = await prisma.sabaqAdmin.findFirst({
+        where: {
+          sabaqId: params.sabaqId,
+          userId: currentUser.id,
+        },
+      });
+      if (!isSabaqAdmin) {
+        return { success: false, error: "Unauthorized - Not a sabaq admin" };
+      }
+    }
+
+    // Check if attendance already exists
+    const existing = await prisma.attendance.findUnique({
+      where: {
+        sessionId_userId: {
+          sessionId: params.sessionId,
+          userId: params.userId,
+        },
+      },
+    });
+
+    if (existing) {
+      return { success: false, error: "Attendance already marked" };
+    }
+
+    // Get user and session details
+    const [user, session] = await Promise.all([
+      prisma.user.findUnique({
+        where: { id: params.userId },
+        select: { id: true, name: true, itsNumber: true, email: true },
+      }),
+      prisma.session.findUnique({
+        where: { id: params.sessionId },
+        include: { sabaq: { select: { id: true, name: true } } },
+      }),
+    ]);
+
+    if (!user) return { success: false, error: "User not found" };
+    if (!session) return { success: false, error: "Session not found" };
+
+    const markedAt = new Date();
+    const { isLate, minutesLate } = calculateLateness(
+      markedAt,
+      session.cutoffTime
+    );
+    const attendanceId = generateAttendanceId(user.itsNumber, params.sessionId);
+
+    // Write directly to Neon DB (not Firebase)
+    await prisma.$transaction([
+      prisma.attendance.create({
+        data: {
+          id: attendanceId,
+          sessionId: params.sessionId,
+          userId: params.userId,
+          itsNumber: user.itsNumber,
+          markedAt,
+          markedBy: currentUser.id,
+          method: "MANUAL_ENTRY",
+          isLate,
+          minutesLate,
+        },
+      }),
+      prisma.session.update({
+        where: { id: params.sessionId },
+        data: { attendanceCount: { increment: 1 } },
+      }),
+      prisma.user.update({
+        where: { id: params.userId },
+        data: {
+          attendedCount: { increment: 1 },
+          lateCount: isLate ? { increment: 1 } : undefined,
+        },
+      }),
+    ]);
+
+    // Send email with performance stats
+    if (user.email) {
+      const [totalSessions, userAttendanceCount] = await Promise.all([
+        prisma.session.count({
+          where: { sabaqId: session.sabaqId, endedAt: { not: null } },
+        }),
+        prisma.attendance.count({
+          where: {
+            userId: params.userId,
+            session: { sabaqId: session.sabaqId },
+          },
+        }),
+      ]);
+
+      const attendedCount = userAttendanceCount;
+      const totalForPercent = Math.max(totalSessions, 1);
+      const attendancePercent = Math.round(
+        (attendedCount / totalForPercent) * 100
+      );
+
+      await queueEmail(
+        user.email,
+        `Attendance: ${session.sabaq.name}`,
+        "attendance-marked",
+        {
+          userName: user.name,
+          userItsNumber: user.itsNumber,
+          sabaqName: session.sabaq.name,
+          status: isLate ? "Late" : "Present",
+          markedAt: formatDateTime(markedAt),
+          sessionDate: formatDate(params.scheduledAt),
+          sessionId: params.sessionId,
+          attendedCount,
+          totalSessions: totalForPercent,
+          attendancePercent,
+        }
+      );
+      void processEmailQueue();
+    }
+
+    revalidatePath(`/dashboard/sessions/${params.sessionId}`);
+    return {
+      success: true,
+      attendance: { id: attendanceId, userId: params.userId, isLate },
+    };
+  } catch (error: any) {
+    console.error("Manual direct attendance failed:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to mark attendance",
+    };
+  }
+}

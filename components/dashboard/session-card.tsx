@@ -164,10 +164,20 @@ export function SessionCard({ session, userRole, isAttended = false, variant }: 
                             </EndSessionDialog>
                         )}
 
+                        {/* QR Scanner for active sessions - available to all scan-capable roles */}
                         {canScan && isActive && (
                             <Button size="sm" variant="frosted-teal" asChild className="w-fit justify-start">
                                 <Link href={`/dashboard/sessions/${session.id}/scan`}>
                                     <QrCode className="h-3.5 w-3.5 mr-2" /> Take Attendance
+                                </Link>
+                            </Button>
+                        )}
+
+                        {/* Manual Attendance for NON-ACTIVE sessions - ONLY for ADMINs/SUPERADMINs */}
+                        {canStartStop && !isActive && (
+                            <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
+                                <Link href={`/dashboard/sessions/${session.id}/manual-attendance`}>
+                                    <UserPlus className="h-3.5 w-3.5 mr-2" /> Manual Attendance
                                 </Link>
                             </Button>
                         )}

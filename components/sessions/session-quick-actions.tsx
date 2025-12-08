@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startSession, resumeSession } from "@/actions/sessions";
 import { toast } from "sonner";
-import { Play, Square, RotateCcw, Loader2 } from "lucide-react";
+import { Play, Square, RotateCcw, Loader2, UserPlus } from "lucide-react";
+import Link from "next/link";
 import {
     AlertDialog,
     AlertDialogAction,
@@ -80,7 +81,6 @@ export function SessionQuickActions({
 
 
 
-
     return (
         <Card>
             <CardHeader>
@@ -137,6 +137,20 @@ export function SessionQuickActions({
                             End Session
                         </Button>
                     </EndSessionDialog>
+                )}
+
+                {/* Manual Attendance - available for non-active sessions (ended or upcoming) */}
+                {!isActive && (
+                    <Button
+                        variant="outline"
+                        className="w-full sm:w-auto justify-start"
+                        asChild
+                    >
+                        <Link href={`/dashboard/sessions/${sessionId}/manual-attendance`}>
+                            <UserPlus className="mr-2 h-4 w-4" />
+                            Manual Attendance
+                        </Link>
+                    </Button>
                 )}
 
                 {isEnded && (
