@@ -437,7 +437,7 @@ export const sessionReminderTemplate = (data: {
   });
 };
 
-// 4. Attendance Marked
+// 4. Attendance Marked (with Sabaq Performance)
 export const attendanceMarkedTemplate = (data: {
   userName: string;
   userItsNumber?: string;
@@ -445,10 +445,44 @@ export const attendanceMarkedTemplate = (data: {
   status: string;
   markedAt: string;
   sessionDate: string;
+  attendedCount?: number;
+  totalSessions?: number;
+  attendancePercent?: number;
 }) => {
   const isLate = data.status.toLowerCase() === "late";
   const badgeClass = isLate ? "badge-warning" : "badge-success";
   const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
+
+  // Performance color based on percentage
+  const getPerformanceColor = (percent: number) => {
+    if (percent >= 80)
+      return {
+        bg: "#ecfdf5",
+        border: "#a7f3d0",
+        color: "#047857",
+        label: "Excellent",
+      };
+    if (percent >= 60)
+      return {
+        bg: "#fffbeb",
+        border: "#fcd34d",
+        color: "#b45309",
+        label: "Good",
+      };
+    return {
+      bg: "#fef2f2",
+      border: "#fca5a5",
+      color: "#b91c1c",
+      label: "Needs Improvement",
+    };
+  };
+
+  const hasStats =
+    data.attendedCount !== undefined &&
+    data.totalSessions !== undefined &&
+    data.totalSessions > 0;
+  const percent = data.attendancePercent || 0;
+  const perfStyle = hasStats ? getPerformanceColor(percent) : null;
 
   const content = `
     <div class="greeting">Salaams, ${data.userName}${itsDisplay}</div>
@@ -468,9 +502,32 @@ export const attendanceMarkedTemplate = (data: {
     </table>
 
     ${
+      hasStats && perfStyle
+        ? `
+      <div style="margin-top: 20px; padding: 15px; background-color: ${perfStyle.bg}; border: 1px solid ${perfStyle.border}; border-radius: 8px;">
+        <div style="font-size: 12px; font-weight: 600; color: ${perfStyle.color}; text-transform: uppercase; margin-bottom: 10px;">
+          Your Sabaq Performance
+        </div>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <span style="color: #4a5568; font-size: 14px;">Sessions Attended</span>
+          <span style="font-weight: 700; color: ${perfStyle.color}; font-size: 16px;">${data.attendedCount} / ${data.totalSessions}</span>
+        </div>
+        <div style="background-color: #e2e8f0; border-radius: 4px; height: 8px; overflow: hidden;">
+          <div style="background-color: ${perfStyle.color}; height: 100%; width: ${percent}%;"></div>
+        </div>
+        <div style="display: flex; justify-content: space-between; margin-top: 8px;">
+          <span style="font-size: 12px; color: #718096;">${perfStyle.label}</span>
+          <span style="font-weight: 600; color: ${perfStyle.color};">${percent}%</span>
+        </div>
+      </div>
+    `
+        : ""
+    }
+
+    ${
       isLate
         ? `
-      <div class="alert-box" style="background-color: #fffaf0; border-color: #d69e2e; color: #744210;">
+      <div class="alert-box" style="background-color: #fffaf0; border-color: #d69e2e; color: #744210; margin-top: 15px;">
         <strong>Note:</strong> Please try to arrive on time for future sessions to ensure you don't miss important lessons.
       </div>
     `
@@ -479,7 +536,9 @@ export const attendanceMarkedTemplate = (data: {
   `;
   return baseEmailTemplate({
     title: "Attendance Update",
-    previewText: `Attendance marked as ${data.status} for ${data.sabaqName}.`,
+    previewText: `Attendance marked as ${data.status} for ${data.sabaqName}. ${
+      hasStats ? `Your attendance: ${percent}%` : ""
+    }`,
     content,
   });
 };

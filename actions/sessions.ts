@@ -322,74 +322,8 @@ export async function endSession(
 
     const attendanceMap = new Map(attendances.map((a) => [a.userId, a]));
 
-    // Get total sessions for this sabaq (for attendance percentage in emails)
-    const totalSabaqSessions = await prisma.session.count({
-      where: {
-        sabaqId: existingSession.sabaqId,
-        endedAt: { not: null },
-      },
-    });
-
-    // 3. Queue emails to each enrolled user
-    for (const enrollment of enrollments) {
-      if (!enrollment.user.email) continue;
-
-      const attendance = attendanceMap.get(enrollment.user.id);
-
-      // Get user's total attendance for this sabaq
-      const userAttendanceCount = await prisma.attendance.count({
-        where: {
-          userId: enrollment.user.id,
-          session: { sabaqId: existingSession.sabaqId },
-        },
-      });
-
-      const attendancePercent =
-        totalSabaqSessions > 0
-          ? Math.round((userAttendanceCount / totalSabaqSessions) * 100)
-          : 0;
-
-      if (attendance) {
-        // Present or Late
-        await queueEmail(
-          enrollment.user.email,
-          `Session Summary: ${existingSession.sabaq.name}`,
-          "session-summary",
-          {
-            userName: enrollment.user.name,
-            userItsNumber: enrollment.user.itsNumber,
-            sabaqName: existingSession.sabaq.name,
-            scheduledAt: formatDateTime(existingSession.scheduledAt),
-            status: attendance.isLate ? "Late" : "Present",
-            minutesLate: attendance.minutesLate,
-            sessionId: id,
-            feedbackLink: `${process.env.NEXT_PUBLIC_APP_URL}/sessions/${id}/feedback`,
-            attendedCount: userAttendanceCount,
-            totalSessions: totalSabaqSessions,
-            attendancePercent,
-            reportErrorLink: `${process.env.NEXT_PUBLIC_APP_URL}/sessions/${id}/report-error`,
-          }
-        );
-      } else {
-        // Absent
-        await queueEmail(
-          enrollment.user.email,
-          `Session Absence: ${existingSession.sabaq.name}`,
-          "session-absent",
-          {
-            userName: enrollment.user.name,
-            userItsNumber: enrollment.user.itsNumber,
-            sabaqName: existingSession.sabaq.name,
-            scheduledAt: formatDateTime(existingSession.scheduledAt),
-            sessionId: id,
-            attendedCount: userAttendanceCount,
-            totalSessions: totalSabaqSessions,
-            attendancePercent,
-            reportErrorLink: `${process.env.NEXT_PUBLIC_APP_URL}/sessions/${id}/report-error`,
-          }
-        );
-      }
-    }
+    // NOTE: Individual user emails (session-summary/session-absent) removed to reduce email spam
+    // Users already receive attendance confirmation when marked. Only admins get end-of-session report.
 
     // 4. Calculate attendance stats
     const totalStudents = enrollments.length;

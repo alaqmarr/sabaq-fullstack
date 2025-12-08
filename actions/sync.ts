@@ -26,8 +26,25 @@ export async function syncSessionAttendance(sessionId: string) {
     const snapshot = await ref.get();
 
     if (!snapshot.exists()) {
-      // No data in Firebase, call endSession to send emails
+      // No data in Firebase - set progress status and call endSession
+      const statusRef = adminDb.ref(`sessions/${sessionId}/syncStatus`);
+      await statusRef.set({
+        status: "syncing",
+        total: 1,
+        current: 0,
+        errors: 0,
+      });
+
       const endResult = await endSession(sessionId, { skipActiveCheck: true });
+
+      await statusRef.set({
+        status: "completed",
+        total: 1,
+        current: 1,
+        errors: 0,
+        completedAt: Date.now(),
+      });
+
       revalidatePath(`/dashboard/sessions/${sessionId}`);
       return {
         success: true,
@@ -98,17 +115,18 @@ export async function syncSessionAttendance(sessionId: string) {
           syncedCount++;
         }
 
-        // Update progress every 5 records or if it's the last one
-        if (syncedCount % 5 === 0 || syncedCount === totalRecords) {
-          await statusRef.update({
-            current: syncedCount,
-            errors: errorCount,
-          });
-        }
+        // Update progress after EVERY record for smooth progress bar animation
+        await statusRef.update({
+          current: syncedCount + errorCount,
+          errors: errorCount,
+        });
       } catch (err) {
         console.error(`Failed to sync record for user ${record.userId}:`, err);
         errorCount++;
-        await statusRef.update({ errors: errorCount });
+        await statusRef.update({
+          current: syncedCount + errorCount,
+          errors: errorCount,
+        });
       }
     }
 
