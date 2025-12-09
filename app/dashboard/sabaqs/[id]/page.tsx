@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { auth } from '@/auth';
 
 export const preferredRegion = ["sin1"];
-import { Role } from '@prisma/client';
+import { Role } from '@/app/prisma/client';
 import Link from 'next/link';
 import { Users, Calendar, FileDown, ChevronRight } from 'lucide-react';
 import { EnrollmentStatusBanner } from '@/components/sabaqs/enrollment-status-banner';

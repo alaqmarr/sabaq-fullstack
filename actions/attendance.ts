@@ -62,7 +62,7 @@ export async function markAttendanceManual(
 ) {
   try {
     const session = await auth();
-    if (!session?.user) {
+    if (!session?.user?.id) {
       return { success: false, error: "Unauthorized" };
     }
 
@@ -810,6 +810,10 @@ export async function getUserAttendanceHistory(userId?: string) {
     }
 
     const targetUserId = userId || session.user.id;
+
+    if (!targetUserId) {
+      return { success: false, error: "User ID missing" };
+    }
 
     // If requesting for another user, check 'read' permission
     // If requesting for self, check 'read_self' permission

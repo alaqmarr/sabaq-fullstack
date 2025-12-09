@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { cookies } from "next/headers";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/prisma/client";
 import { redirect } from "next/navigation";
 import { waitUntil } from "@vercel/functions";
 

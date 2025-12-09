@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import { auth } from '@/auth';
 
 export const preferredRegion = ["sin1"];
-import { Role } from '@prisma/client';
+import { Role } from '@/app/prisma/client';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';

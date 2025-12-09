@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { redirect } from "next/navigation";
 import permissionsConfig from "@/config/permissions.json";
 import { prisma } from "@/lib/prisma";
-import { Role } from "@prisma/client";
+import { Role } from "@/app/prisma/client";
 import { getErrorCode, ERROR_CODES } from "@/lib/error-codes";
 
 type Resource = keyof typeof permissionsConfig.roles.SUPERADMIN;

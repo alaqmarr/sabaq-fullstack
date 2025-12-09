@@ -1,6 +1,6 @@
-import { BaseService } from './base-service';
-import { prisma } from '@/lib/prisma';
-import { CACHE_TTL, CACHE_TAGS, cacheKeys } from '@/lib/cache-config';
+import { BaseService } from "./base-service";
+import { prisma } from "@/lib/prisma";
+import { CACHE_TTL, CACHE_TAGS, cacheKeys } from "@/lib/cache-config";
 
 /**
  * Users service with optimized caching
@@ -27,7 +27,7 @@ class UsersService extends BaseService {
         },
       });
     } catch (error) {
-      this.handleError(error, 'UsersService.getById');
+      this.handleError(error, "UsersService.getById");
     }
   });
 
@@ -49,10 +49,10 @@ class UsersService extends BaseService {
           role: true,
           isActive: true,
         },
-        orderBy: { name: 'asc' },
+        orderBy: { name: "asc" },
       });
     } catch (error) {
-      this.handleError(error, 'UsersService.getAll');
+      this.handleError(error, "UsersService.getAll");
     }
   });
 
@@ -71,10 +71,10 @@ class UsersService extends BaseService {
             name: true,
             email: true,
           },
-          orderBy: { name: 'asc' },
+          orderBy: { name: "asc" },
         });
       } catch (error) {
-        this.handleError(error, 'UsersService.getByRole');
+        this.handleError(error, "UsersService.getByRole");
       }
     },
     (role) => [cacheKeys.usersByRole(role)],
@@ -95,7 +95,7 @@ class UsersService extends BaseService {
           where: { role: role as any, isActive: true },
         });
       } catch (error) {
-        this.handleError(error, 'UsersService.getCountByRole');
+        this.handleError(error, "UsersService.getCountByRole");
       }
     },
     (role) => [cacheKeys.usersByRole(`${role}-count`)],
@@ -114,7 +114,7 @@ class UsersService extends BaseService {
       return await prisma.user.findMany({
         where: {
           OR: [
-            { name: { contains: query, mode: 'insensitive' } },
+            { name: { contains: query, mode: "insensitive" } },
             { itsNumber: { contains: query } },
           ],
           isActive: true,
@@ -129,7 +129,7 @@ class UsersService extends BaseService {
         take: 10,
       });
     } catch (error) {
-      this.handleError(error, 'UsersService.search');
+      this.handleError(error, "UsersService.search");
     }
   });
 
@@ -144,10 +144,7 @@ class UsersService extends BaseService {
    * Invalidate specific user cache
    */
   invalidateById(id: string): void {
-    this.invalidateCacheTags([
-      CACHE_TAGS.users[0],
-      cacheKeys.user(id),
-    ]);
+    this.invalidateCacheTags([CACHE_TAGS.users[0], cacheKeys.user(id)]);
   }
 }
 

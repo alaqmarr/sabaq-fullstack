@@ -25,7 +25,7 @@ import { toast } from 'sonner';
 import { formatDateTimeCode } from '@/lib/date-utils';
 import { Check, X } from 'lucide-react';
 import { RejectionDialog } from './rejection-dialog';
-import { EnrollmentStatus } from '@prisma/client';
+import { EnrollmentStatus } from '@/app/prisma/client';
 
 interface EnrollmentTableProps {
     enrollments: any[];

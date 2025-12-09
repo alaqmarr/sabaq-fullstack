@@ -23,7 +23,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Role } from '@prisma/client';
+import { Role } from '@/app/prisma/client';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
 import { useState } from 'react';

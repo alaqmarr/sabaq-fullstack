@@ -1,7 +1,7 @@
-import { BaseService } from './base-service';
-import { prisma } from '@/lib/prisma';
-import { CACHE_TTL, CACHE_TAGS, cacheKeys } from '@/lib/cache-config';
-import { Session } from '@prisma/client';
+import { BaseService } from "./base-service";
+import { prisma } from "@/lib/prisma";
+import { CACHE_TTL, CACHE_TAGS, cacheKeys } from "@/lib/cache-config";
+import { Session } from "@/app/prisma/client";
 
 /**
  * Sessions service with optimized caching
@@ -33,7 +33,7 @@ class SessionsService extends BaseService {
         },
       });
     } catch (error) {
-      this.handleError(error, 'SessionsService.getById');
+      this.handleError(error, "SessionsService.getById");
     }
   });
 
@@ -62,10 +62,10 @@ class SessionsService extends BaseService {
               },
             },
           },
-          orderBy: { scheduledAt: 'desc' },
+          orderBy: { scheduledAt: "desc" },
         });
       } catch (error) {
-        this.handleError(error, 'SessionsService.getActiveSessions');
+        this.handleError(error, "SessionsService.getActiveSessions");
       }
     },
     () => [cacheKeys.activeSessions()],
@@ -103,11 +103,11 @@ class SessionsService extends BaseService {
               },
             },
           },
-          orderBy: { scheduledAt: 'asc' },
+          orderBy: { scheduledAt: "asc" },
           take: 10,
         });
       } catch (error) {
-        this.handleError(error, 'SessionsService.getUpcomingSessions');
+        this.handleError(error, "SessionsService.getUpcomingSessions");
       }
     },
     () => [cacheKeys.sessions()],
@@ -133,10 +133,10 @@ class SessionsService extends BaseService {
             },
           },
         },
-        orderBy: { scheduledAt: 'desc' },
+        orderBy: { scheduledAt: "desc" },
       });
     } catch (error) {
-      this.handleError(error, 'SessionsService.getBySabaqId');
+      this.handleError(error, "SessionsService.getBySabaqId");
     }
   });
 
@@ -144,45 +144,41 @@ class SessionsService extends BaseService {
    * Get all sessions with pagination
    * Uses request-level cache
    */
-  getAll = this.cached(async (options?: {
-    skip?: number;
-    take?: number;
-    sabaqId?: string;
-  }) => {
-    try {
-      const where = options?.sabaqId 
-        ? { sabaqId: options.sabaqId }
-        : {};
+  getAll = this.cached(
+    async (options?: { skip?: number; take?: number; sabaqId?: string }) => {
+      try {
+        const where = options?.sabaqId ? { sabaqId: options.sabaqId } : {};
 
-      const [sessions, total] = await Promise.all([
-        prisma.session.findMany({
-          where,
-          include: {
-            sabaq: {
-              select: {
-                id: true,
-                name: true,
-                kitaab: true,
+        const [sessions, total] = await Promise.all([
+          prisma.session.findMany({
+            where,
+            include: {
+              sabaq: {
+                select: {
+                  id: true,
+                  name: true,
+                  kitaab: true,
+                },
+              },
+              _count: {
+                select: {
+                  attendances: true,
+                },
               },
             },
-            _count: {
-              select: {
-                attendances: true,
-              },
-            },
-          },
-          orderBy: { scheduledAt: 'desc' },
-          skip: options?.skip || 0,
-          take: options?.take || 50,
-        }),
-        prisma.session.count({ where }),
-      ]);
+            orderBy: { scheduledAt: "desc" },
+            skip: options?.skip || 0,
+            take: options?.take || 50,
+          }),
+          prisma.session.count({ where }),
+        ]);
 
-      return { sessions, total };
-    } catch (error) {
-      this.handleError(error, 'SessionsService.getAll');
+        return { sessions, total };
+      } catch (error) {
+        this.handleError(error, "SessionsService.getAll");
+      }
     }
-  });
+  );
 
   /**
    * Get session details with all related data
@@ -197,7 +193,7 @@ class SessionsService extends BaseService {
             include: {
               location: true,
               enrollments: {
-                where: { status: 'APPROVED' },
+                where: { status: "APPROVED" },
                 select: {
                   userId: true,
                 },
@@ -214,7 +210,7 @@ class SessionsService extends BaseService {
                 },
               },
             },
-            orderBy: { markedAt: 'asc' },
+            orderBy: { markedAt: "asc" },
           },
           questions: {
             include: {
@@ -226,15 +222,12 @@ class SessionsService extends BaseService {
                 },
               },
             },
-            orderBy: [
-              { upvotes: 'desc' },
-              { createdAt: 'desc' },
-            ],
+            orderBy: [{ upvotes: "desc" }, { createdAt: "desc" }],
           },
         },
       });
     } catch (error) {
-      this.handleError(error, 'SessionsService.getDetails');
+      this.handleError(error, "SessionsService.getDetails");
     }
   });
 
@@ -250,10 +243,7 @@ class SessionsService extends BaseService {
    * Invalidate specific session cache
    */
   invalidateById(id: string): void {
-    this.invalidateCacheTags([
-      CACHE_TAGS.sessions[0],
-      cacheKeys.session(id),
-    ]);
+    this.invalidateCacheTags([CACHE_TAGS.sessions[0], cacheKeys.session(id)]);
   }
 }
 

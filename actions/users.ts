@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
 import { auth } from "@/auth";
-import { Role, Gender } from "@prisma/client";
+import { Role, Gender } from "@/app/prisma/client";
 import { hash } from "bcryptjs";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { waitUntil } from "@vercel/functions";
