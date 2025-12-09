@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { Role } from "@/app/prisma/client";
+import { Role } from "@/app/prisma/enums";
 import { revalidatePath } from "next/cache";
 
 export async function getAppConfig() {
