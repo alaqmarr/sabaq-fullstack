@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Role, EnrollmentStatus, AttendanceMethod } from "@prisma/client";
+import { Role, EnrollmentStatus, AttendanceMethod } from "@/app/prisma/enums";
 
 export const UserSchema = z.object({
   itsNumber: z.string().regex(/^\d{8}$/, "ITS Number must be exactly 8 digits"),
