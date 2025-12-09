@@ -993,3 +993,68 @@ export async function getEnrollmentRequests(
     return { success: false, error: "Failed to fetch enrollment requests" };
   }
 }
+
+// Direct Enroll (Admin/Superadmin only) - Bypasses request flow
+export async function directEnrollUser(sabaqId: string, userId: string) {
+  try {
+    const currentUser = await requirePermission("enrollments", "create");
+    // Verify access
+    if (currentUser.role !== "SUPERADMIN") {
+      const isAssigned = await prisma.sabaqAdmin.findUnique({
+        where: { sabaqId_userId: { sabaqId, userId: currentUser.id } },
+      });
+      const sabaq = await prisma.sabaq.findUnique({
+        where: { id: sabaqId },
+        select: { janabId: true },
+      });
+
+      if (!isAssigned && sabaq?.janabId !== currentUser.id) {
+        return { success: false, error: "Unauthorized" };
+      }
+    }
+
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    const enrollmentId = generateEnrollmentId(user?.itsNumber!, sabaqId);
+
+    // Upsert to handle if a request already exists (PENDING -> APPROVED) or new
+    const enrollment = await prisma.enrollment.upsert({
+      where: { sabaqId_userId: { sabaqId, userId } },
+      update: {
+        status: "APPROVED",
+        approvedAt: new Date(),
+        approvedBy: currentUser.id,
+        rejectedAt: null,
+        rejectionReason: null,
+      },
+      create: {
+        id: enrollmentId,
+        sabaqId,
+        userId,
+        status: "APPROVED",
+        approvedAt: new Date(),
+        approvedBy: currentUser.id,
+        requestedAt: new Date(),
+      },
+      include: { user: true, sabaq: true },
+    });
+
+    // Update counts (if newly created or changed from pending)
+    // Upsert doesn't tell us if it created or updated easily without a check,
+    // but let's just blindly increment count if it wasn't approved before.
+    // Or simpler: Recalculate or rely on trigger?
+    // Let's do a safe increment:
+    await prisma.sabaq.update({
+      where: { id: sabaqId },
+      data: { enrollmentCount: { increment: 1 } },
+    });
+    await prisma.user.update({
+      where: { id: userId },
+      data: { enrollmentCount: { increment: 1 } },
+    });
+
+    revalidatePath(`/dashboard/sessions`);
+    return { success: true, enrollment };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}

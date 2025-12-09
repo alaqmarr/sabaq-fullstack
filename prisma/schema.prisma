@@ -11,6 +11,7 @@ model User {
   id           String   @id // ITS Number will be the ID
   itsNumber    String   @unique // Kept for backward compatibility/clarity, will match ID
   name         String
+  gender       Gender?
   email        String?
   phone        String?
   role         Role     @default(MUMIN)
@@ -267,6 +268,11 @@ enum Role {
   ATTENDANCE_INCHARGE
   JANAB
   MUMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
 }
 
 enum EnrollmentStatus {

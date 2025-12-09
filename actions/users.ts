@@ -3,7 +3,7 @@
 import { prisma } from "@/lib/prisma";
 import { requirePermission } from "@/lib/rbac";
 import { auth } from "@/auth";
-import { Role } from "@prisma/client";
+import { Role, Gender } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { waitUntil } from "@vercel/functions";
@@ -201,8 +201,9 @@ export async function createUser(data: any) {
         itsNumber: data.itsNumber,
         email: data.email,
         phone: data.phone ? normalizePhone(data.phone) : undefined,
-        role: data.role || "MUMIN",
+        role: data.role || Role.MUMIN,
         password: hashedPassword,
+        gender: data.gender || inferGender(data.name),
       },
     });
 
@@ -474,51 +475,59 @@ export async function bulkCreateUsers(users: any[]) {
   try {
     await requirePermission("users", "create");
 
-    let createdCount = 0;
-    let errors: { its: string; name: string; error: string }[] = [];
+    const inputItsNumbers = users.map((u) => u.itsNumber);
 
-    for (const userData of users) {
-      try {
-        const existingUser = await prisma.user.findUnique({
-          where: { itsNumber: userData.itsNumber },
-        });
+    // 1. Bulk check for existing users
+    const existingUsers = await prisma.user.findMany({
+      where: { itsNumber: { in: inputItsNumbers } },
+      select: { itsNumber: true },
+    });
 
-        if (existingUser) {
-          errors.push({
-            its: userData.itsNumber,
-            name: userData.name,
-            error: `User with ITS ${userData.itsNumber} already exists`,
-          });
-          continue;
-        }
+    const existingItsSet = new Set(existingUsers.map((u) => u.itsNumber));
 
-        const hashedPassword = await hash(
-          userData.password || userData.itsNumber,
-          10
-        );
+    const validUsers: any[] = [];
+    const errors: { its: string; name: string; error: string }[] = [];
 
-        await prisma.user.create({
-          data: {
-            id: userData.itsNumber,
-            name: userData.name,
-            itsNumber: userData.itsNumber,
-            email: userData.email,
-            phone: userData.phone ? normalizePhone(userData.phone) : undefined,
-            role: userData.role || "MUMIN",
-            password: hashedPassword,
-          },
-        });
-        createdCount++;
-      } catch (error: any) {
+    // 2. Filter and Verify
+    // Optimizing hashing by running in parallel for the batch
+    const processingPromises = users.map(async (userData) => {
+      if (existingItsSet.has(userData.itsNumber)) {
         errors.push({
           its: userData.itsNumber,
           name: userData.name,
-          error: error.message || "Unknown error",
+          error: `User already exists`,
         });
+        return;
       }
-    }
 
-    if (createdCount > 0) {
+      const hashedPassword = await hash(
+        userData.password || userData.itsNumber,
+        10
+      );
+
+      validUsers.push({
+        id: userData.itsNumber,
+        name: userData.name,
+        itsNumber: userData.itsNumber,
+        email: userData.email,
+        phone: userData.phone ? normalizePhone(userData.phone) : undefined,
+        role: userData.role || Role.MUMIN,
+        password: hashedPassword,
+        gender: userData.gender || inferGender(userData.name),
+        isActive: true,
+      });
+    });
+
+    await Promise.all(processingPromises);
+
+    // 3. Bulk Insert
+    let createdCount = 0;
+    if (validUsers.length > 0) {
+      await prisma.user.createMany({
+        data: validUsers,
+        skipDuplicates: true,
+      });
+      createdCount = validUsers.length;
       await cache.invalidatePattern("users:*");
     }
 
@@ -534,8 +543,58 @@ export async function bulkCreateUsers(users: any[]) {
   }
 }
 
-function normalizePhone(phone: string): string {
-  let p = phone.trim();
+export async function fixMissingGenders() {
+  try {
+    await requirePermission("users", "update");
+
+    const usersWithoutGender = await prisma.user.findMany({
+      where: { gender: null },
+      select: { id: true, name: true },
+    });
+
+    let updatedCount = 0;
+
+    // Use parallel processing for gender updates with a concurrency limit
+    // to avoid overwhelming the DB connection pool if there are thousands
+    const BATCH_SIZE = 50;
+    for (let i = 0; i < usersWithoutGender.length; i += BATCH_SIZE) {
+      const batch = usersWithoutGender.slice(i, i + BATCH_SIZE);
+      await Promise.all(
+        batch.map(async (user) => {
+          const inferredGender = inferGender(user.name);
+          if (inferredGender) {
+            await prisma.user.update({
+              where: { id: user.id },
+              data: { gender: inferredGender },
+            });
+            updatedCount++;
+          }
+        })
+      );
+    }
+
+    if (updatedCount > 0) {
+      await cache.invalidatePattern("users:*");
+    }
+
+    return {
+      success: true,
+      count: updatedCount,
+      message: `Updated gender for ${updatedCount} users`,
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+}
+
+function inferGender(name: string): Gender {
+  const words = name.toLowerCase().split(/\s+/).slice(0, 3);
+  const hasBhai = words.some((w) => w.includes("bhai"));
+  return hasBhai ? Gender.MALE : Gender.FEMALE;
+}
+
+function normalizePhone(phone: string | number): string {
+  let p = String(phone).trim();
   const hasPlus = p.startsWith("+");
   const digits = p.replace(/\D/g, "");
 
@@ -559,42 +618,75 @@ export async function bulkUpdateUsers(users: any[]) {
     let updatedCount = 0;
     let errors: { its: string; name: string; error: string }[] = [];
 
+    // 1. Bulk check existence
+    const inputItsDetails = users.map((u) => ({
+      its: u.itsNumber,
+      name: u.name,
+    }));
+    const existingUsers = await prisma.user.findMany({
+      where: { itsNumber: { in: inputItsDetails.map((d) => d.its) } },
+      select: { itsNumber: true },
+    });
+    const existingItsSet = new Set(existingUsers.map((u) => u.itsNumber));
+
+    const updatesToRun: {
+      fn: () => Promise<any>;
+      its: string;
+      name: string;
+    }[] = [];
+
+    // 2. Prepare Updates
     for (const userData of users) {
-      try {
-        const existingUser = await prisma.user.findUnique({
-          where: { itsNumber: userData.itsNumber },
-        });
-
-        if (!existingUser) {
-          errors.push({
-            its: userData.itsNumber,
-            name: userData.name || "Unknown",
-            error: `User with ITS ${userData.itsNumber} not found`,
-          });
-          continue;
-        }
-
-        const dataToUpdate: any = {};
-        if (userData.name) dataToUpdate.name = userData.name;
-        if (userData.email) dataToUpdate.email = userData.email;
-        if (userData.phone) dataToUpdate.phone = normalizePhone(userData.phone);
-        if (userData.role) dataToUpdate.role = userData.role;
-        if (userData.password) {
-          dataToUpdate.password = await hash(userData.password, 10);
-        }
-
-        await prisma.user.update({
-          where: { id: userData.itsNumber },
-          data: dataToUpdate,
-        });
-        updatedCount++;
-      } catch (error: any) {
+      if (!existingItsSet.has(userData.itsNumber)) {
         errors.push({
           its: userData.itsNumber,
           name: userData.name || "Unknown",
-          error: error.message || "Unknown error",
+          error: `User with ITS ${userData.itsNumber} not found`,
+        });
+        continue;
+      }
+
+      const dataToUpdate: any = {};
+      if (userData.name) dataToUpdate.name = userData.name;
+      // Only allow name update for now via this specific flow optimization,
+      // but keep logic generic if other fields passed (though we only expect name from new UI)
+      // For safety in "name only" feature, strictly update name implies we trust limits.
+      // But existing function is generic "bulkUpdateUsers".
+      if (userData.email) dataToUpdate.email = userData.email;
+      if (userData.phone) dataToUpdate.phone = normalizePhone(userData.phone);
+      if (userData.role) dataToUpdate.role = userData.role;
+
+      if (Object.keys(dataToUpdate).length > 0) {
+        updatesToRun.push({
+          its: userData.itsNumber,
+          name: userData.name,
+          fn: () =>
+            prisma.user.update({
+              where: { id: userData.itsNumber },
+              data: dataToUpdate,
+            }),
         });
       }
+    }
+
+    // 3. Execute in parallel matches (concurrency limit 20)
+    const BATCH_SIZE = 20;
+    for (let i = 0; i < updatesToRun.length; i += BATCH_SIZE) {
+      const batch = updatesToRun.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(batch.map((item) => item.fn()));
+
+      results.forEach((res, idx) => {
+        if (res.status === "fulfilled") {
+          updatedCount++;
+        } else {
+          const failedItem = batch[idx];
+          errors.push({
+            its: failedItem.its,
+            name: failedItem.name,
+            error: res.reason?.message || "Update failed",
+          });
+        }
+      });
     }
 
     if (updatedCount > 0) {
@@ -870,5 +962,57 @@ export async function updateUserProfile(
       success: false,
       error: "Could not update profile. Please try again.",
     };
+  }
+}
+
+// Lookup user for attendance (Global search + Enrollment check)
+export async function lookupUserForAttendance(query: string, sabaqId: string) {
+  try {
+    const session = await auth();
+    if (!session?.user) {
+      return { success: false, error: "Unauthorized" };
+    }
+
+    // Search by ITS or Name
+    const user = await prisma.user.findFirst({
+      where: {
+        OR: [
+          { itsNumber: query },
+          { name: { contains: query, mode: "insensitive" } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        itsNumber: true,
+        role: true,
+      },
+    });
+
+    if (!user) {
+      return { success: true, user: null };
+    }
+
+    // Check enrollment status
+    const enrollment = await prisma.enrollment.findUnique({
+      where: {
+        sabaqId_userId: {
+          sabaqId,
+          userId: user.id,
+        },
+      },
+      select: { status: true, id: true },
+    });
+
+    return {
+      success: true,
+      user: {
+        ...user,
+        enrollmentStatus: enrollment?.status || null,
+        enrollmentId: enrollment?.id || null,
+      },
+    };
+  } catch (error: any) {
+    return { success: false, error: error.message };
   }
 }

@@ -94,6 +94,25 @@ export default async function ManualAttendancePage({ params }: { params: Promise
         hasAttended: attendedUserIds.has(e.user.id)
     }));
 
+    // Fetch pending enrollment requests for this sabaq
+    const pendingRequests = await prisma.enrollment.findMany({
+        where: {
+            sabaqId: session.sabaqId,
+            status: 'PENDING'
+        },
+        include: {
+            user: {
+                select: {
+                    id: true,
+                    name: true,
+                    itsNumber: true,
+                    email: true
+                }
+            }
+        },
+        orderBy: { requestedAt: 'asc' }
+    });
+
     return (
         <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6 max-w-4xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
@@ -124,6 +143,13 @@ export default async function ManualAttendancePage({ params }: { params: Promise
                 sabaqId={session.sabaqId}
                 scheduledAt={session.scheduledAt.toISOString()}
                 enrolledUsers={enrolledUsers}
+                pendingRequests={pendingRequests.map(req => ({
+                    id: req.id,
+                    userId: req.userId,
+                    name: req.user.name,
+                    itsNumber: req.user.itsNumber,
+                    email: req.user.email
+                }))}
             />
         </div>
     );

@@ -76,6 +76,7 @@ export default async function SessionScanPage({ params }: { params: Promise<{ se
                 sessionName={sessionData.sabaq.name}
                 isActive={sessionData.isActive}
                 isAdmin={canStartSession}
+                sabaqId={sessionData.sabaqId}
             />
         </div>
     );

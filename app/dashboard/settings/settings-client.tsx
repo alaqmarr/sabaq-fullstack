@@ -34,6 +34,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from "@/components/ui/page-header";
+import { BulkUserImport } from "@/components/settings/bulk-user-import";
+import { BulkNameUpdate } from "@/components/settings/bulk-name-update";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export function SettingsClient() {
     const [dbStatus, setDbStatus] = useState<{ status: string; latency?: number } | null>(null);
@@ -329,6 +332,22 @@ export function SettingsClient() {
                         )}
                     </CardContent>
                 </Card>
+
+                {/* Bulk User Management */}
+                <div className="lg:col-span-2">
+                    <Tabs defaultValue="import">
+                        <TabsList className="grid w-full grid-cols-2">
+                            <TabsTrigger value="import">Bulk Import (Create)</TabsTrigger>
+                            <TabsTrigger value="update">Bulk Update (Names)</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="import">
+                            <BulkUserImport />
+                        </TabsContent>
+                        <TabsContent value="update">
+                            <BulkNameUpdate />
+                        </TabsContent>
+                    </Tabs>
+                </div>
 
                 {/* System Status */}
                 <Card>
