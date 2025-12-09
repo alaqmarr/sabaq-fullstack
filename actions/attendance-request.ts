@@ -108,3 +108,50 @@ export async function submitAttendanceRequest(formData: FormData) {
     return { success: false, error: "Internal System Error" };
   }
 }
+
+export async function checkAttendanceStatus(
+  sessionId: string,
+  itsNumber: string
+) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { itsNumber },
+      select: { id: true, name: true },
+    });
+
+    if (!user) return { status: "UNKNOWN" };
+
+    // 1. Check Attendance
+    const existingAttendance = await prisma.attendance.findUnique({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (existingAttendance) {
+      return { status: "ALREADY_MARKED", name: user.name };
+    }
+
+    // 2. Check Pending Request
+    const existingRequest = await prisma.attendanceRequest.findUnique({
+      where: {
+        sessionId_userId: {
+          sessionId,
+          userId: user.id,
+        },
+      },
+    });
+
+    if (existingRequest) {
+      return { status: "REQUEST_PENDING", name: user.name };
+    }
+
+    return { status: "NONE", name: user.name };
+  } catch (error) {
+    console.error("Status Check Error:", error);
+    return { status: "ERROR" };
+  }
+}

@@ -60,6 +60,8 @@ export default async function UserDirectPage({ searchParams }: PageProps) {
     // Check Admin Permissions for this Sabaq
     let isAdmin = false;
     let pendingRequests: any[] = [];
+    let initialStatus: 'submitted' | 'already_marked' | null = null;
+    let initialMessage: string | null = null;
 
     if (user) {
         const userRole = user.role;
@@ -69,6 +71,22 @@ export default async function UserDirectPage({ searchParams }: PageProps) {
             // Fetch pending requests
             const { requests } = await getSessionAttendanceRequests(sessionId);
             pendingRequests = requests || [];
+        }
+
+        // Check Attendance Status immediately for logged-in user
+        if (user.itsNumber) {
+            // Import dynamically or directly since this is server component (but check circular deps? actions are fine) 
+            // Better to use dynamic import if needed, but standard should work in server component
+            const { checkAttendanceStatus } = await import('@/actions/attendance-request');
+            const statusResult = await checkAttendanceStatus(sessionId, user.itsNumber);
+
+            if (statusResult.status === 'ALREADY_MARKED') {
+                initialStatus = 'already_marked';
+                initialMessage = `Attendance already marked for ${statusResult.name || 'you'}`;
+            } else if (statusResult.status === 'REQUEST_PENDING') {
+                initialStatus = 'submitted';
+                initialMessage = `Request already pending for ${statusResult.name || 'you'}`;
+            }
         }
     }
 
@@ -85,6 +103,8 @@ export default async function UserDirectPage({ searchParams }: PageProps) {
                     user={user}
                     isAdmin={isAdmin}
                     initialRequests={pendingRequests}
+                    initialStatus={initialStatus}
+                    initialMessage={initialMessage}
                 />
             </div>
 

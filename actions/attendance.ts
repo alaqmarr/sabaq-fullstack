@@ -119,7 +119,7 @@ export async function markAttendanceManual(
     }
 
     // Firebase Duplicate Check
-    if (adminDb) {
+    if (adminDb && !forceNeon) {
       const ref = adminDb.ref(`sessions/${sessionId}/attendance/${user.id}`);
       const snapshot = await ref.get();
       if (snapshot.exists()) {
@@ -141,7 +141,7 @@ export async function markAttendanceManual(
       if (existing)
         return {
           success: false,
-          error: "Attendance for this user has already been recorded.",
+          error: "Attendance already marked.",
         };
     }
 
