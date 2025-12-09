@@ -801,6 +801,8 @@ export const securityFlaggedUserTemplate = (data: {
   action: string;
   time: string;
   ip?: string;
+  errorCode?: string;
+  errorMessage?: string;
 }) => {
   const itsDisplay = data.userItsNumber ? ` (${data.userItsNumber})` : "";
   const content = `
@@ -813,6 +815,8 @@ export const securityFlaggedUserTemplate = (data: {
     
     <table class="info-table" style="border-color: #fed7d7;">
       ${createRow("Action", data.action)}
+      ${data.errorCode ? createRow("Error Code", data.errorCode) : ""}
+      ${data.errorMessage ? createRow("Error Details", data.errorMessage) : ""}
       ${createRow("Time", data.time)}
       ${data.ip ? createRow("IP", data.ip) : ""}
     </table>
@@ -839,6 +843,8 @@ export const securityFlaggedAdminTemplate = (data: {
   time: string;
   ip?: string;
   userAgent?: string;
+  errorCode?: string;
+  errorMessage?: string;
 }) => {
   const content = `
     <div class="greeting" style="color: #c53030;">Security Incident</div>
@@ -853,6 +859,8 @@ export const securityFlaggedAdminTemplate = (data: {
       )}
       ${createRow("Action", data.action)}
       ${createRow("Resource", data.resource)}
+      ${data.errorCode ? createRow("Error Code", data.errorCode) : ""}
+      ${data.errorMessage ? createRow("Error Message", data.errorMessage) : ""}
       ${data.details?.url ? createRow("Target URL", data.details.url) : ""}
       ${
         data.details?.referrer

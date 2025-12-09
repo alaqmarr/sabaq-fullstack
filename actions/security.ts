@@ -43,27 +43,40 @@ export async function logUnauthorizedAccess(resource: string, details?: any) {
           action: `Attempted access to ${resource}`,
           time: new Date().toLocaleString(),
           ip,
+          errorCode: details?.code,
+          errorMessage: details?.reason,
         }
       );
     }
 
-    // 3. Email Admin
-    await queueEmail(
-      "alaqmarak0810@gmail.com",
-      `Security Alert: Unauthorized Access by ${user.name}`,
-      "security-flagged-admin",
-      {
-        userName: user.name || "User",
-        userEmail: user.email || "No Email",
-        userId: user.id,
-        action: "UNAUTHORIZED_ACCESS",
-        resource,
-        details,
-        time: new Date().toLocaleString(),
-        ip,
-        userAgent,
+    // 3. Email All Superadmins
+    const superAdmins = await prisma.user.findMany({
+      where: { role: "SUPERADMIN" },
+      select: { email: true, name: true },
+    });
+
+    for (const admin of superAdmins) {
+      if (admin.email) {
+        await queueEmail(
+          admin.email,
+          `Security Alert: Unauthorized Access by ${user.name}`,
+          "security-flagged-admin",
+          {
+            userName: user.name || "User",
+            userEmail: user.email || "No Email",
+            userId: user.id,
+            action: "UNAUTHORIZED_ACCESS",
+            resource,
+            details,
+            time: new Date().toLocaleString(),
+            ip,
+            userAgent,
+            errorCode: details?.code,
+            errorMessage: details?.reason,
+          }
+        );
       }
-    );
+    }
 
     return { success: true };
   } catch (error) {

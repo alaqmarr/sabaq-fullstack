@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import permissionsConfig from "@/config/permissions.json";
 import { prisma } from "@/lib/prisma";
 import { Role } from "@prisma/client";
+import { getErrorCode, ERROR_CODES } from "@/lib/error-codes";
 
 type Resource = keyof typeof permissionsConfig.roles.SUPERADMIN;
 type Action = string;
@@ -85,8 +86,13 @@ export async function requirePermission(resource: Resource, action: Action) {
       resource,
       { action }
     );
-    const reason = `You do not have permission to perform '${action}' on '${resource}'.`;
-    redirect(`/unauthorized?reason=${encodeURIComponent(reason)}&flagged=true`);
+    const errorInfo = getErrorCode(resource, action);
+    const reason = errorInfo.message;
+    redirect(
+      `/unauthorized?reason=${encodeURIComponent(reason)}&code=${
+        errorInfo.code
+      }&flagged=true`
+    );
   }
 
   return session.user;
@@ -129,8 +135,12 @@ export async function requireSabaqAccess(sabaqId: string) {
   await logAuditEvent(user.id, "UNAUTHORIZED_SABAQ_ACCESS", "sabaq", {
     sabaqId,
   });
-  const reason = "You do not have permission to access this Sabaq.";
-  redirect(`/unauthorized?reason=${encodeURIComponent(reason)}&flagged=true`);
+  const errorInfo = ERROR_CODES.SABAQS_ACCESS_DENIED;
+  redirect(
+    `/unauthorized?reason=${encodeURIComponent(errorInfo.message)}&code=${
+      errorInfo.code
+    }&flagged=true`
+  );
 }
 
 export async function requireSessionAccess(sessionId: string) {
