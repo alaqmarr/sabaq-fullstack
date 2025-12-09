@@ -11,6 +11,7 @@ import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
 import { createNotification } from "@/actions/notifications";
 
 import { cache } from "@/lib/cache";
+import { waitUntil } from "@vercel/functions";
 
 // Validate user attended session
 async function validateAttendance(sessionId: string, userId: string) {
@@ -371,21 +372,29 @@ export async function answerQuestion(questionId: string, answerText: string) {
 
     // Queue email notification if user has email
     if (question.user.email) {
-      await queueEmail(
-        question.user.email,
-        "Your Question Has Been Answered",
-        "question-answered",
-        {
-          userName: question.user.name,
-          questionText: question.question,
-          answerText: validatedData.answer,
-          sabaqName: question.session.sabaq.name,
-          sessionId: question.sessionId,
-          answeredAt: formatDateTime(new Date()),
-        }
+      // Trigger processing immediately in background
+      waitUntil(
+        (async () => {
+          try {
+            await queueEmail(
+              question.user.email!,
+              "Your Question Has Been Answered",
+              "question-answered",
+              {
+                userName: question.user.name,
+                questionText: question.question,
+                answerText: validatedData.answer,
+                sabaqName: question.session.sabaq.name,
+                sessionId: question.sessionId,
+                answeredAt: formatDateTime(new Date()),
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error("Background email error (answerQuestion):", err);
+          }
+        })()
       );
-      // Trigger processing immediately
-      void processEmailQueue();
     }
 
     // In-app notification

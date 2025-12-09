@@ -12,6 +12,7 @@ import { createNotification } from "@/actions/notifications";
 import * as XLSX from "xlsx";
 
 import { cache } from "@/lib/cache";
+import { waitUntil } from "@vercel/functions";
 
 export async function createSession(data: {
   sabaqId: string;
@@ -514,30 +515,37 @@ export async function endSession(
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     };
 
-    for (const email of uniqueAdminEmails) {
-      await queueEmail(
-        email,
-        `Session Report: ${existingSession.sabaq.name}`,
-        "session-report",
-        {
-          sabaqName: existingSession.sabaq.name,
-          sessionDate: formatDateTime(existingSession.scheduledAt),
-          totalStudents,
-          presentCount,
-          absentCount,
-          lateCount,
-          attendanceRate,
-          topStudents,
-          lowAttendanceStudents,
-          noShowStudents,
-          noShowCount: noShowUsers.length,
-        },
-        [excelAttachment] // Attach Excel report
-      );
-    }
-
-    // 11. Process email queue and wait for completion
-    await processEmailQueue();
+    // 11. Process email queue in background
+    waitUntil(
+      (async () => {
+        try {
+          for (const email of uniqueAdminEmails) {
+            await queueEmail(
+              email,
+              `Session Report: ${existingSession.sabaq.name}`,
+              "session-report",
+              {
+                sabaqName: existingSession.sabaq.name,
+                sessionDate: formatDateTime(existingSession.scheduledAt),
+                totalStudents,
+                presentCount,
+                absentCount,
+                lateCount,
+                attendanceRate,
+                topStudents,
+                lowAttendanceStudents,
+                noShowStudents,
+                noShowCount: noShowUsers.length,
+              },
+              [excelAttachment] // Attach Excel report
+            );
+          }
+          await processEmailQueue();
+        } catch (err) {
+          console.error("Background email error (endSession):", err);
+        }
+      })()
+    );
 
     await cache.invalidatePattern("sessions:*");
     revalidatePath("/dashboard/sessions");

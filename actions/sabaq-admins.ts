@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { queueEmail, processEmailQueue } from "./email-queue";
+import { waitUntil } from "@vercel/functions";
 
 export async function getSabaqAdmins(sabaqId: string) {
   const session = await auth();
@@ -85,19 +86,27 @@ export async function assignSabaqAdmin(sabaqId: string, userId: string) {
 
   // Queue email notification
   if (user.email) {
-    await queueEmail(
-      user.email,
-      `New Assignment - ${sabaq.name}`,
-      "admin-assigned",
-      {
-        userName: user.name,
-        sabaqName: sabaq.name,
-        role: user.role,
-        assignedBy: session.user.name || "Super Admin",
-      }
+    waitUntil(
+      (async () => {
+        try {
+          await queueEmail(
+            user.email as string,
+            `New Assignment - ${sabaq.name}`,
+            "admin-assigned",
+            {
+              userName: user.name,
+              sabaqName: sabaq.name,
+              role: user.role,
+              assignedBy: session.user.name || "Super Admin",
+            }
+          );
+          // Trigger processing immediately
+          await processEmailQueue();
+        } catch (err) {
+          console.error("Background email error (assignSabaqAdmin):", err);
+        }
+      })()
     );
-    // Trigger processing immediately
-    void processEmailQueue();
   }
 
   revalidatePath("/dashboard/sabaqs");

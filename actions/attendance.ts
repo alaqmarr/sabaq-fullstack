@@ -8,6 +8,7 @@ import { requirePermission } from "@/lib/rbac";
 import { queueEmail, processEmailQueue } from "./email-queue";
 import { generateAttendanceId } from "@/lib/id-generators";
 import { formatDate, formatTime, formatDateTime } from "@/lib/date-utils";
+import { waitUntil } from "@vercel/functions";
 
 // Helper function to calculate lateness
 function calculateLateness(markedAt: Date, cutoffTime: Date) {
@@ -207,48 +208,59 @@ export async function markAttendanceManual(
 
     // Queue email notification with performance stats (Fire-and-Forget)
     if (user.email) {
-      // Fetch user's sabaq performance
-      const [totalSessions, userAttendanceCount] = await Promise.all([
-        prisma.session.count({
-          where: {
-            sabaqId: sessionData.sabaqId,
-            endedAt: { not: null },
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            userId: user.id,
-            session: { sabaqId: sessionData.sabaqId },
-          },
-        }),
-      ]);
+      waitUntil(
+        (async () => {
+          try {
+            // Fetch user's sabaq performance
+            const [totalSessions, userAttendanceCount] = await Promise.all([
+              prisma.session.count({
+                where: {
+                  sabaqId: sessionData.sabaqId,
+                  endedAt: { not: null },
+                },
+              }),
+              prisma.attendance.count({
+                where: {
+                  userId: user.id,
+                  session: { sabaqId: sessionData.sabaqId },
+                },
+              }),
+            ]);
 
-      // Add 1 to count for the attendance we just marked (it may not be in DB yet)
-      const attendedCount = userAttendanceCount + 1;
-      const attendancePercent =
-        totalSessions > 0
-          ? Math.round((attendedCount / (totalSessions + 1)) * 100)
-          : 100;
+            // Add 1 to count for the attendance we just marked (it may not be in DB yet)
+            const attendedCount = userAttendanceCount + 1;
+            const attendancePercent =
+              totalSessions > 0
+                ? Math.round((attendedCount / (totalSessions + 1)) * 100)
+                : 100;
 
-      await queueEmail(
-        user.email,
-        `Attendance: ${sessionData.sabaq.name}`,
-        "attendance-marked",
-        {
-          userName: user.name,
-          userItsNumber: user.itsNumber,
-          sabaqName: sessionData.sabaq.name,
-          status: isLate ? "Late" : "On Time",
-          markedAt: formatDateTime(markedAt),
-          sessionDate: formatDate(sessionData.scheduledAt),
-          sessionId: sessionId,
-          attendedCount,
-          totalSessions: totalSessions + 1, // Include current session
-          attendancePercent,
-        }
+            await queueEmail(
+              user.email as string,
+              `Attendance: ${sessionData.sabaq.name}`,
+              "attendance-marked",
+              {
+                userName: user.name,
+                userItsNumber: user.itsNumber,
+                sabaqName: sessionData.sabaq.name,
+                status: isLate ? "Late" : "On Time",
+                markedAt: formatDateTime(markedAt),
+                sessionDate: formatDate(sessionData.scheduledAt),
+                sessionId: sessionId,
+                attendedCount,
+                totalSessions: totalSessions + 1, // Include current session
+                attendancePercent,
+              }
+            );
+            // Trigger processing immediately without awaiting
+            await processEmailQueue();
+          } catch (err) {
+            console.error(
+              "Background email error (markAttendanceManual):",
+              err
+            );
+          }
+        })()
       );
-      // Trigger processing immediately without awaiting
-      void processEmailQueue();
     }
 
     revalidatePath(`/dashboard/sessions/${sessionId}`);
@@ -437,46 +449,57 @@ export async function markAttendanceLocation(
 
     // Queue email notification with performance stats (Fire-and-Forget)
     if (currentUser.email) {
-      // Fetch user's sabaq performance
-      const [totalSessions, userAttendanceCount] = await Promise.all([
-        prisma.session.count({
-          where: {
-            sabaqId: sessionData.sabaqId,
-            endedAt: { not: null },
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            userId: currentUser.id,
-            session: { sabaqId: sessionData.sabaqId },
-          },
-        }),
-      ]);
+      waitUntil(
+        (async () => {
+          try {
+            // Fetch user's sabaq performance
+            const [totalSessions, userAttendanceCount] = await Promise.all([
+              prisma.session.count({
+                where: {
+                  sabaqId: sessionData.sabaqId,
+                  endedAt: { not: null },
+                },
+              }),
+              prisma.attendance.count({
+                where: {
+                  userId: currentUser.id,
+                  session: { sabaqId: sessionData.sabaqId },
+                },
+              }),
+            ]);
 
-      const attendedCount = userAttendanceCount + 1;
-      const attendancePercent =
-        totalSessions > 0
-          ? Math.round((attendedCount / (totalSessions + 1)) * 100)
-          : 100;
+            const attendedCount = userAttendanceCount + 1;
+            const attendancePercent =
+              totalSessions > 0
+                ? Math.round((attendedCount / (totalSessions + 1)) * 100)
+                : 100;
 
-      await queueEmail(
-        currentUser.email,
-        `Attendance: ${sessionData.sabaq.name}`,
-        "attendance-marked",
-        {
-          userName: currentUser.name,
-          userItsNumber: currentUser.itsNumber,
-          sabaqName: sessionData.sabaq.name,
-          status: isLate ? "Late" : "Present",
-          markedAt: formatDateTime(markedAt),
-          sessionDate: formatDate(sessionData.scheduledAt),
-          sessionId: sessionId,
-          attendedCount,
-          totalSessions: totalSessions + 1,
-          attendancePercent,
-        }
+            await queueEmail(
+              currentUser.email as string,
+              `Attendance: ${sessionData.sabaq.name}`,
+              "attendance-marked",
+              {
+                userName: currentUser.name,
+                userItsNumber: currentUser.itsNumber,
+                sabaqName: sessionData.sabaq.name,
+                status: isLate ? "Late" : "Present",
+                markedAt: formatDateTime(markedAt),
+                sessionDate: formatDate(sessionData.scheduledAt),
+                sessionId: sessionId,
+                attendedCount,
+                totalSessions: totalSessions + 1,
+                attendancePercent,
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error(
+              "Background email error (markAttendanceLocation):",
+              err
+            );
+          }
+        })()
       );
-      void processEmailQueue();
     }
 
     revalidatePath(`/dashboard/sessions/${sessionId}`);
@@ -620,46 +643,54 @@ export async function markAttendanceQR(sessionId: string) {
 
     // Queue email notification with performance stats (Fire-and-Forget)
     if (currentUser.email) {
-      // Fetch user's sabaq performance
-      const [totalSessions, userAttendanceCount] = await Promise.all([
-        prisma.session.count({
-          where: {
-            sabaqId: sessionData.sabaqId,
-            endedAt: { not: null },
-          },
-        }),
-        prisma.attendance.count({
-          where: {
-            userId: currentUser.id,
-            session: { sabaqId: sessionData.sabaqId },
-          },
-        }),
-      ]);
+      waitUntil(
+        (async () => {
+          try {
+            // Fetch user's sabaq performance
+            const [totalSessions, userAttendanceCount] = await Promise.all([
+              prisma.session.count({
+                where: {
+                  sabaqId: sessionData.sabaqId,
+                  endedAt: { not: null },
+                },
+              }),
+              prisma.attendance.count({
+                where: {
+                  userId: currentUser.id,
+                  session: { sabaqId: sessionData.sabaqId },
+                },
+              }),
+            ]);
 
-      const attendedCount = userAttendanceCount + 1;
-      const attendancePercent =
-        totalSessions > 0
-          ? Math.round((attendedCount / (totalSessions + 1)) * 100)
-          : 100;
+            const attendedCount = userAttendanceCount + 1;
+            const attendancePercent =
+              totalSessions > 0
+                ? Math.round((attendedCount / (totalSessions + 1)) * 100)
+                : 100;
 
-      await queueEmail(
-        currentUser.email,
-        `Attendance: ${sessionData.sabaq.name}`,
-        "attendance-marked",
-        {
-          userName: currentUser.name,
-          userItsNumber: currentUser.itsNumber,
-          sabaqName: sessionData.sabaq.name,
-          status: isLate ? "Late" : "Present",
-          markedAt: formatDateTime(markedAt),
-          sessionDate: formatDate(sessionData.scheduledAt),
-          sessionId: sessionId,
-          attendedCount,
-          totalSessions: totalSessions + 1,
-          attendancePercent,
-        }
+            await queueEmail(
+              currentUser.email as string,
+              `Attendance: ${sessionData.sabaq.name}`,
+              "attendance-marked",
+              {
+                userName: currentUser.name,
+                userItsNumber: currentUser.itsNumber,
+                sabaqName: sessionData.sabaq.name,
+                status: isLate ? "Late" : "Present",
+                markedAt: formatDateTime(markedAt),
+                sessionDate: formatDate(sessionData.scheduledAt),
+                sessionId: sessionId,
+                attendedCount,
+                totalSessions: totalSessions + 1,
+                attendancePercent,
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error("Background email error (markAttendanceQR):", err);
+          }
+        })()
       );
-      void processEmailQueue();
     }
 
     revalidatePath(`/dashboard/sessions/${sessionId}`);

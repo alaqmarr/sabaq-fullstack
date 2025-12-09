@@ -2,10 +2,11 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { queueEmail } from "./email-queue";
+import { queueEmail, processEmailQueue } from "./email-queue";
 import { cookies } from "next/headers";
 import { Role } from "@prisma/client";
 import { redirect } from "next/navigation";
+import { waitUntil } from "@vercel/functions";
 
 export async function generateAdminOTP() {
   const session = await auth();
@@ -43,11 +44,20 @@ export async function generateAdminOTP() {
   });
 
   // Send email
-  await queueEmail(user.email!, "verification code", "admin-otp", {
-    userName: user.name,
-    otp,
-    expiryMinutes: 15,
-  });
+  waitUntil(
+    (async () => {
+      try {
+        await queueEmail(user.email!, "verification code", "admin-otp", {
+          userName: user.name,
+          otp,
+          expiryMinutes: 15,
+        });
+        await processEmailQueue();
+      } catch (err) {
+        console.error("Background email error (generateAdminOTP):", err);
+      }
+    })()
+  );
 
   return { success: true };
 }
@@ -131,11 +141,20 @@ export async function sendUserOTP(userId: string) {
   });
 
   // Send email
-  await queueEmail(user.email, "Password Reset Code", "admin-otp", {
-    userName: user.name,
-    otp,
-    expiryMinutes: 15,
-  });
+  waitUntil(
+    (async () => {
+      try {
+        await queueEmail(user.email!, "Password Reset Code", "admin-otp", {
+          userName: user.name,
+          otp,
+          expiryMinutes: 15,
+        });
+        await processEmailQueue(); // Ensure it goes out
+      } catch (err) {
+        console.error("Background email error (sendUserOTP):", err);
+      }
+    })()
+  );
 
   return { success: true };
 }

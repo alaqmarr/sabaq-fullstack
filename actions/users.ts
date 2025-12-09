@@ -6,7 +6,7 @@ import { auth } from "@/auth";
 import { Role } from "@prisma/client";
 import { hash } from "bcryptjs";
 import { queueEmail, processEmailQueue } from "./email-queue";
-import { sendEmail } from "@/lib/email";
+import { waitUntil } from "@vercel/functions";
 import {
   profileUpdatedTemplate,
   rolePromotedTemplate,
@@ -79,7 +79,7 @@ export async function getUsers(
       return cached;
     }
 
-    // 1. Fetch minimal data for sorting and filtering
+    // 0. Prepare filter
     const where: any = {};
     if (query) {
       where.OR = [
@@ -90,74 +90,82 @@ export async function getUsers(
       ];
     }
 
-    const allUsers = await prisma.user.findMany({
-      where,
-      select: {
-        id: true,
-        role: true,
-        name: true,
-      },
-    });
+    // 1. Get total count and counts by role
+    const [total, roleCountsResult] = await prisma.$transaction([
+      prisma.user.count({ where }),
+      prisma.user.groupBy({
+        by: ["role"],
+        where,
+        _count: { _all: true },
+        orderBy: { role: "asc" },
+      }),
+    ]);
 
-    // 2. Define role priority (lower number = higher priority)
-    const rolePriority: Record<string, number> = {
-      SUPERADMIN: 0,
-      ADMIN: 1,
-      MANAGER: 2,
-      JANAB: 3,
-      ATTENDANCE_INCHARGE: 4,
-      MUMIN: 5,
-    };
+    // 2. Define role priority
+    const roleOrder: Role[] = [
+      "SUPERADMIN",
+      "ADMIN",
+      "MANAGER",
+      "JANAB",
+      "ATTENDANCE_INCHARGE",
+      "MUMIN",
+    ];
 
-    // 3. Sort all users
-    const sortedAllUsers = allUsers.sort((a, b) => {
-      const roleA = rolePriority[a.role] ?? 99;
-      const roleB = rolePriority[b.role] ?? 99;
+    // Map DB counts to order
+    const roleCountsMap = new Map(
+      roleCountsResult.map((c: any) => [c.role, c._count._all])
+    );
 
-      if (roleA !== roleB) {
-        return roleA - roleB;
-      }
+    let skip = (page - 1) * limit;
+    let take = limit;
+    const fetchedUsers: any[] = [];
 
-      // If roles are same, sort by name
-      return (a.name || "").localeCompare(b.name || "");
-    });
+    // 3. Iterate through roles and fetch simple slices
+    for (const role of roleOrder) {
+      if (take <= 0) break;
 
-    // 4. Slice for pagination
-    const startIndex = (page - 1) * limit;
-    const paginatedUsers = sortedAllUsers.slice(startIndex, startIndex + limit);
-    const paginatedIds = paginatedUsers.map((u) => u.id);
+      const count = roleCountsMap.get(role) || 0;
+      if (count === 0) continue;
 
-    // 5. Fetch full details for the current page
-    const users = await prisma.user.findMany({
-      where: {
-        id: { in: paginatedIds },
-      },
-      include: {
-        assignedSabaqs: {
+      if (skip >= count) {
+        // Skip this entire group
+        skip -= count;
+      } else {
+        // Fetch from this group
+        const toFetch = Math.min(take, count - skip);
+
+        const roleUsers = await prisma.user.findMany({
+          where: { ...where, role },
+          orderBy: { name: "asc" },
+          skip: skip,
+          take: toFetch,
           include: {
-            sabaq: {
+            assignedSabaqs: {
+              include: {
+                sabaq: {
+                  select: { name: true },
+                },
+              },
+            },
+            managedSabaqs: {
               select: { name: true },
             },
           },
-        },
-        managedSabaqs: {
-          select: { name: true },
-        },
-      },
-    });
+        });
 
-    // 6. Re-sort the fetched users to match the sliced order (since 'in' query doesn't guarantee order)
-    const sortedUsers = users.sort((a, b) => {
-      return paginatedIds.indexOf(a.id) - paginatedIds.indexOf(b.id);
-    });
+        fetchedUsers.push(...roleUsers);
+        take -= roleUsers.length;
+        skip = 0; // Exhausted global skip
+      }
+    }
 
     const result = {
       success: true,
-      users: sortedUsers,
-      total: allUsers.length,
+      users: fetchedUsers,
+      total,
       page,
       limit,
-      hasMore: startIndex + limit < allUsers.length,
+      hasMore: (page - 1) * limit + fetchedUsers.length < total,
     };
 
     // Cache for 1 hour (3600 seconds)
@@ -262,15 +270,25 @@ export async function promoteUser(userId: string) {
 
     // Send email notification
     if (updatedUser.email) {
-      const emailHtml = rolePromotedTemplate({
-        userName: updatedUser.name || "User",
-        newRole: newRole,
-        features: [
-          "Access to new dashboard features",
-          "Ability to manage more resources",
-        ],
-      });
-      await sendEmail(updatedUser.email, "Role Promoted", emailHtml);
+      waitUntil(
+        (async () => {
+          try {
+            await queueEmail(
+              updatedUser.email!,
+              "Role Promoted",
+              "role-promoted",
+              {
+                userName: updatedUser.name || "User",
+                newRole: newRole,
+                features: ["Access to new dashboard features"],
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error("Background email error (promoteUser):", err);
+          }
+        })()
+      );
     }
 
     await cache.invalidatePattern("users:*");
@@ -351,15 +369,25 @@ export async function demoteUser(userId: string) {
 
     // Send email notification
     if (updatedUser.email) {
-      const emailHtml = roleDemotedTemplate({
-        userName: updatedUser.name || "User",
-        newRole: newRole,
-        lostAccess: [
-          "Access to advanced dashboard features",
-          "Ability to manage resources",
-        ],
-      });
-      await sendEmail(updatedUser.email, "Role Demoted", emailHtml);
+      waitUntil(
+        (async () => {
+          try {
+            await queueEmail(
+              updatedUser.email!,
+              "Role Demoted",
+              "role-demoted",
+              {
+                userName: updatedUser.name || "User",
+                newRole: newRole,
+                lostAccess: ["Access to advanced dashboard features"],
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error("Background email error (demoteUser):", err);
+          }
+        })()
+      );
     }
 
     await cache.invalidatePattern("users:*");
@@ -807,16 +835,29 @@ export async function updateUserProfile(
     });
 
     // Send confirmation email if email exists
+    // Send confirmation email if email exists
     if (data.email) {
-      const emailHtml = profileUpdatedTemplate({
-        userName: session.user.name || "User",
-        updatedFields: Object.keys(data).filter(
-          (k) => k !== "otp" && data[k as keyof typeof data]
-        ),
-        time: new Date().toLocaleString(),
-      });
-
-      await sendEmail(data.email, "Profile Updated Successfully", emailHtml);
+      waitUntil(
+        (async () => {
+          try {
+            await queueEmail(
+              data.email!,
+              "Profile Updated Successfully",
+              "profile-updated",
+              {
+                userName: session.user.name || "User",
+                updatedFields: Object.keys(data).filter(
+                  (k) => k !== "otp" && data[k as keyof typeof data]
+                ),
+                time: new Date().toLocaleString(),
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error("Background email error (updateUserProfile):", err);
+          }
+        })()
+      );
     }
 
     await cache.invalidatePattern("users:*");

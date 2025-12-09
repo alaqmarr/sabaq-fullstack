@@ -2,7 +2,8 @@
 
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
-import { queueEmail } from "./email-queue";
+import { queueEmail, processEmailQueue } from "./email-queue";
+import { waitUntil } from "@vercel/functions";
 
 export async function checkSystemStatus() {
   try {
@@ -66,11 +67,21 @@ export async function sendTestEmail(
       assignedBy: "Super Admin",
     };
 
-    await queueEmail(
-      targetEmail,
-      `Test Email: ${templateName}`,
-      templateName,
-      dummyData
+    // Fire and forget
+    waitUntil(
+      (async () => {
+        try {
+          await queueEmail(
+            targetEmail,
+            `Test Email: ${templateName}`,
+            templateName,
+            dummyData
+          );
+          await processEmailQueue();
+        } catch (err) {
+          console.error("Background email error (sendTestEmail):", err);
+        }
+      })()
     );
 
     return { success: true };
@@ -182,14 +193,24 @@ export async function sendAllTestEmails(customEmail?: string) {
     };
 
     // Queue all emails
-    for (const template of templates) {
-      await queueEmail(
-        targetEmail,
-        `Test Email: ${template}`,
-        template,
-        dummyData
-      );
-    }
+    // Fire and forget
+    waitUntil(
+      (async () => {
+        try {
+          for (const template of templates) {
+            await queueEmail(
+              targetEmail,
+              `Test Email: ${template}`,
+              template,
+              dummyData
+            );
+          }
+          await processEmailQueue();
+        } catch (err) {
+          console.error("Background email error (sendAllTestEmails):", err);
+        }
+      })()
+    );
 
     return { success: true };
   } catch (error) {

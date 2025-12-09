@@ -7,7 +7,9 @@ import { requirePermission } from "@/lib/rbac";
 import { SabaqSchema } from "@/schemas";
 import { queueEmail } from "./email-queue";
 import { z } from "zod";
+
 import { cache } from "@/lib/cache";
+import { waitUntil } from "@vercel/functions";
 
 export async function createSabaq(data: any) {
   try {
@@ -51,24 +53,32 @@ export async function createSabaq(data: any) {
         data: { managedSabaqsCount: { increment: 1 } },
       });
 
-      const janab = await prisma.user.findUnique({
-        where: { id: validatedData.janabId },
-        select: { email: true, name: true },
-      });
+      waitUntil(
+        (async () => {
+          try {
+            const janab = await prisma.user.findUnique({
+              where: { id: validatedData.janabId },
+              select: { email: true, name: true },
+            });
 
-      if (janab?.email) {
-        await queueEmail(
-          janab.email,
-          `Assigned as Janab for ${sabaq.name}`,
-          "janab-assignment",
-          {
-            janabName: janab.name,
-            sabaqName: sabaq.name,
-            sabaqLevel: sabaq.level,
-            action: "assigned",
+            if (janab?.email) {
+              await queueEmail(
+                janab.email,
+                `Assigned as Janab for ${sabaq.name}`,
+                "janab-assignment",
+                {
+                  janabName: janab.name,
+                  sabaqName: sabaq.name,
+                  sabaqLevel: sabaq.level,
+                  action: "assigned",
+                }
+              );
+            }
+          } catch (err) {
+            console.error("Background email error (createSabaq):", err);
           }
-        );
-      }
+        })()
+      );
     }
 
     await cache.invalidatePattern("sabaqs:*");
@@ -101,24 +111,32 @@ export async function updateSabaq(id: string, data: any) {
 
     // Notify Janab if assigned/changed
     if (validatedData.janabId) {
-      const janab = await prisma.user.findUnique({
-        where: { id: validatedData.janabId },
-        select: { email: true, name: true },
-      });
+      waitUntil(
+        (async () => {
+          try {
+            const janab = await prisma.user.findUnique({
+              where: { id: validatedData.janabId },
+              select: { email: true, name: true },
+            });
 
-      if (janab?.email) {
-        await queueEmail(
-          janab.email,
-          `Janab Assignment Update: ${sabaq.name}`,
-          "janab-assignment",
-          {
-            janabName: janab.name,
-            sabaqName: sabaq.name,
-            sabaqLevel: sabaq.level,
-            action: "updated",
+            if (janab?.email) {
+              await queueEmail(
+                janab.email,
+                `Janab Assignment Update: ${sabaq.name}`,
+                "janab-assignment",
+                {
+                  janabName: janab.name,
+                  sabaqName: sabaq.name,
+                  sabaqLevel: sabaq.level,
+                  action: "updated",
+                }
+              );
+            }
+          } catch (err) {
+            console.error("Background email error (updateSabaq):", err);
           }
-        );
-      }
+        })()
+      );
     }
 
     await cache.invalidatePattern("sabaqs:*");
@@ -552,16 +570,27 @@ export async function assignUserToSabaq(
 
         // Send email
         if (user.email) {
-          await queueEmail(
-            user.email,
-            `Assigned as Janab for ${sabaq.name}`,
-            "janab-assignment",
-            {
-              janabName: user.name,
-              sabaqName: sabaq.name,
-              sabaqLevel: sabaq.level,
-              action: "assigned",
-            }
+          waitUntil(
+            (async () => {
+              try {
+                await queueEmail(
+                  user.email as string,
+                  `Assigned as Janab for ${sabaq.name}`,
+                  "janab-assignment",
+                  {
+                    janabName: user.name,
+                    sabaqName: sabaq.name,
+                    sabaqLevel: sabaq.level,
+                    action: "assigned",
+                  }
+                );
+              } catch (err) {
+                console.error(
+                  "Background email error (assignUserToSabaq):",
+                  err
+                );
+              }
+            })()
           );
         }
         message = `Assigned ${user.name} as Janab for ${sabaq.name}`;

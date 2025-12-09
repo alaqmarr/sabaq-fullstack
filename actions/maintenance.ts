@@ -7,6 +7,7 @@ import { cache } from "@/lib/cache";
 import { syncSessionAttendance } from "@/actions/sync";
 import { processEmailQueue, queueEmail } from "@/actions/email-queue";
 import { auth } from "@/auth";
+import { waitUntil } from "@vercel/functions";
 function isRedirectError(error: any) {
   return (
     error &&
@@ -88,15 +89,27 @@ export async function triggerManualSync() {
     const session = await auth();
     if (session?.user?.email) {
       const startTime = Date.now(); // Approximate start
-      await queueEmail(
-        session.user.email,
-        "System Sync Successful",
-        "sync-success",
-        {
-          syncedCount,
-          duration: "N/A", // We didn't track duration precisely here, but could
-          time: new Date().toLocaleString(),
-        }
+      waitUntil(
+        (async () => {
+          try {
+            await queueEmail(
+              session.user.email!,
+              "System Sync Successful",
+              "sync-success",
+              {
+                syncedCount,
+                duration: "N/A", // We didn't track duration precisely here, but could
+                time: new Date().toLocaleString(),
+              }
+            );
+            await processEmailQueue();
+          } catch (err) {
+            console.error(
+              "Background email error (triggerManualSync - success):",
+              err
+            );
+          }
+        })()
       );
     }
 
@@ -108,14 +121,26 @@ export async function triggerManualSync() {
     try {
       const session = await auth();
       if (session?.user?.email) {
-        await queueEmail(
-          session.user.email,
-          "System Sync Failed",
-          "sync-failed",
-          {
-            error: error.message,
-            time: new Date().toLocaleString(),
-          }
+        waitUntil(
+          (async () => {
+            try {
+              await queueEmail(
+                session.user.email!,
+                "System Sync Failed",
+                "sync-failed",
+                {
+                  error: error.message,
+                  time: new Date().toLocaleString(),
+                }
+              );
+              await processEmailQueue();
+            } catch (err) {
+              console.error(
+                "Background email error (triggerManualSync - fail):",
+                err
+              );
+            }
+          })()
         );
       }
     } catch (e) {
