@@ -39,6 +39,7 @@ model User {
   AdminOTP           AdminOTP[]
   notifications      Notification[]
   feedback           Feedback[]
+  attendanceRequests AttendanceRequest[]
 
   @@index([role])
   @@index([itsNumber])
@@ -177,6 +178,7 @@ model Session {
   attendances    Attendance[]
   questions      Question[]
   feedback       Feedback[]
+  attendanceRequests AttendanceRequest[]
 
   @@index([sabaqId])
   @@index([isActive])
@@ -308,6 +310,28 @@ model SecurityLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action])
+}
+
+model AttendanceRequest {
+  id          String        @id @default(cuid())
+  sessionId   String
+  userId      String
+  itsNumber   String
+  requestedAt DateTime      @default(now())
+  status      RequestStatus @default(PENDING)
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id])
+
+  @@unique([sessionId, userId])
+  @@index([sessionId])
+  @@index([status])
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
 }
 
 model AdminOTP {

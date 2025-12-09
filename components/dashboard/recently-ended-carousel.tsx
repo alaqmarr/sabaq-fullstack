@@ -207,18 +207,39 @@ export function RecentlyEndedCarousel({ sessions, showAdminActions = false }: Re
                                             </>
                                         )}
 
-                                        {/* Admin: Resume Session button */}
+                                        {/* Admin Actions */}
                                         {showAdminActions && (
-                                            <Button
-                                                size="sm"
-                                                variant="frosted-green"
-                                                className="w-fit justify-start"
-                                                onClick={() => handleResumeSession(currentSession.id)}
-                                                disabled={isResuming}
-                                            >
-                                                <RotateCcw className={cn("h-3.5 w-3.5 mr-2", isResuming && "animate-spin")} />
-                                                Resume Session
-                                            </Button>
+                                            <>
+                                                <Button
+                                                    size="sm"
+                                                    variant="frosted-green"
+                                                    className="w-full justify-start text-[11px]" // Reduced font size locally to fit
+                                                    onClick={() => handleResumeSession(currentSession.id)}
+                                                    disabled={isResuming}
+                                                >
+                                                    <RotateCcw className={cn("h-3.5 w-3.5 mr-2", isResuming && "animate-spin")} />
+                                                    Resume
+                                                </Button>
+
+                                                <Button size="sm" variant="outline" asChild className="w-full justify-start text-[11px] border-white/10 hover:bg-white/5">
+                                                    <Link href={`/dashboard/sessions/${currentSession.id}/manual-attendance`}>
+                                                        <CheckCircle className="h-3.5 w-3.5 mr-2" /> Manual Attendance
+                                                    </Link>
+                                                </Button>
+
+                                                <Button
+                                                    size="sm"
+                                                    variant="secondary"
+                                                    className="w-full justify-start text-[11px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20"
+                                                    onClick={() => {
+                                                        const link = `${window.location.origin}/user_direct?subId=${currentSession.id}`;
+                                                        navigator.clipboard.writeText(link);
+                                                        toast.success("User Direct Link copied!");
+                                                    }}
+                                                >
+                                                    <Users className="h-3.5 w-3.5 mr-2" /> Copy User Link
+                                                </Button>
+                                            </>
                                         )}
 
                                         {/* Message for absent users */}

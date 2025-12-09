@@ -206,6 +206,14 @@ export async function markAttendanceManual(
       });
     }
 
+    // Clear any pending attendance request
+    await prisma.attendanceRequest.deleteMany({
+      where: {
+        sessionId,
+        userId: user.id,
+      },
+    });
+
     // Queue email notification with performance stats (Fire-and-Forget)
     if (user.email) {
       waitUntil(
