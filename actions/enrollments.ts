@@ -63,7 +63,11 @@ export async function createEnrollmentRequest(
     });
 
     if (existingEnrollment) {
-      return { success: false, error: "Already enrolled or request pending" };
+      return {
+        success: false,
+        error:
+          "You have already submitted an enrollment request for this sabaq.",
+      };
     }
 
     // Create enrollment request with human-readable ID
@@ -109,7 +113,8 @@ export async function createPublicEnrollmentRequest(
     if (!user) {
       return {
         success: false,
-        error: "User with this ITS not found. Please register first.",
+        error:
+          "No user found with this ITS number. Please register for an account first.",
       };
     }
 
@@ -125,7 +130,11 @@ export async function createPublicEnrollmentRequest(
     });
 
     if (existingEnrollment) {
-      return { success: false, error: "Already enrolled or request pending" };
+      return {
+        success: false,
+        error:
+          "You have already submitted an enrollment request for this sabaq.",
+      };
     }
 
     // Create enrollment request with human-readable ID
@@ -209,7 +218,8 @@ export async function getEnrollmentsBySabaq(sabaqId: string) {
       if (!isAssigned && !isJanab) {
         return {
           success: false,
-          error: "Unauthorized to view enrollments for this sabaq",
+          error:
+            "You do not have permission to view enrollments for this sabaq.",
         };
       }
     }
@@ -342,7 +352,8 @@ export async function approveEnrollment(enrollmentId: string) {
       if (!isAssigned && !isJanab) {
         return {
           success: false,
-          error: "Unauthorized to approve for this sabaq",
+          error:
+            "You do not have permission to approve enrollments for this sabaq.",
         };
       }
     }
@@ -441,7 +452,8 @@ export async function rejectEnrollment(enrollmentId: string, reason: string) {
       if (!isAssigned && !isJanab) {
         return {
           success: false,
-          error: "Unauthorized to reject for this sabaq",
+          error:
+            "You do not have permission to reject enrollments for this sabaq",
         };
       }
     }
@@ -774,7 +786,10 @@ export async function bulkEnrollUsers(sabaqId: string, itsNumbers: string[]) {
     );
 
     if (validItsNumbers.length === 0) {
-      return { success: false, error: "No valid ITS numbers provided" };
+      return {
+        success: false,
+        error: "Please provide at least one valid ITS number.",
+      };
     }
 
     // Fetch users by ITS numbers

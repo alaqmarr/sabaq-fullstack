@@ -13,9 +13,9 @@ export async function authenticate(
     if (error instanceof AuthError) {
       switch (error.type) {
         case "CredentialsSignin":
-          return "Invalid credentials.";
+          return "Double-check your ITS number and password.";
         default:
-          return "Something went wrong.";
+          return "We experienced a server error. Please try again later.";
       }
     }
     throw error;
@@ -31,7 +31,10 @@ import { redirect } from "next/navigation";
 
 export async function loginAsGuest(its: string) {
   if (!its || its.length !== 8 || !/^\d+$/.test(its)) {
-    return { success: false, error: "Invalid ITS number" };
+    return {
+      success: false,
+      error: "Please enter a valid 8-digit ITS number.",
+    };
   }
 
   const cookieStore = await cookies();

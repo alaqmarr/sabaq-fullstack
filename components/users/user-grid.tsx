@@ -12,14 +12,21 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { UserDialog } from './user-dialog';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
+import { AssignSabaqDialog } from './assign-sabaq-dialog';
+import { BookOpen } from 'lucide-react';
 
 interface UserGridProps {
     users: any[];
+    currentUserRole?: string;
 }
 
-export function UserGrid({ users }: UserGridProps) {
+export function UserGrid({ users, currentUserRole }: UserGridProps) {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [assignDialogState, setAssignDialogState] = useState<{ open: boolean; user: any | null }>({
+        open: false,
+        user: null,
+    });
     const [loading, setLoading] = useState<string | null>(null);
     const router = useRouter();
 
@@ -31,8 +38,7 @@ export function UserGrid({ users }: UserGridProps) {
             const { promoteUser } = await import('@/actions/users');
             const result = await promoteUser(userId);
             if (result.success) {
-                toast.success(`User promoted to ${(result as any).newRole}`);
-                toast.success(`User promoted to ${(result as any).newRole}`);
+                toast.success(`User promoted to ${(result as any).user?.role}`);
                 router.refresh();
             } else {
                 toast.error(result.error || 'Failed to promote user');
@@ -51,8 +57,7 @@ export function UserGrid({ users }: UserGridProps) {
             const { demoteUser } = await import('@/actions/users');
             const result = await demoteUser(userId);
             if (result.success) {
-                toast.success(`User demoted to ${(result as any).newRole}`);
-                toast.success(`User demoted to ${(result as any).newRole}`);
+                toast.success(`User demoted to ${(result as any).user?.role}`);
                 router.refresh();
             } else {
                 toast.error(result.error || 'Failed to demote user');
@@ -91,6 +96,9 @@ export function UserGrid({ users }: UserGridProps) {
                     const isSuperAdmin = user.role === 'SUPERADMIN';
                     const isMumin = user.role === 'MUMIN';
                     const isPromoting = loading === user.id;
+
+                    // Can assign if current user is SUPERADMIN
+                    const canAssign = currentUserRole === 'SUPERADMIN';
 
                     // Determine assigned function/sabaq
                     let assignedFunction = null;
@@ -259,6 +267,23 @@ export function UserGrid({ users }: UserGridProps) {
                                             <span>chat</span>
                                         </Button>
                                     )}
+                                    {canAssign && (
+                                        <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="h-8 px-3 gap-1.5 flex-1 min-w-[80px]"
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                e.preventDefault();
+                                                setAssignDialogState({ open: true, user });
+                                            }}
+                                            disabled={loading !== null}
+                                            title="Assign to Sabaq"
+                                        >
+                                            <BookOpen className="h-3.5 w-3.5" />
+                                            <span>assign</span>
+                                        </Button>
+                                    )}
                                 </div>
                             </Card>
                         </div>
@@ -273,6 +298,21 @@ export function UserGrid({ users }: UserGridProps) {
                     onOpenChange={(open) => {
                         setIsDialogOpen(open);
                         if (!open) setEditingUser(null);
+                    }}
+                />
+            )}
+
+            {assignDialogState.user && (
+                <AssignSabaqDialog
+                    user={assignDialogState.user}
+                    open={assignDialogState.open}
+                    onOpenChange={(open) => {
+                        setAssignDialogState((prev) => ({ ...prev, open }));
+                        if (!open) {
+                            setTimeout(() => {
+                                setAssignDialogState({ open: false, user: null });
+                            }, 300);
+                        }
                     }}
                 />
             )}

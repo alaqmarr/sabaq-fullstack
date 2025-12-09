@@ -81,7 +81,10 @@ export async function createSabaq(data: any) {
         error: error.issues[0]?.message || "Validation failed",
       };
     }
-    return { success: false, error: error.message || "Failed to create sabaq" };
+    return {
+      success: false,
+      error: error.message || "Could not create sabaq. Please try again.",
+    };
   }
 }
 
@@ -131,7 +134,12 @@ export async function updateSabaq(id: string, data: any) {
         error: error.issues[0]?.message || "Validation failed",
       };
     }
-    return { success: false, error: error.message || "Failed to update sabaq" };
+    return {
+      success: false,
+      error:
+        error.message ||
+        "Could not update sabaq. Please check the details and try again.",
+    };
   }
 }
 
@@ -170,7 +178,12 @@ export async function deleteSabaq(id: string) {
     revalidatePath("/dashboard/sabaqs");
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to delete sabaq" };
+    return {
+      success: false,
+      error:
+        error.message ||
+        "Could not delete sabaq. It may have dependencies preventing deletion.",
+    };
   }
 }
 
@@ -294,7 +307,11 @@ export async function getSabaqs() {
 
     return result;
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to fetch sabaqs" };
+    return {
+      success: false,
+      error:
+        error.message || "We encountered an issue fetching the sabaq list.",
+    };
   }
 }
 
@@ -317,7 +334,10 @@ export async function getSabaqById(id: string) {
         });
 
         if (!isAssigned && !isJanab) {
-          return { success: false, error: "Unauthorized access to this sabaq" };
+          return {
+            success: false,
+            error: "You do not have permission to access this sabaq.",
+          };
         }
       } else {
         // Mumin check
@@ -328,7 +348,10 @@ export async function getSabaqById(id: string) {
           },
         });
         if (!isEnrolled) {
-          return { success: false, error: "Unauthorized access to this sabaq" };
+          return {
+            success: false,
+            error: "You are not enrolled in this sabaq.",
+          };
         }
       }
     }
@@ -363,7 +386,11 @@ export async function getSabaqById(id: string) {
       }
     }
 
-    if (!sabaq) return { success: false, error: "Sabaq not found" };
+    if (!sabaq)
+      return {
+        success: false,
+        error: "The requested sabaq could not be found.",
+      };
 
     const serializedSabaq = {
       ...sabaq,
@@ -379,7 +406,10 @@ export async function getSabaqById(id: string) {
 
     return { success: true, sabaq: serializedSabaq };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to fetch sabaq" };
+    return {
+      success: false,
+      error: error.message || "Could not load sabaq details.",
+    };
   }
 }
 
@@ -430,6 +460,150 @@ export async function getPublicSabaqInfo(sabaqId: string) {
     return {
       success: false,
       error: error.message || "Failed to fetch sabaq info",
+    };
+  }
+}
+
+export async function assignUserToSabaq(userId: string, sabaqId: string) {
+  try {
+    // Only superadmin can assign freely
+    const currentUser = await requirePermission("users", "promote");
+    if (currentUser.role !== "SUPERADMIN") {
+      return {
+        success: false,
+        error: "Only Superadmins can directly assign users to sabaqs.",
+      };
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      return { success: false, error: "User not found." };
+    }
+
+    const sabaq = await prisma.sabaq.findUnique({
+      where: { id: sabaqId },
+    });
+
+    if (!sabaq) {
+      return { success: false, error: "Sabaq not found." };
+    }
+
+    let message = "";
+
+    // Logic based on role
+    if (user.role === "JANAB") {
+      // Assign as Janab (overwrite existing if any)
+      await prisma.sabaq.update({
+        where: { id: sabaqId },
+        data: { janabId: userId },
+      });
+
+      // Increment counters
+      await prisma.user.update({
+        where: { id: userId },
+        data: { managedSabaqsCount: { increment: 1 } },
+      });
+
+      // Send email
+      if (user.email) {
+        await queueEmail(
+          user.email,
+          `Assigned as Janab for ${sabaq.name}`,
+          "janab-assignment",
+          {
+            janabName: user.name,
+            sabaqName: sabaq.name,
+            sabaqLevel: sabaq.level,
+            action: "assigned",
+          }
+        );
+      }
+      message = `Assigned ${user.name} as Janab for ${sabaq.name}`;
+    } else if (
+      ["ADMIN", "MANAGER", "ATTENDANCE_INCHARGE"].includes(user.role)
+    ) {
+      // Create SabaqAdmin entry
+      const existingAdmin = await prisma.sabaqAdmin.findUnique({
+        where: {
+          sabaqId_userId: {
+            sabaqId,
+            userId,
+          },
+        },
+      });
+
+      if (existingAdmin) {
+        return {
+          success: false,
+          error: "User is already an admin for this sabaq.",
+        };
+      }
+
+      await prisma.sabaqAdmin.create({
+        data: {
+          sabaqId,
+          userId,
+        },
+      });
+      message = `Assigned ${user.name} as Admin for ${sabaq.name}`;
+    } else if (user.role === "MUMIN") {
+      // Direct enrollment
+      const existingEnrollment = await prisma.enrollment.findUnique({
+        where: {
+          sabaqId_userId: {
+            sabaqId,
+            userId,
+          },
+        },
+      });
+
+      if (existingEnrollment) {
+        if (existingEnrollment.status === "APPROVED") {
+          return {
+            success: false,
+            error: "User is already enrolled in this sabaq.",
+          };
+        } else {
+          // Update to APPROVED
+          await prisma.enrollment.update({
+            where: { id: existingEnrollment.id },
+            data: { status: "APPROVED" },
+          });
+          message = `Approved enrollment for ${user.name} in ${sabaq.name}`;
+        }
+      } else {
+        await prisma.enrollment.create({
+          data: {
+            userId,
+            sabaqId,
+            status: "APPROVED",
+          },
+        });
+        message = `Enrolled ${user.name} in ${sabaq.name}`;
+      }
+    } else {
+      return {
+        success: false,
+        error: "Cannot assign Superadmin to a specific sabaq.",
+      };
+    }
+
+    await cache.invalidatePattern("sabaqs:*");
+    await cache.invalidatePattern("users:*");
+    await cache.del(`user:profile:${userId}`);
+
+    revalidatePath("/dashboard/users");
+    revalidatePath("/dashboard/sabaqs");
+
+    return { success: true, message };
+  } catch (error: any) {
+    console.error("Assign user error:", error);
+    return {
+      success: false,
+      error: error.message || "Failed to assign user to sabaq.",
     };
   }
 }

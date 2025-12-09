@@ -13,9 +13,10 @@ interface UsersClientWrapperProps {
     initialUsers: any[];
     initialTotal: number;
     currentView: 'grid' | 'table';
+    currentUserRole?: string;
 }
 
-export function UsersClientWrapper({ initialUsers, initialTotal, currentView }: UsersClientWrapperProps) {
+export function UsersClientWrapper({ initialUsers, initialTotal, currentView, currentUserRole }: UsersClientWrapperProps) {
     const [users, setUsers] = useState(initialUsers);
     const [total, setTotal] = useState(initialTotal);
     const [page, setPage] = useState(1);
@@ -117,7 +118,7 @@ export function UsersClientWrapper({ initialUsers, initialTotal, currentView }: 
             ) : (
                 <>
                     {currentView === 'grid' ? (
-                        <UserGrid users={users} />
+                        <UserGrid users={users} currentUserRole={currentUserRole} />
                     ) : (
                         <UserTable users={users} />
                     )}

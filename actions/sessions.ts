@@ -50,7 +50,9 @@ export async function createSession(data: {
     console.error("Failed to create session:", error);
     return {
       success: false,
-      error: error.message || "Failed to create session",
+      error:
+        error.message ||
+        "Could not schedule session. Please check your inputs.",
     };
   }
 }
@@ -77,7 +79,10 @@ export async function updateSession(
     });
 
     if (!user || !["SUPERADMIN", "ADMIN"].includes(user.role)) {
-      return { success: false, error: "Unauthorized" };
+      return {
+        success: false,
+        error: "You do not have permission to modify sessions.",
+      };
     }
 
     const existingSession = await prisma.session.findUnique({
@@ -93,7 +98,10 @@ export async function updateSession(
     });
 
     if (!existingSession) {
-      return { success: false, error: "Session not found" };
+      return {
+        success: false,
+        error: "The requested session could not be found.",
+      };
     }
 
     // For ADMIN, verify they are a sabaq admin
@@ -102,7 +110,10 @@ export async function updateSession(
         (a) => a.userId === authSession.user.id
       );
       if (!isSabaqAdmin) {
-        return { success: false, error: "Unauthorized - Not a sabaq admin" };
+        return {
+          success: false,
+          error: "You do not have permission to manage this specific session.",
+        };
       }
     }
 
@@ -124,7 +135,8 @@ export async function updateSession(
     console.error("Failed to update session:", error);
     return {
       success: false,
-      error: error.message || "Failed to update session",
+      error:
+        error.message || "Could not update session timing. Please try again.",
     };
   }
 }
@@ -138,13 +150,16 @@ export async function deleteSession(id: string) {
     });
 
     if (!existingSession) {
-      return { success: false, error: "Session not found" };
+      return {
+        success: false,
+        error: "The requested session could not be found.",
+      };
     }
 
     if (existingSession.startedAt) {
       return {
         success: false,
-        error: "Cannot delete a session that has already started",
+        error: "This session has already started and cannot be deleted.",
       };
     }
 
@@ -159,7 +174,7 @@ export async function deleteSession(id: string) {
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || "Failed to delete session",
+      error: error.message || "Could not delete this session.",
     };
   }
 }
@@ -173,15 +188,21 @@ export async function startSession(id: string) {
     });
 
     if (!existingSession) {
-      return { success: false, error: "Session not found" };
+      return {
+        success: false,
+        error: "The requested session could not be found.",
+      };
     }
 
     if (existingSession.isActive) {
-      return { success: false, error: "Session is already active" };
+      return { success: false, error: "This session is currently active." };
     }
 
     if (existingSession.startedAt) {
-      return { success: false, error: "Session has already been started" };
+      return {
+        success: false,
+        error: "This session was previously started and cannot be restarted.",
+      };
     }
 
     // Check if another session for this sabaq is active
@@ -195,7 +216,8 @@ export async function startSession(id: string) {
     if (activeSession) {
       return {
         success: false,
-        error: "Another session for this sabaq is already active",
+        error:
+          "Another session for this sabaq is currently in progress. Please end it first.",
       };
     }
 
@@ -256,7 +278,7 @@ export async function startSession(id: string) {
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || "Failed to start session",
+      error: error.message || "Could not start the session. Please try again.",
     };
   }
 }
@@ -287,14 +309,17 @@ export async function endSession(
     });
 
     if (!existingSession) {
-      return { success: false, error: "Session not found" };
+      return {
+        success: false,
+        error: "The requested session could not be found.",
+      };
     }
 
     // Allow skipping active check when called from sync (session was just ended)
     const skipActiveCheck = options?.skipActiveCheck ?? false;
 
     if (!skipActiveCheck && !existingSession.isActive) {
-      return { success: false, error: "Session is not active" };
+      return { success: false, error: "This session is no longer active." };
     }
 
     // Only update session status if it's still active
@@ -536,7 +561,10 @@ export async function endSession(
     };
   } catch (error: any) {
     console.error("Failed to end session:", error);
-    return { success: false, error: error.message || "Failed to end session" };
+    return {
+      success: false,
+      error: error.message || "Could not end the session. Please try again.",
+    };
   }
 }
 
@@ -575,13 +603,16 @@ export async function endSessionWithProgress(
     });
 
     if (!existingSession) {
-      return { success: false, error: "Session not found" };
+      return {
+        success: false,
+        error: "The requested session could not be found.",
+      };
     }
 
     const skipActiveCheck = options?.skipActiveCheck ?? false;
 
     if (!skipActiveCheck && !existingSession.isActive) {
-      return { success: false, error: "Session is not active" };
+      return { success: false, error: "This session is no longer active." };
     }
 
     // Report progress: Starting

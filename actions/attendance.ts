@@ -42,7 +42,7 @@ async function validateEnrollment(sessionId: string, userId: string) {
   });
 
   if (!enrollment || enrollment.status !== "APPROVED") {
-    throw new Error("User is not enrolled in this sabaq");
+    throw new Error("This user is not enrolled in the current sabaq.");
   }
 
   return session;
@@ -72,7 +72,10 @@ export async function markAttendanceManual(
     });
 
     if (!user) {
-      return { success: false, error: "User not found with this ITS number" };
+      return {
+        success: false,
+        error: "No user found with the provided ITS number.",
+      };
     }
 
     // Validate session and enrollment
@@ -98,13 +101,19 @@ export async function markAttendanceManual(
       isJanab;
 
     if (!canMark) {
-      return { success: false, error: "Insufficient permissions" };
+      return {
+        success: false,
+        error: "You do not have permission to mark attendance.",
+      };
     }
 
     const canBypassSessionEnd = isSuperAdmin || isSabaqAdmin || isJanab;
 
     if (!sessionData.isActive && !canBypassSessionEnd) {
-      return { success: false, error: "Session is not active" };
+      return {
+        success: false,
+        error: "This session is not currently active for attendance.",
+      };
     }
 
     // Firebase Duplicate Check
@@ -128,7 +137,10 @@ export async function markAttendanceManual(
         },
       });
       if (existing)
-        return { success: false, error: "Attendance already marked" };
+        return {
+          success: false,
+          error: "Attendance for this user has already been recorded.",
+        };
     }
 
     // Calculate lateness
@@ -291,13 +303,16 @@ export async function markAttendanceLocation(
     }
 
     if (!sessionData.isActive) {
-      return { success: false, error: "Session is not active" };
+      return {
+        success: false,
+        error: "This session is not currently active for attendance.",
+      };
     }
 
     if (!sessionData.sabaq.allowLocationAttendance) {
       return {
         success: false,
-        error: "Location-based attendance is not enabled for this sabaq",
+        error: "This sabaq does not allow location-based attendance.",
       };
     }
 
@@ -333,7 +348,7 @@ export async function markAttendanceLocation(
       if (existing)
         return {
           success: false,
-          error: "You have already marked attendance for this session",
+          error: "You have already marked your attendance for this session.",
         };
     }
 
@@ -506,7 +521,10 @@ export async function markAttendanceQR(sessionId: string) {
     }
 
     if (!sessionData.isActive) {
-      return { success: false, error: "Session is not active" };
+      return {
+        success: false,
+        error: "This session is not currently active for attendance.",
+      };
     }
 
     // Validate enrollment
@@ -537,7 +555,7 @@ export async function markAttendanceQR(sessionId: string) {
       if (existing)
         return {
           success: false,
-          error: "You have already marked attendance for this session",
+          error: "You have already marked your attendance for this session.",
         };
     }
 

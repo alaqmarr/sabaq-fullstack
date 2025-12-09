@@ -11,7 +11,6 @@ import { ITSValidation } from '@/components/enrollment/its-validation';
 import { validateITSNumber } from '@/actions/public-enrollment';
 import { LoginForm } from '@/components/auth/login-form';
 import { cookies } from 'next/headers';
-
 export const metadata = {
   title: "Home | Sabaq Management System",
 };

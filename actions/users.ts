@@ -17,7 +17,10 @@ export async function lookupUserByITS(itsNumber: string) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: "Unauthorized" };
+      return {
+        success: false,
+        error: "You do not have permission to perform this action.",
+      };
     }
 
     const role = session.user.role;
@@ -30,7 +33,10 @@ export async function lookupUserByITS(itsNumber: string) {
     ];
 
     if (!allowedRoles.includes(role as string)) {
-      return { success: false, error: "Insufficient permissions" };
+      return {
+        success: false,
+        error: "You do not have the necessary permissions.",
+      };
     }
 
     const user = await prisma.user.findUnique({
@@ -45,7 +51,10 @@ export async function lookupUserByITS(itsNumber: string) {
     });
 
     if (!user) {
-      return { success: false, error: "User not found" };
+      return {
+        success: false,
+        error: "The requested user could not be found.",
+      };
     }
 
     return { success: true, user };
@@ -169,7 +178,10 @@ export async function createUser(data: any) {
     });
 
     if (existingUser) {
-      return { success: false, error: "User already exists" };
+      return {
+        success: false,
+        error: "A user with this ITS number already exists.",
+      };
     }
 
     const hashedPassword = await hash(data.password || data.itsNumber, 10);
@@ -189,7 +201,11 @@ export async function createUser(data: any) {
     await cache.invalidatePattern("users:*");
     return { success: true, user: newUser };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to create user" };
+    return {
+      success: false,
+      error:
+        error.message || "Could not create user account. Please try again.",
+    };
   }
 }
 
@@ -199,11 +215,15 @@ export async function promoteUser(userId: string) {
 
     // Prevent promoting self
     if (currentUser.id === userId) {
-      return { success: false, error: "Cannot promote yourself" };
+      return { success: false, error: "You cannot promote your own account." };
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return { success: false, error: "User not found" };
+    if (!user)
+      return {
+        success: false,
+        error: "The requested user could not be found.",
+      };
 
     const roleHierarchy = [
       "MUMIN",
@@ -215,7 +235,10 @@ export async function promoteUser(userId: string) {
     const currentIndex = roleHierarchy.indexOf(user.role);
 
     if (currentIndex === -1 || currentIndex === roleHierarchy.length - 1) {
-      return { success: false, error: "Cannot promote further" };
+      return {
+        success: false,
+        error: "This user is already at the highest role.",
+      };
     }
 
     const newRole = roleHierarchy[currentIndex + 1];
@@ -227,7 +250,8 @@ export async function promoteUser(userId: string) {
     ) {
       return {
         success: false,
-        error: "Insufficient permissions to promote to this level",
+        error:
+          "You do not have sufficient permissions to promote a user to this level.",
       };
     }
 
@@ -254,7 +278,10 @@ export async function promoteUser(userId: string) {
     await cache.del(`rbac:user:${userId}`);
     return { success: true, user: updatedUser };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to promote user" };
+    return {
+      success: false,
+      error: "We encountered an issue promoting the user. Please try again.",
+    };
   }
 }
 
@@ -264,11 +291,15 @@ export async function demoteUser(userId: string) {
 
     // Prevent demoting self
     if (currentUser.id === userId) {
-      return { success: false, error: "Cannot demote yourself" };
+      return { success: false, error: "You cannot demote your own account." };
     }
 
     const user = await prisma.user.findUnique({ where: { id: userId } });
-    if (!user) return { success: false, error: "User not found" };
+    if (!user)
+      return {
+        success: false,
+        error: "The requested user could not be found.",
+      };
 
     const roleHierarchy = [
       "MUMIN",
@@ -280,15 +311,43 @@ export async function demoteUser(userId: string) {
     const currentIndex = roleHierarchy.indexOf(user.role);
 
     if (currentIndex <= 0) {
-      return { success: false, error: "Cannot demote further" };
+      return {
+        success: false,
+        error: "This user is already at the lowest role.",
+      };
     }
 
     const newRole = roleHierarchy[currentIndex - 1];
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: { role: newRole as Role },
-    });
+    // If demoting to MUMIN, clean up all admin assignments
+    if (newRole === "MUMIN") {
+      await prisma.$transaction([
+        // 1. Update the user role
+        prisma.user.update({
+          where: { id: userId },
+          data: { role: newRole as Role },
+        }),
+        // 2. Remove from SabaqAdmin
+        prisma.sabaqAdmin.deleteMany({
+          where: { userId: userId },
+        }),
+        // 3. Unlink as Janab from any Sabaq
+        prisma.sabaq.updateMany({
+          where: { janabId: userId },
+          data: { janabId: null },
+        }),
+      ]);
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { role: newRole as Role },
+      });
+    }
+
+    // Fetch the updated user for the return value and email
+    const updatedUser = await prisma.user.findUnique({ where: { id: userId } });
+    if (!updatedUser)
+      return { success: false, error: "User not found after update" };
 
     // Send email notification
     if (updatedUser.email) {
@@ -308,7 +367,10 @@ export async function demoteUser(userId: string) {
     await cache.del(`rbac:user:${userId}`);
     return { success: true, user: updatedUser };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to demote user" };
+    return {
+      success: false,
+      error: "We encountered an issue demoting the user. Please try again.",
+    };
   }
 }
 
@@ -316,7 +378,10 @@ export async function updateUser(userId: string, data: any) {
   try {
     const session = await auth();
     if (!session?.user) {
-      return { success: false, error: "Unauthorized" };
+      return {
+        success: false,
+        error: "You do not have permission to perform this action.",
+      };
     }
 
     const currentUser = session.user;
@@ -326,7 +391,10 @@ export async function updateUser(userId: string, data: any) {
     );
 
     if (!isSelf && !isAdmin) {
-      return { success: false, error: "Insufficient permissions" };
+      return {
+        success: false,
+        error: "You do not have the necessary permissions to update this user.",
+      };
     }
 
     // If updating password, hash it
@@ -339,17 +407,38 @@ export async function updateUser(userId: string, data: any) {
       delete data.role;
     }
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: data,
-    });
+    // Special handling for demoting to MUMIN via update
+    if (data.role === "MUMIN") {
+      await prisma.$transaction([
+        prisma.user.update({
+          where: { id: userId },
+          data: data,
+        }),
+        prisma.sabaqAdmin.deleteMany({
+          where: { userId: userId },
+        }),
+        prisma.sabaq.updateMany({
+          where: { janabId: userId },
+          data: { janabId: null },
+        }),
+      ]);
+    } else {
+      await prisma.user.update({
+        where: { id: userId },
+        data: data,
+      });
+    }
 
     await cache.invalidatePattern("users:*");
     await cache.del(`user:profile:${userId}`);
     await cache.del(`rbac:user:${userId}`);
     return { success: true };
   } catch (error: any) {
-    return { success: false, error: error.message || "Failed to update user" };
+    return {
+      success: false,
+      error:
+        "Failed to update user profile. Please check the details and try again.",
+    };
   }
 }
 
@@ -516,7 +605,7 @@ export async function getUserProfile(userId: string) {
     if (!isSelf && !canViewOthers) {
       return {
         success: false,
-        error: "You are not authorized to view this profile",
+        error: "You are not authorized to view this profile.",
       };
     }
 
@@ -540,7 +629,10 @@ export async function getUserProfile(userId: string) {
     });
 
     if (!user) {
-      return { success: false, error: "User not found" };
+      return {
+        success: false,
+        error: "The requested user profile could not be found.",
+      };
     }
 
     // Fetch Enrollments with Sabaq details
@@ -644,7 +736,7 @@ export async function getUserProfile(userId: string) {
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || "Failed to fetch user profile",
+      error: error.message || "Could not load user profile details.",
     };
   }
 }
@@ -656,7 +748,10 @@ export async function updateUserProfile(
   try {
     const session = await auth();
     if (!session?.user?.id) {
-      return { success: false, error: "Unauthorized" };
+      return {
+        success: false,
+        error: "You do not have permission to perform this action.",
+      };
     }
 
     // Only allow users to update their own profile unless they are admins
@@ -668,7 +763,7 @@ export async function updateUserProfile(
     if (!isSelf && !isAdmin) {
       return {
         success: false,
-        error: "You are not authorized to update this profile",
+        error: "You are not authorized to update this profile.",
       };
     }
 
@@ -677,7 +772,8 @@ export async function updateUserProfile(
       if (!data.otp) {
         return {
           success: false,
-          error: "OTP is required for security verification",
+          error:
+            "Please enter the OTP sent to your email to verify this change.",
         };
       }
 
@@ -692,7 +788,10 @@ export async function updateUserProfile(
       });
 
       if (!otpRecord) {
-        return { success: false, error: "Invalid or expired OTP" };
+        return {
+          success: false,
+          error: "The OTP you entered is invalid or has expired.",
+        };
       }
 
       // Delete used OTP
@@ -726,6 +825,9 @@ export async function updateUserProfile(
     return { success: true };
   } catch (error) {
     console.error("Error updating user profile:", error);
-    return { success: false, error: "Failed to update profile" };
+    return {
+      success: false,
+      error: "Could not update profile. Please try again.",
+    };
   }
 }

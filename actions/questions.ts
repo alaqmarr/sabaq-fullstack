@@ -24,7 +24,9 @@ async function validateAttendance(sessionId: string, userId: string) {
   });
 
   if (!attendance) {
-    throw new Error("You must attend the session to submit questions");
+    throw new Error(
+      "You can only submit questions if you have marked attendance for this session."
+    );
   }
 
   return true;
@@ -55,12 +57,16 @@ export async function submitQuestionPublic({
       if (!user) {
         return {
           success: false,
-          error: "User not found. Please register first.",
+          error:
+            "No user found with the provided ITS number. Please register first.",
         };
       }
       userId = user.id;
     } else {
-      return { success: false, error: "Unauthorized" };
+      return {
+        success: false,
+        error: "You do not have permission to perform this action.",
+      };
     }
 
     // 2. Get Session & Sabaq Info
@@ -84,7 +90,10 @@ export async function submitQuestionPublic({
     });
 
     if (!enrollment || enrollment.status !== "APPROVED") {
-      return { success: false, error: "You are not enrolled in this sabaq." };
+      return {
+        success: false,
+        error: "You must be enrolled in this sabaq to submit questions.",
+      };
     }
 
     // 4. Check Attendance
@@ -100,7 +109,7 @@ export async function submitQuestionPublic({
     if (!attendance) {
       return {
         success: false,
-        error: "You must mark attendance before asking a question.",
+        error: "Please mark your attendance before submitting a question.",
       };
     }
 
@@ -142,7 +151,8 @@ export async function submitQuestionPublic({
     console.error("Failed to submit public question:", error);
     return {
       success: false,
-      error: error.message || "Failed to submit question",
+      error:
+        error.message || "Could not submit your question. Please try again.",
     };
   }
 }
@@ -242,7 +252,7 @@ export async function upvoteQuestion(questionId: string) {
 
     // Prevent self-upvote
     if (question.userId === currentUser.id) {
-      return { success: false, error: "You cannot upvote your own question" };
+      return { success: false, error: "You cannot upvote your own question." };
     }
 
     if (existingVote) {
@@ -283,7 +293,7 @@ export async function upvoteQuestion(questionId: string) {
     console.error("Failed to upvote question:", error);
     return {
       success: false,
-      error: error.message || "Failed to upvote question",
+      error: error.message || "Could not process your vote. Please try again.",
     };
   }
 }
@@ -321,7 +331,8 @@ export async function answerQuestion(questionId: string, answerText: string) {
       if (!isAssigned && !isJanab) {
         return {
           success: false,
-          error: "Unauthorized to answer questions for this sabaq",
+          error:
+            "You do not have permission to answer questions for this sabaq.",
         };
       }
     }
@@ -394,7 +405,7 @@ export async function answerQuestion(questionId: string, answerText: string) {
     console.error("Failed to answer question:", error);
     return {
       success: false,
-      error: error.message || "Failed to answer question",
+      error: error.message || "Could not submit your answer. Please try again.",
     };
   }
 }
@@ -429,7 +440,8 @@ export async function deleteQuestion(questionId: string) {
       if (!isAssigned && !isJanab) {
         return {
           success: false,
-          error: "Unauthorized to delete questions for this sabaq",
+          error:
+            "You do not have permission to delete questions for this sabaq.",
         };
       }
     }
@@ -504,7 +516,8 @@ export async function getSessionQuestions(sessionId: string) {
         if (!isAssigned && !isJanab) {
           return {
             success: false,
-            error: "Unauthorized access to this session",
+            error:
+              "You do not have permission to view questions for this session.",
           };
         }
       } else {
@@ -521,7 +534,8 @@ export async function getSessionQuestions(sessionId: string) {
         if (!isEnrolled) {
           return {
             success: false,
-            error: "Unauthorized access to this session",
+            error:
+              "You do not have permission to view questions for this session.",
           };
         }
       }
@@ -553,7 +567,7 @@ export async function getSessionQuestions(sessionId: string) {
   } catch (error: any) {
     return {
       success: false,
-      error: error.message || "Failed to fetch questions",
+      error: error.message || "Could not load questions. Please try again.",
     };
   }
 }

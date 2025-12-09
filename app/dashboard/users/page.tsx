@@ -44,6 +44,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 initialUsers={users}
                 initialTotal={total}
                 currentView={currentView}
+                currentUserRole={session?.user?.role || undefined}
             />
 
             <UserDialogManager isOpen={isDialogOpen} />

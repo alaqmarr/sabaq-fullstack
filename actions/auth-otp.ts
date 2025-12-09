@@ -11,7 +11,10 @@ export async function generateAdminOTP() {
   const session = await auth();
 
   if (!session?.user?.id || !session.user.email) {
-    return { success: false, error: "Unauthorized" };
+    return {
+      success: false,
+      error: "You do not have permission to perform this action.",
+    };
   }
 
   const user = await prisma.user.findUnique({
@@ -20,7 +23,10 @@ export async function generateAdminOTP() {
   });
 
   if (!user || (user.role !== Role.ADMIN && user.role !== Role.SUPERADMIN)) {
-    return { success: false, error: "Unauthorized" };
+    return {
+      success: false,
+      error: "You do not have permission to perform this action.",
+    };
   }
 
   // Generate 6-digit OTP
@@ -63,7 +69,11 @@ export async function verifyAdminOTP(code: string) {
   });
 
   if (!otpRecord) {
-    return { success: false, error: "Invalid or expired code" };
+    return {
+      success: false,
+      error:
+        "The code you entered is invalid or has expired. Please request a new one.",
+    };
   }
 
   // Delete used OTP
@@ -89,7 +99,10 @@ export async function sendUserOTP(userId: string) {
     !session?.user ||
     (session.user.role !== "SUPERADMIN" && session.user.role !== "ADMIN")
   ) {
-    return { success: false, error: "Unauthorized" };
+    return {
+      success: false,
+      error: "You do not have permission to perform this action.",
+    };
   }
 
   const user = await prisma.user.findUnique({
@@ -97,8 +110,12 @@ export async function sendUserOTP(userId: string) {
     select: { id: true, name: true, email: true },
   });
 
-  if (!user) return { success: false, error: "User not found" };
-  if (!user.email) return { success: false, error: "User has no email linked" };
+  if (!user) return { success: false, error: "User not found." };
+  if (!user.email)
+    return {
+      success: false,
+      error: "This user is missing a linked email address.",
+    };
 
   // Generate 6-digit OTP
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -146,7 +163,11 @@ export async function resetUserPassword(
   });
 
   if (!otpRecord) {
-    return { success: false, error: "Invalid or expired code" };
+    return {
+      success: false,
+      error:
+        "The code you entered is invalid or has expired. Please request a new one.",
+    };
   }
 
   // Delete used OTP
