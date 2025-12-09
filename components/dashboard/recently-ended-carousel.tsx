@@ -194,14 +194,14 @@ export function RecentlyEndedCarousel({ sessions, showAdminActions = false }: Re
                                         {/* Actions for users who attended */}
                                         {currentSession.userAttendance.attended && (
                                             <>
-                                                <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
+                                                <Button size="sm" variant="frosted-amber" asChild className="w-full justify-start truncate">
                                                     <Link href={`/sessions/${currentSession.id}/ask`}>
-                                                        <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
+                                                        <MessageCircle className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Ask Question</span>
                                                     </Link>
                                                 </Button>
-                                                <Button size="sm" variant="frosted-blue" asChild className="w-fit justify-start">
+                                                <Button size="sm" variant="frosted-blue" asChild className="w-full justify-start truncate">
                                                     <Link href={`/sessions/${currentSession.id}/feedback`}>
-                                                        <Star className="h-3.5 w-3.5 mr-2" /> Add Feedback
+                                                        <Star className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Add Feedback</span>
                                                     </Link>
                                                 </Button>
                                             </>
@@ -213,31 +213,31 @@ export function RecentlyEndedCarousel({ sessions, showAdminActions = false }: Re
                                                 <Button
                                                     size="sm"
                                                     variant="frosted-green"
-                                                    className="w-full justify-start text-[11px]" // Reduced font size locally to fit
+                                                    className="w-full justify-start text-[11px] truncate" // Reduced font size locally to fit
                                                     onClick={() => handleResumeSession(currentSession.id)}
                                                     disabled={isResuming}
                                                 >
-                                                    <RotateCcw className={cn("h-3.5 w-3.5 mr-2", isResuming && "animate-spin")} />
-                                                    Resume
+                                                    <RotateCcw className={cn("h-3.5 w-3.5 mr-2 shrink-0", isResuming && "animate-spin")} />
+                                                    <span className="truncate">Resume</span>
                                                 </Button>
 
-                                                <Button size="sm" variant="outline" asChild className="w-full justify-start text-[11px] border-white/10 hover:bg-white/5">
+                                                <Button size="sm" variant="outline" asChild className="w-full justify-start text-[11px] border-white/10 hover:bg-white/5 truncate">
                                                     <Link href={`/dashboard/sessions/${currentSession.id}/manual-attendance`}>
-                                                        <CheckCircle className="h-3.5 w-3.5 mr-2" /> Manual Attendance
+                                                        <CheckCircle className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Manual Attendance</span>
                                                     </Link>
                                                 </Button>
 
                                                 <Button
                                                     size="sm"
                                                     variant="secondary"
-                                                    className="w-full justify-start text-[11px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20"
+                                                    className="w-full justify-start text-[11px] bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 truncate"
                                                     onClick={() => {
                                                         const link = `${window.location.origin}/user_direct?subId=${currentSession.id}`;
                                                         navigator.clipboard.writeText(link);
                                                         toast.success("User Direct Link copied!");
                                                     }}
                                                 >
-                                                    <Users className="h-3.5 w-3.5 mr-2" /> Copy User Link
+                                                    <Users className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Copy User Link</span>
                                                 </Button>
                                             </>
                                         )}

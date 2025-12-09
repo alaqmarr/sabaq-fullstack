@@ -71,9 +71,9 @@ export function AddToCalendarBtn({ session }: AddToCalendarBtnProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" className="w-fit">
-                    <CalendarPlus className="mr-2 h-4 w-4" />
-                    Add to Calendar
+                <Button variant="outline" size="sm" className="w-full justify-start truncate">
+                    <CalendarPlus className="mr-2 h-4 w-4 shrink-0" />
+                    <span className="truncate">Add to Calendar</span>
                 </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">

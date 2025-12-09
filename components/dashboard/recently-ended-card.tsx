@@ -92,18 +92,18 @@ export function RecentlyEndedSessionCard({
                     </div>
 
                     {/* Right: Controls */}
-                    <div className="p-4 sm:p-5 bg-muted/30 lg:bg-transparent lg:border-l border-t lg:border-t-0 flex flex-wrap lg:flex-col gap-2 justify-end lg:w-48 pointer-events-auto">
+                    <div className="p-4 sm:p-5 bg-muted/30 lg:bg-transparent lg:border-l border-t lg:border-t-0 flex flex-wrap lg:flex-col gap-2 justify-end lg:w-52 pointer-events-auto">
                         {/* Actions for users who attended */}
                         {userAttendance?.attended && (
                             <>
-                                <Button size="sm" variant="frosted-amber" asChild className="w-fit justify-start">
+                                <Button size="sm" variant="frosted-amber" asChild className="w-full justify-start truncate">
                                     <Link href={`/sessions/${session.id}/ask`}>
-                                        <MessageCircle className="h-3.5 w-3.5 mr-2" /> Ask Question
+                                        <MessageCircle className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Ask Question</span>
                                     </Link>
                                 </Button>
-                                <Button size="sm" variant="frosted-blue" asChild className="w-fit justify-start">
+                                <Button size="sm" variant="frosted-blue" asChild className="w-full justify-start truncate">
                                     <Link href={`/sessions/${session.id}/feedback`}>
-                                        <Star className="h-3.5 w-3.5 mr-2" /> Add Feedback
+                                        <Star className="h-3.5 w-3.5 mr-2 shrink-0" /> <span className="truncate">Add Feedback</span>
                                     </Link>
                                 </Button>
                             </>
@@ -111,9 +111,9 @@ export function RecentlyEndedSessionCard({
 
                         {/* Admin actions */}
                         {showAdminActions && (
-                            <Button size="sm" variant="ghost" asChild className="w-fit justify-start">
+                            <Button size="sm" variant="ghost" asChild className="w-full justify-start truncate">
                                 <Link href={`/dashboard/sessions/${session.id}`}>
-                                    View Report
+                                    <span className="truncate">View Report</span>
                                 </Link>
                             </Button>
                         )}
