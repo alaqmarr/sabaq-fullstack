@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { startSession, resumeSession } from "@/actions/sessions";
 import { toast } from "sonner";
-import { Play, Square, RotateCcw, Loader2, UserPlus } from "lucide-react";
+import { Play, Square, RotateCcw, Loader2, UserPlus, Pencil } from "lucide-react";
 import Link from "next/link";
 import {
     AlertDialog,
@@ -152,6 +152,18 @@ export function SessionQuickActions({
                         </Link>
                     </Button>
                 )}
+
+                {/* Edit Session - always available */}
+                <Button
+                    variant="outline"
+                    className="w-full sm:w-auto justify-start"
+                    asChild
+                >
+                    <Link href={`/dashboard/sessions/${sessionId}/edit`}>
+                        <Pencil className="mr-2 h-4 w-4" />
+                        Edit Session
+                    </Link>
+                </Button>
 
                 {isEnded && (
                     <AlertDialog>

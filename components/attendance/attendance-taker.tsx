@@ -10,7 +10,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { getSessionAttendanceData, bulkMarkAttendance } from '@/actions/attendance';
 import { cn } from '@/lib/utils';
-import { format } from 'date-fns';
+import { formatPPPp } from '@/lib/date-utils';
 
 interface Attendee {
     user: {
@@ -139,7 +139,7 @@ export function AttendanceTaker({ sessionId }: AttendanceTakerProps) {
                 <div>
                     <h2 className="text-2xl font-bold">{sessionInfo.sabaqName}</h2>
                     <p className="text-muted-foreground">
-                        {format(new Date(sessionInfo.scheduledAt), 'PPP p')}
+                        {formatPPPp(sessionInfo.scheduledAt)}
                     </p>
                 </div>
                 <div className="flex items-center gap-2">

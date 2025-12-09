@@ -4,7 +4,7 @@ import { RegistrationDetails } from '@/components/enrollments/registration-detai
 import { notFound } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { BookOpen } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatShortDate } from '@/lib/date-utils';
 import Image from 'next/image';
 
 export const preferredRegion = ["sin1"];
@@ -90,7 +90,7 @@ export default async function PublicRegistrationPage({ params }: { params: Promi
                         <div className="p-6 rounded-lg bg-destructive/10 text-destructive text-center border border-destructive/20">
                             <h3 className="font-semibold mb-2">Registration Closed</h3>
                             <p className="text-sm opacity-90">
-                                Enrollment for this sabaq ended on {format(new Date(sabaq.enrollmentEndsAt), 'MMM d, yyyy')}.
+                                Enrollment for this sabaq ended on {formatShortDate(sabaq.enrollmentEndsAt)}.
                             </p>
                         </div>
                     ) : (

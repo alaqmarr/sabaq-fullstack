@@ -11,7 +11,7 @@ import { Search, UserCheck, Loader2, Keyboard, CheckCircle, XCircle, AlertTriang
 import { toast } from 'sonner';
 import { database } from '@/lib/firebase';
 import { ref, onValue, off } from 'firebase/database';
-import { format } from 'date-fns';
+import { formatTime } from '@/lib/date-utils';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { playSuccessSound, playErrorSound } from '@/lib/sounds';
@@ -452,7 +452,7 @@ export function SessionScanClient({ sessionId, sessionName, isActive, isAdmin }:
                                     {/* Time - compact on mobile */}
                                     <div className="shrink-0 text-right">
                                         <span className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
-                                            {format(record.markedAt, 'h:mm a')}
+                                            {formatTime(record.markedAt)}
                                         </span>
                                     </div>
                                 </div>

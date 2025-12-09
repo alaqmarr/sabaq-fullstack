@@ -14,7 +14,7 @@ import {
     BookOpen,
     User
 } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatDate, formatTime } from '@/lib/date-utils';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 
@@ -92,11 +92,11 @@ export function DashboardSessionList({ sessions, type, emptyMessage = "No sessio
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-muted-foreground">
                                         <div className="flex items-center gap-2">
                                             <Calendar className="h-4 w-4 text-primary" />
-                                            <span>{format(new Date(session.scheduledAt), 'EEEE, MMMM d')}</span>
+                                            <span>{formatDate(session.scheduledAt)}</span>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <Clock className="h-4 w-4 text-primary" />
-                                            <span>{format(new Date(session.scheduledAt), 'h:mm a')}</span>
+                                            <span>{formatTime(session.scheduledAt)}</span>
                                         </div>
                                         {session.sabaq.location && (
                                             <div className="flex items-center gap-2">

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { format } from 'date-fns';
+import { formatDateCode } from '@/lib/date-utils';
 import { CheckCircle2, XCircle, Clock } from 'lucide-react';
 
 interface MyEnrollmentsProps {
@@ -75,13 +75,13 @@ export function MyEnrollments({ enrollments }: MyEnrollmentsProps) {
                                     <TableCell>{enrollment.sabaq.kitaab}</TableCell>
                                     <TableCell>{enrollment.sabaq.level}</TableCell>
                                     <TableCell>
-                                        {format(new Date(enrollment.requestedAt), 'dd MMM yyyy')}
+                                        {formatDateCode(enrollment.requestedAt)}
                                     </TableCell>
                                     <TableCell>{getStatusBadge(enrollment.status)}</TableCell>
                                     <TableCell>
                                         {enrollment.status === 'APPROVED' && enrollment.approvedAt && (
                                             <span className="text-sm text-muted-foreground">
-                                                Raza granted on {format(new Date(enrollment.approvedAt), 'dd MMM yyyy')}
+                                                Raza granted on {formatDateCode(enrollment.approvedAt)}
                                             </span>
                                         )}
                                         {enrollment.status === 'REJECTED' && enrollment.rejectionReason && (

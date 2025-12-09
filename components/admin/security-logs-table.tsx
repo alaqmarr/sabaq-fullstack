@@ -9,7 +9,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatCustom } from '@/lib/date-utils';
 
 interface SecurityLog {
     id: string;
@@ -46,7 +46,7 @@ export function SecurityLogsTable({ logs }: SecurityLogsTableProps) {
                     {logs.map((log) => (
                         <TableRow key={log.id}>
                             <TableCell className="whitespace-nowrap">
-                                {format(new Date(log.createdAt), 'MMM d, HH:mm:ss')}
+                                {formatCustom(log.createdAt, 'MMM d, HH:mm:ss')}
                             </TableCell>
                             <TableCell>
                                 <div className="flex flex-col">

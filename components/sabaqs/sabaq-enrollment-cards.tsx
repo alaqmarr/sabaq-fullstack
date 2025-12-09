@@ -1,7 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { format } from "date-fns";
+import { formatShortDate } from "@/lib/date-utils";
 
 interface Enrollment {
     id: string;
@@ -65,7 +65,7 @@ export function SabaqEnrollmentCards({ enrollments }: SabaqEnrollmentCardsProps)
                                 {enrollment.status}
                             </Badge>
                             <span className="text-xs text-muted-foreground">
-                                {format(new Date(enrollment.requestedAt), "MMM d, yyyy")}
+                                {formatShortDate(enrollment.requestedAt)}
                             </span>
                         </div>
                     </CardContent>

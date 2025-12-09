@@ -3,10 +3,10 @@ import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { notFound } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
-import { ManualAttendanceClient } from './manual-attendance-client';
-import { formatPPP } from '@/lib/date-utils';
+import { SessionEditClient } from './session-edit-client';
+import { formatShortDateTime } from '@/lib/date-utils';
 import { Metadata } from 'next';
 import { PageHeader } from '@/components/ui/page-header';
 
@@ -15,11 +15,11 @@ export const preferredRegion = ["sin1"];
 export async function generateMetadata({ params }: { params: Promise<{ sessionId: string }> }): Promise<Metadata> {
     const { sessionId } = await params;
     return {
-        title: `Manual Attendance | Session ${sessionId}`,
+        title: `Edit Session | ${sessionId}`,
     };
 }
 
-export default async function ManualAttendancePage({ params }: { params: Promise<{ sessionId: string }> }) {
+export default async function SessionEditPage({ params }: { params: Promise<{ sessionId: string }> }) {
     const { sessionId } = await params;
     const authSession = await auth();
 
@@ -63,39 +63,8 @@ export default async function ManualAttendancePage({ params }: { params: Promise
         }
     }
 
-    // Fetch enrolled users for this sabaq
-    const enrollments = await prisma.enrollment.findMany({
-        where: {
-            sabaqId: session.sabaqId,
-            status: 'APPROVED'
-        },
-        include: {
-            user: {
-                select: {
-                    id: true,
-                    name: true,
-                    itsNumber: true,
-                    email: true
-                }
-            }
-        },
-        orderBy: { user: { name: 'asc' } }
-    });
-
-    // Fetch existing attendances for this session
-    const attendances = await prisma.attendance.findMany({
-        where: { sessionId },
-        select: { userId: true }
-    });
-    const attendedUserIds = new Set(attendances.map(a => a.userId));
-
-    const enrolledUsers = enrollments.map(e => ({
-        ...e.user,
-        hasAttended: attendedUserIds.has(e.user.id)
-    }));
-
     return (
-        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6 max-w-4xl mx-auto">
+        <div className="flex-1 space-y-6 p-4 sm:p-8 pt-6 max-w-2xl mx-auto">
             <div className="flex items-center gap-2 mb-4">
                 <Link href={`/dashboard/sessions/${sessionId}`}>
                     <Button variant="ghost" size="sm">
@@ -106,24 +75,18 @@ export default async function ManualAttendancePage({ params }: { params: Promise
             </div>
 
             <PageHeader
-                title="Manual Attendance"
-                description={`Mark attendance for ${session.sabaq.name} - ${formatPPP(session.scheduledAt)}`}
+                title="Edit Session"
+                description={`${session.sabaq.name} - ${formatShortDateTime(session.scheduledAt)}`}
             />
 
-            <div className="glass-panel p-4 rounded-lg flex items-center gap-3 text-sm mb-6">
-                <Shield className="h-5 w-5 text-amber-500" />
-                <div>
-                    <span className="font-semibold text-amber-600 dark:text-amber-400">Admin Only:</span>
-                    {' '}This page allows direct attendance marking without QR/location. Users will be notified via email.
-                </div>
-            </div>
-
-            <ManualAttendanceClient
+            <SessionEditClient
                 sessionId={sessionId}
                 sabaqName={session.sabaq.name}
                 sabaqId={session.sabaqId}
-                scheduledAt={session.scheduledAt.toISOString()}
-                enrolledUsers={enrolledUsers}
+                currentScheduledAt={session.scheduledAt.toISOString()}
+                currentCutoffTime={session.cutoffTime.toISOString()}
+                isActive={session.isActive}
+                isEnded={!!session.endedAt}
             />
         </div>
     );

@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { upvoteQuestion, deleteQuestion } from '@/actions/questions';
 import { AnswerDialog } from './answer-dialog';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatPPPp } from '@/lib/date-utils';
 import { ThumbsUp, Trash, MessageSquare, CheckCircle } from 'lucide-react';
 
 interface QuestionListProps {
@@ -86,7 +86,7 @@ export function QuestionList({ sessionId, questions, userVotedIds, isAdmin = fal
                                                 {isAdmin ? question.user.name : 'Anonymous'}
                                             </span>
                                             <span className="text-xs text-muted-foreground lowercase">
-                                                {format(new Date(question.createdAt), 'PPp')}
+                                                {formatPPPp(question.createdAt)}
                                             </span>
                                             {question.isAnswered && (
                                                 <Badge className="bg-green-500 lowercase">
@@ -121,7 +121,7 @@ export function QuestionList({ sessionId, questions, userVotedIds, isAdmin = fal
                                         <p className="text-sm font-medium lowercase">answer:</p>
                                         <p className="text-sm lowercase">{question.answer}</p>
                                         <p className="text-xs text-muted-foreground lowercase">
-                                            answered {format(new Date(question.answeredAt), 'PPp')}
+                                            answered {formatPPPp(question.answeredAt)}
                                         </p>
                                     </div>
                                 </CardContent>

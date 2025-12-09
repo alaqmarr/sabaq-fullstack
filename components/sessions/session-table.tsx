@@ -14,9 +14,9 @@ import { Edit, Trash, Play, StopCircle, RotateCcw, ClipboardCheck, Eye } from 'l
 import { SessionDialog } from './session-dialog';
 import { EndSessionDialog } from './end-session-dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { deleteSession, startSession, endSession, resumeSession } from '@/actions/sessions';
+import { deleteSession, startSession, resumeSession } from '@/actions/sessions';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatDateTimeCode, formatTime24 } from '@/lib/date-utils';
 import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -110,10 +110,10 @@ export function SessionTable({ sessions, sabaqs }: SessionTableProps) {
                                     </div>
                                 </TableCell>
                                 <TableCell className="font-medium">
-                                    {format(new Date(session.scheduledAt), 'dd/MM/yy HH:mm')}
+                                    {formatDateTimeCode(session.scheduledAt)}
                                 </TableCell>
                                 <TableCell>
-                                    {format(new Date(session.cutoffTime), 'HH:mm')}
+                                    {formatTime24(session.cutoffTime)}
                                 </TableCell>
                                 <TableCell>{getStatusBadge(session)}</TableCell>
                                 <TableCell>{session._count?.attendances || 0}</TableCell>

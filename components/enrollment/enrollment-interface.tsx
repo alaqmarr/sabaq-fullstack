@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, BookOpen, MapPin, Calendar, Users, CheckCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatPPP } from '@/lib/date-utils';
 import { toast } from 'sonner';
 import { EnrollmentCountdown } from './enrollment-countdown';
 
@@ -141,7 +141,7 @@ export function EnrollmentInterface({ user }: EnrollmentInterfaceProps) {
                                         <div className="flex items-start justify-between text-muted-foreground">
                                             <div className="flex items-center">
                                                 <Calendar className="h-4 w-4 mr-2" />
-                                                Closes: {format(new Date(sabaq.enrollmentEndsAt), 'PP')}
+                                                Closes: {formatPPP(sabaq.enrollmentEndsAt)}
                                             </div>
                                             <EnrollmentCountdown
                                                 enrollmentEndsAt={sabaq.enrollmentEndsAt}

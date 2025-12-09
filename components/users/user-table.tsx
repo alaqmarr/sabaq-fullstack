@@ -9,7 +9,7 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDateCode } from '@/lib/date-utils';
 import { Button } from '@/components/ui/button';
 import { Edit } from 'lucide-react';
 import { useState } from 'react';
@@ -55,7 +55,7 @@ export function UserTable({ users }: UserTableProps) {
                                     <Badge variant="outline" className="whitespace-nowrap">{user.role}</Badge>
                                 </TableCell>
                                 <TableCell className="whitespace-nowrap">
-                                    {format(new Date(user.createdAt), 'dd/MM/yyyy')}
+                                    {formatDateCode(user.createdAt)}
                                 </TableCell>
                                 <TableCell className="text-right sticky right-0 bg-card">
                                     <Button

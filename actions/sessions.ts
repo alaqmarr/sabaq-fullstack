@@ -65,36 +65,63 @@ export async function updateSession(
   try {
     await requirePermission("sessions", "update");
 
-    const validatedData = SessionSchema.partial().parse(data);
+    const authSession = await auth();
+    if (!authSession?.user) {
+      return { success: false, error: "Not authenticated" };
+    }
+
+    // Verify user is ADMIN/SUPERADMIN
+    const user = await prisma.user.findUnique({
+      where: { id: authSession.user.id },
+      select: { role: true },
+    });
+
+    if (!user || !["SUPERADMIN", "ADMIN"].includes(user.role)) {
+      return { success: false, error: "Unauthorized" };
+    }
 
     const existingSession = await prisma.session.findUnique({
       where: { id },
+      include: {
+        sabaq: {
+          select: {
+            id: true,
+            admins: { select: { userId: true } },
+          },
+        },
+      },
     });
 
     if (!existingSession) {
       return { success: false, error: "Session not found" };
     }
 
-    if (existingSession.startedAt) {
-      return {
-        success: false,
-        error: "Cannot edit a session that has already started",
-      };
+    // For ADMIN, verify they are a sabaq admin
+    if (user.role === "ADMIN") {
+      const isSabaqAdmin = existingSession.sabaq.admins.some(
+        (a) => a.userId === authSession.user.id
+      );
+      if (!isSabaqAdmin) {
+        return { success: false, error: "Unauthorized - Not a sabaq admin" };
+      }
     }
 
+    // Update session timing
     const updatedSession = await prisma.session.update({
       where: { id },
-      data: validatedData,
+      data: {
+        scheduledAt: data.scheduledAt,
+        cutoffTime: data.cutoffTime,
+      },
     });
 
     await cache.invalidatePattern("sessions:*");
     revalidatePath(`/dashboard/sabaqs/${updatedSession.sabaqId}`);
     revalidatePath("/dashboard/sessions");
+    revalidatePath(`/dashboard/sessions/${id}`);
     return { success: true, session: updatedSession };
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return { success: false, error: error.errors[0].message };
-    }
+    console.error("Failed to update session:", error);
     return {
       success: false,
       error: error.message || "Failed to update session",

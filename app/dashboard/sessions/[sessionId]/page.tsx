@@ -10,7 +10,7 @@ import { getQuestionStats } from '@/actions/questions';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { format } from 'date-fns';
+import { formatShortDate, formatPPP, formatTime24 } from '@/lib/date-utils';
 import Link from 'next/link';
 import { ArrowLeft, Calendar, Clock, MapPin, Users, MessageSquare, ChevronRight, QrCode } from 'lucide-react';
 import { ExportButton } from '@/components/exports/export-button';
@@ -32,7 +32,7 @@ export async function generateMetadata({ params }: { params: Promise<{ sessionId
             };
         }
 
-        const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
+        const date = formatShortDate(result.session.scheduledAt);
         return {
             title: `${date} | ${result.session.sabaq.name}`,
         };
@@ -103,7 +103,7 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     </p>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground pl-8 md:pl-0">
                         <Calendar className="h-4 w-4" />
-                        {format(new Date(sessionData.scheduledAt), 'PPP')}
+                        {formatPPP(sessionData.scheduledAt)}
                     </div>
                 </div>
                 <div className="flex items-center gap-2 pl-8 md:pl-0">
@@ -138,10 +138,10 @@ export default async function SessionDetailPage({ params }: { params: Promise<{ 
                     </CardHeader>
                     <CardContent>
                         <div className="text-lg font-bold">
-                            {format(new Date(sessionData.scheduledAt), 'p')}
+                            {formatTime24(sessionData.scheduledAt)}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                            Cutoff: {format(new Date(sessionData.cutoffTime), 'p')}
+                            Cutoff: {formatTime24(sessionData.cutoffTime)}
                         </p>
                     </CardContent>
                 </Card>

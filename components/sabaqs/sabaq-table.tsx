@@ -15,7 +15,7 @@ import { SabaqDialog } from './sabaq-dialog';
 import { SabaqAdminDialog } from './sabaq-admin-dialog';
 import { deleteSabaq } from '@/actions/sabaqs';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatDateTimeCode } from '@/lib/date-utils';
 import Link from 'next/link';
 
 interface SabaqTableProps {
@@ -74,7 +74,7 @@ export function SabaqTable({ sabaqs, locations, users }: SabaqTableProps) {
                                 </TableCell>
                                 <TableCell>{sabaq.level}</TableCell>
                                 <TableCell className="whitespace-nowrap text-xs sm:text-sm">
-                                    {format(new Date(sabaq.enrollmentStartsAt), 'dd/MM/yy HH:mm')} - {format(new Date(sabaq.enrollmentEndsAt), 'dd/MM/yy HH:mm')}
+                                    {formatDateTimeCode(sabaq.enrollmentStartsAt)} - {formatDateTimeCode(sabaq.enrollmentEndsAt)}
                                 </TableCell>
                                 <TableCell>
                                     <div className="truncate max-w-[180px]">

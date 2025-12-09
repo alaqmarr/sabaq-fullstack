@@ -8,12 +8,13 @@ import { Edit, Trash, Play, StopCircle, Calendar, Clock, Users, BookOpen, Clipbo
 import { SessionDialog } from './session-dialog';
 import { deleteSession, startSession } from '@/actions/sessions';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatDayDate, formatTime24 } from '@/lib/date-utils';
 import Link from 'next/link';
 
 import { EndSessionDialog } from './end-session-dialog';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { useRouter } from 'next/navigation';
+
 
 interface SessionGridProps {
     sessions: any[];
@@ -102,7 +103,7 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                                     <Calendar className="h-4 w-4" />
                                 </div>
                                 <span className="font-medium text-foreground/80">
-                                    {format(new Date(session.scheduledAt), 'EEE, dd MMM yyyy')}
+                                    {formatDayDate(session.scheduledAt)}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3 text-muted-foreground">
@@ -110,9 +111,9 @@ export function SessionGrid({ sessions, sabaqs }: SessionGridProps) {
                                     <Clock className="h-4 w-4" />
                                 </div>
                                 <span className="font-medium text-foreground/80">
-                                    {format(new Date(session.scheduledAt), 'HH:mm')}
+                                    {formatTime24(session.scheduledAt)}
                                     <span className="mx-2 text-muted-foreground/50">•</span>
-                                    Cutoff: {format(new Date(session.cutoffTime), 'HH:mm')}
+                                    Cutoff: {formatTime24(session.cutoffTime)}
                                 </span>
                             </div>
                             <div className="flex items-center gap-3 text-muted-foreground">

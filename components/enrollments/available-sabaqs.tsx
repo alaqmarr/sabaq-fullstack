@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { MapPin, Calendar, Users } from 'lucide-react';
 import { createEnrollmentRequest } from '@/actions/enrollments';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatShortDateTime } from '@/lib/date-utils';
 
 interface AvailableSabaqsProps {
     sabaqs: any[];
@@ -67,9 +67,9 @@ export function AvailableSabaqs({ sabaqs }: AvailableSabaqsProps) {
                                 <span className="text-muted-foreground">Enrollment Window:</span>
                             </div>
                             <div className="pl-6 text-xs">
-                                <div>{format(new Date(sabaq.enrollmentStartsAt), 'dd MMM yyyy, hh:mm a')}</div>
+                                <div>{formatShortDateTime(sabaq.enrollmentStartsAt)}</div>
                                 <div className="text-muted-foreground">to</div>
-                                <div>{format(new Date(sabaq.enrollmentEndsAt), 'dd MMM yyyy, hh:mm a')}</div>
+                                <div>{formatShortDateTime(sabaq.enrollmentEndsAt)}</div>
                             </div>
 
                             {sabaq.allowLocationAttendance && sabaq.location && (

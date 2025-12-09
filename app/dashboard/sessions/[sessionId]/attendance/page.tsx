@@ -13,7 +13,7 @@ import { ChevronLeft, QrCode } from 'lucide-react';
 import { AttendanceStats } from '@/components/attendance/attendance-stats';
 import { AttendanceList } from '@/components/attendance/attendance-list';
 import { PageHeader } from '@/components/ui/page-header';
-import { format } from 'date-fns';
+import { formatShortDate } from '@/lib/date-utils';
 
 import { Metadata } from 'next';
 
@@ -28,7 +28,7 @@ export async function generateMetadata({ params }: { params: Promise<{ sessionId
             };
         }
 
-        const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
+        const date = formatShortDate(result.session.scheduledAt);
         return {
             title: `Attendance | ${result.session.sabaq.name} | ${date}`,
         };

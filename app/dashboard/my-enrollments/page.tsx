@@ -1,7 +1,7 @@
 import { getMyEnrollments } from '@/actions/enrollments';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDateCode } from '@/lib/date-utils';
 import Link from 'next/link';
 import { BookOpen, MapPin, UserCheck, Calendar, CheckCircle, Clock, XCircle } from 'lucide-react';
 
@@ -92,7 +92,7 @@ export default async function MyEnrollmentsPage() {
                                         <div className="flex items-center gap-2 text-muted-foreground">
                                             <Calendar className="h-4 w-4 shrink-0" />
                                             <span className="lowercase">
-                                                requested on {format(new Date(enrollment.requestedAt), 'dd MMM yyyy')}
+                                                requested on {formatDateCode(enrollment.requestedAt)}
                                             </span>
                                         </div>
 
@@ -108,7 +108,7 @@ export default async function MyEnrollmentsPage() {
                                             <div className="pt-2 border-t">
                                                 <p className="text-xs text-green-600 lowercase flex items-center gap-1">
                                                     <CheckCircle className="h-3 w-3" />
-                                                    raza granted on {format(new Date(enrollment.approvedAt), 'dd MMM yyyy')}
+                                                    raza granted on {formatDateCode(enrollment.approvedAt)}
                                                 </p>
                                             </div>
                                         )}

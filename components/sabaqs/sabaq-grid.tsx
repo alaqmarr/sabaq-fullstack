@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+
 import { Button } from '@/components/ui/button';
 import { Edit, Users, MapPin, Calendar, BookOpen, Trash, UserCheck } from 'lucide-react';
 import { useState } from 'react';

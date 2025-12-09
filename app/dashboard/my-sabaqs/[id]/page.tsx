@@ -3,7 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { format } from 'date-fns';
+import { formatDate, formatTime } from '@/lib/date-utils';
 import Link from 'next/link';
 import {
     BookOpen,
@@ -211,8 +211,8 @@ export default async function MySabaqDetailPage({ params }: { params: Promise<{ 
                                 >
                                     <div className="flex items-center gap-3">
                                         <div className={`h-8 w-8 rounded-full flex items-center justify-center ${attendance.isLate
-                                                ? 'bg-orange-500/20 text-orange-500'
-                                                : 'bg-green-500/20 text-green-500'
+                                            ? 'bg-orange-500/20 text-orange-500'
+                                            : 'bg-green-500/20 text-green-500'
                                             }`}>
                                             {attendance.isLate ? (
                                                 <Clock className="h-4 w-4" />
@@ -222,10 +222,10 @@ export default async function MySabaqDetailPage({ params }: { params: Promise<{ 
                                         </div>
                                         <div>
                                             <p className="text-sm font-medium lowercase">
-                                                {format(attendance.session.scheduledAt, 'EEEE, dd MMM yyyy')}
+                                                {formatDate(attendance.session.scheduledAt)}
                                             </p>
                                             <p className="text-xs text-muted-foreground lowercase">
-                                                marked at {format(attendance.markedAt, 'h:mm a')}
+                                                marked at {formatTime(attendance.markedAt)}
                                             </p>
                                         </div>
                                     </div>

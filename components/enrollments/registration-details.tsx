@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Calendar, Info, MapPin } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatShortDateTime } from '@/lib/date-utils';
 import Link from 'next/link';
 import { CountdownTimer } from '@/components/ui/countdown-timer';
 import { MapWrapper } from '@/components/ui/map-wrapper';
@@ -59,8 +59,8 @@ export function RegistrationDetails({ sabaqId, sabaq }: RegistrationDetailsProps
                     <div className="text-left w-full">
                         <p className="font-medium text-foreground">Enrollment Period</p>
                         <div className="text-xs space-y-1 text-muted-foreground">
-                            <p>Starts: {sabaq.enrollmentStartsAt ? format(new Date(sabaq.enrollmentStartsAt), 'MMM d, yyyy h:mm a') : 'N/A'}</p>
-                            <p>Ends: {format(new Date(sabaq.enrollmentEndsAt), 'MMM d, yyyy h:mm a')}</p>
+                            <p>Starts: {sabaq.enrollmentStartsAt ? formatShortDateTime(sabaq.enrollmentStartsAt) : 'N/A'}</p>
+                            <p>Ends: {formatShortDateTime(sabaq.enrollmentEndsAt)}</p>
                         </div>
                         {new Date(sabaq.enrollmentEndsAt) > new Date() && (
                             <div className="mt-3 pt-3 border-t border-border/50">

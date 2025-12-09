@@ -6,7 +6,7 @@ import { requirePermission } from '@/lib/rbac';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from 'next/link';
 import { Calendar, MapPin, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatShortDateTime, formatTime } from '@/lib/date-utils';
 import { prisma } from '@/lib/prisma';
 
 export default async function AttendancePage() {
@@ -135,7 +135,7 @@ export default async function AttendancePage() {
                                                     </div>
                                                     <div className="flex items-center text-xs text-muted-foreground">
                                                         <Clock className="h-3 w-3 mr-1" />
-                                                        Ended {sess.endedAt && format(new Date(sess.endedAt), 'PP p')}
+                                                        Ended {sess.endedAt && formatShortDateTime(sess.endedAt)}
                                                     </div>
                                                     <div className="text-sm font-medium text-primary">
                                                         {sess._count.attendances} attendees
@@ -166,7 +166,7 @@ export default async function AttendancePage() {
                                         </div>
                                         <div className="flex items-center text-xs text-muted-foreground">
                                             <Clock className="h-3 w-3 mr-1" />
-                                            Started {sess.startedAt && format(new Date(sess.startedAt), 'p')}
+                                            Started {sess.startedAt && formatTime(sess.startedAt)}
                                         </div>
                                         <div className="text-sm font-medium text-primary">
                                             {sess._count.attendances} attendees
@@ -196,7 +196,7 @@ export default async function AttendancePage() {
                                     <CardContent className="space-y-2">
                                         <div className="flex items-center text-xs text-muted-foreground">
                                             <Calendar className="h-3 w-3 mr-1" />
-                                            {format(new Date(sess.scheduledAt), 'PPp')}
+                                            {formatShortDateTime(sess.scheduledAt)}
                                         </div>
                                         <div className="flex items-center text-xs text-muted-foreground">
                                             <MapPin className="h-3 w-3 mr-1" />

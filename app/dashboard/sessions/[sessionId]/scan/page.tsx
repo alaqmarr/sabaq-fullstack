@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { SessionScanClient } from './session-scan-client';
-import { format } from 'date-fns';
+import { formatShortDate } from '@/lib/date-utils';
 
 import { Metadata } from 'next';
 
@@ -25,7 +25,7 @@ export async function generateMetadata({ params }: { params: Promise<{ sessionId
             };
         }
 
-        const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
+        const date = formatShortDate(result.session.scheduledAt);
         return {
             title: `Scan | ${result.session.sabaq.name} | ${date}`,
         };

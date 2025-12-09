@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, ArrowLeft, Trash2 } from 'lucide-react';
 import { SessionDialog } from './session-dialog';
 import Link from 'next/link';
-import { format } from 'date-fns';
+import { formatPPP, formatTime } from '@/lib/date-utils';
 import { Badge } from '@/components/ui/badge';
 import { SessionControls } from './session-controls';
 import { deleteSession } from '@/actions/sessions';
@@ -73,12 +73,12 @@ export function SessionDetailsHeader({ session, isAdmin }: SessionDetailsHeaderP
                 <div className="space-y-1">
                     <div className="flex items-center gap-3">
                         <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-cred-heading">
-                            {format(new Date(session.scheduledAt), 'PPP')}
+                            {formatPPP(session.scheduledAt)}
                         </h1>
                         {getStatusBadge()}
                     </div>
                     <p className="text-muted-foreground">
-                        {session.sabaq.name} • {format(new Date(session.scheduledAt), 'p')}
+                        {session.sabaq.name} • {formatTime(session.scheduledAt)}
                     </p>
                 </div>
 

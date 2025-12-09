@@ -22,7 +22,7 @@ import {
 import { SearchInput } from '../ui/search-input';
 import { approveEnrollment, rejectEnrollment, bulkApproveEnrollments, bulkRejectEnrollments } from '@/actions/enrollments';
 import { toast } from 'sonner';
-import { format } from 'date-fns';
+import { formatDateTimeCode } from '@/lib/date-utils';
 import { Check, X } from 'lucide-react';
 import { RejectionDialog } from './rejection-dialog';
 import { EnrollmentStatus } from '@prisma/client';
@@ -243,7 +243,7 @@ export function EnrollmentTable({ enrollments, sabaqId }: EnrollmentTableProps) 
                                 <TableCell>{enrollment.user.name}</TableCell>
                                 <TableCell>{enrollment.user.email || 'N/A'}</TableCell>
                                 <TableCell>
-                                    {format(new Date(enrollment.requestedAt), 'dd/MM/yy HH:mm')}
+                                    {formatDateTimeCode(enrollment.requestedAt)}
                                 </TableCell>
                                 <TableCell>
                                     <Badge className={statusColors[enrollment.status as keyof typeof statusColors]}>

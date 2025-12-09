@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 
 import { database } from '@/lib/firebase';
 import { ref, onValue, off } from 'firebase/database';
-import { format } from 'date-fns';
+import { formatShortDate, formatPPP, formatTime } from '@/lib/date-utils';
 import { CheckCircle, XCircle, Clock, User, AlertTriangle } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -240,7 +240,7 @@ export default function ScanClient() {
                                         )}
                                         {sessions.map((session) => (
                                             <SelectItem key={session.id} value={session.id}>
-                                                {session.name} ({format(new Date(session.date), 'MMM d, yyyy')})
+                                                {session.name} ({formatShortDate(session.date)})
                                             </SelectItem>
                                         ))}
                                     </SelectContent>
@@ -251,9 +251,9 @@ export default function ScanClient() {
                         {selectedSessionId && selectedSession && (
                             <div className="text-sm text-muted-foreground">
                                 <p><strong>Session:</strong> {selectedSession.name}</p>
-                                <p><strong>Date:</strong> {format(new Date(selectedSession.date), 'PPP')}</p>
-                                <p><strong>Start Time:</strong> {format(new Date(selectedSession.startTime), 'p')}</p>
-                                <p><strong>End Time:</strong> {format(new Date(selectedSession.endTime), 'p')}</p>
+                                <p><strong>Date:</strong> {formatPPP(selectedSession.date)}</p>
+                                <p><strong>Start Time:</strong> {formatTime(selectedSession.startTime)}</p>
+                                <p><strong>End Time:</strong> {formatTime(selectedSession.endTime)}</p>
                             </div>
                         )}
 
@@ -353,7 +353,7 @@ export default function ScanClient() {
                                         </div>
                                         <div className="flex flex-col items-end gap-1 ml-4">
                                             <span className="text-xs text-muted-foreground whitespace-nowrap">
-                                                {format(record.markedAt, 'h:mm:ss a')}
+                                                {formatTime(record.markedAt)}
                                             </span>
                                             {record.isLate && (
                                                 <Badge variant="destructive" className="text-[10px] h-5 px-1.5">Late</Badge>

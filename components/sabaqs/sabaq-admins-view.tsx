@@ -8,7 +8,7 @@ import { UserPlus, Trash, Users, Shield, Calendar } from 'lucide-react';
 import { assignSabaqAdmin, removeSabaqAdmin } from '@/actions/sabaq-admins';
 import { toast } from 'sonner';
 import { ITSInput } from '@/components/ui/its-input';
-import { format } from 'date-fns';
+import { formatShortDate } from '@/lib/date-utils';
 
 interface Admin {
     id: string;
@@ -195,7 +195,7 @@ export function SabaqAdminsView({ sabaqId, sabaqName, currentAdmins, eligibleAdm
                                             </Badge>
                                             <span className="flex items-center gap-1">
                                                 <Calendar className="h-3 w-3" />
-                                                {format(new Date(admin.assignedAt), 'MMM d, yyyy')}
+                                                {formatShortDate(admin.assignedAt)}
                                             </span>
                                         </div>
                                         {admin.user.email && (

@@ -18,6 +18,7 @@ import { ChevronLeft, ChevronRight, Calendar as CalendarIcon } from "lucide-reac
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { getCalendarSessions } from "@/actions/calendar";
+import { formatCustom, formatPPPp } from "@/lib/date-utils";
 import {
     Popover,
     PopoverContent,
@@ -148,7 +149,7 @@ export function CalendarView({ initialDate = new Date() }: CalendarViewProps) {
                                                     )}
                                                 >
                                                     <span className="font-semibold">
-                                                        {format(new Date(session.scheduledAt), "HH:mm")}
+                                                        {formatCustom(session.scheduledAt, "HH:mm")}
                                                     </span>{" "}
                                                     {session.sabaq.name}
                                                 </div>
@@ -168,7 +169,7 @@ export function CalendarView({ initialDate = new Date() }: CalendarViewProps) {
                                                     <div className="flex items-center gap-2">
                                                         <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                                                         <span>
-                                                            {format(new Date(session.scheduledAt), "PPP p")}
+                                                            {formatPPPp(session.scheduledAt)}
                                                         </span>
                                                     </div>
                                                     <div className="flex items-center gap-2">

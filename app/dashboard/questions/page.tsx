@@ -7,7 +7,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Link from 'next/link';
 import { Calendar, MessageCircle, CheckCircle, Clock } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatPPP } from '@/lib/date-utils';
 import { prisma } from '@/lib/prisma';
 import { Badge } from '@/components/ui/badge';
 import { getUserQuestions } from '@/actions/questions';
@@ -138,7 +138,7 @@ export default async function QuestionsPage() {
 
                                                 <div className="flex items-center text-xs text-muted-foreground">
                                                     <Calendar className="h-3 w-3 mr-1" />
-                                                    {format(new Date(sess.scheduledAt), 'PPP')}
+                                                    {formatPPP(sess.scheduledAt)}
                                                 </div>
 
                                                 <div className="flex items-center justify-between pt-2">
@@ -182,7 +182,7 @@ export default async function QuestionsPage() {
                                             <div>
                                                 <h3 className="font-medium text-base">{q.question}</h3>
                                                 <p className="text-xs text-muted-foreground mt-1">
-                                                    Asked in <Link href={`/dashboard/sessions/${q.sessionId}`} className="underline hover:text-primary">{q.session.sabaq.name}</Link> on {format(new Date(q.createdAt), 'PPP')}
+                                                    Asked in <Link href={`/dashboard/sessions/${q.sessionId}`} className="underline hover:text-primary">{q.session.sabaq.name}</Link> on {formatPPP(q.createdAt)}
                                                 </p>
                                             </div>
                                             {q.isAnswered ? (
@@ -221,7 +221,7 @@ export default async function QuestionsPage() {
 
                                             <div className="flex items-center text-xs text-muted-foreground">
                                                 <Calendar className="h-3 w-3 mr-1" />
-                                                {format(new Date(sess.scheduledAt), 'PPP')}
+                                                {formatPPP(sess.scheduledAt)}
                                             </div>
 
                                             <div className="flex items-center gap-2">

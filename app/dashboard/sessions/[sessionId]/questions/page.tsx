@@ -14,7 +14,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatShortDate } from '@/lib/date-utils';
 
 import { Metadata } from 'next';
 
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: { params: Promise<{ sessionId
             };
         }
 
-        const date = format(new Date(result.session.scheduledAt), 'MMM d, yyyy');
+        const date = formatShortDate(result.session.scheduledAt);
         return {
             title: `Questions | ${result.session.sabaq.name} | ${date}`,
         };
