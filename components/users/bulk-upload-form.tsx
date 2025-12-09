@@ -12,7 +12,7 @@ import { Upload, Trash2, AlertCircle, CheckCircle, FileSpreadsheet } from 'lucid
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import { bulkCreateUsers, bulkUpdateUsers } from '@/actions/users';
-import { Role } from '@/app/prisma/client';
+import { Role } from '@/app/prisma/enums';
 
 interface ParsedUser {
     itsNumber: string;

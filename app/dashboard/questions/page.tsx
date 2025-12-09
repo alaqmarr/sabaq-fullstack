@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { getUserQuestions } from '@/actions/questions';
 import { PageHeader } from '@/components/ui/page-header';
 
-import { Prisma } from '@/app/prisma/client';
+import type { Prisma } from '@/app/prisma/client';
 
 type QuestionWithDetails = Prisma.QuestionGetPayload<{
     include: {

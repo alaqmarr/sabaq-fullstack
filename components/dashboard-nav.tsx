@@ -21,7 +21,7 @@ import {
     BarChart3
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import { Role } from '@/app/prisma/client';
+import { Role } from '@/app/prisma/enums';
 
 const navItems = [
     {

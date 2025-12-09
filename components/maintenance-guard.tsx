@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Role } from '@/app/prisma/client';
+import { Role } from '@/app/prisma/enums';
 
 interface MaintenanceGuardProps {
     config: any;

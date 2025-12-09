@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import { Role } from "@/app/prisma/client";
+import { Role } from "@/app/prisma/enums";
 
 // Extend the built-in types
 declare module "next-auth" {

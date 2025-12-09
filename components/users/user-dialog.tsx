@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select';
 import { createUser, updateUser } from '@/actions/users';
 import { toast } from 'sonner';
-import { Role } from '@/app/prisma/client';
+import { Role } from '@/app/prisma/enums';
 
 const userSchema = z.object({
     name: z.string().min(2, 'Name must be at least 2 characters'),
