@@ -21,20 +21,20 @@ import { Loader2 } from "lucide-react";
 import { getSabaqs } from "@/actions/sabaqs";
 import { assignUserToSabaq } from "@/actions/sabaqs";
 
-interface AssignSabaqDialogProps {
+interface EnrollSabaqDialogProps {
     user: any;
     open: boolean;
     onOpenChange: (open: boolean) => void;
 }
 
-export function AssignSabaqDialog({
+export function EnrollSabaqDialog({
     user,
     open,
     onOpenChange,
-}: AssignSabaqDialogProps) {
+}: EnrollSabaqDialogProps) {
     const [sabaqs, setSabaqs] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
-    const [assigning, setAssigning] = useState(false);
+    const [enroll, setEnroll] = useState(false);
     const [selectedSabaqId, setSelectedSabaqId] = useState<string>("");
 
     useEffect(() => {
@@ -59,12 +59,13 @@ export function AssignSabaqDialog({
         }
     };
 
-    const handleAssign = async () => {
+    const handleEnroll = async () => {
         if (!selectedSabaqId) return;
 
-        setAssigning(true);
+        setEnroll(true);
         try {
-            const result = await assignUserToSabaq(user.id, selectedSabaqId, 'ASSIGN');
+            // Force ENROLL type
+            const result = await assignUserToSabaq(user.id, selectedSabaqId, 'ENROLL');
             if (result.success) {
                 toast.success(result.message);
                 onOpenChange(false);
@@ -72,27 +73,21 @@ export function AssignSabaqDialog({
                 toast.error(result.error);
             }
         } catch (error) {
-            toast.error("An error occurred while assigning user");
+            toast.error("An error occurred while enrolling user");
         } finally {
-            setAssigning(false);
+            setEnroll(false);
         }
-    };
-
-    // Determine label based on user role
-    const getActionLabel = () => {
-        if (user.role === "JANAB") return "Assign as Janab";
-        return "Assign as Admin";
     };
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="sm:max-w-[425px] glass-card">
                 <DialogHeader>
-                    <DialogTitle>Assign {user.name} to Sabaq</DialogTitle>
+                    <DialogTitle>Enroll {user.name} in Sabaq</DialogTitle>
                 </DialogHeader>
                 <div className="py-4 space-y-4">
                     <div className="text-sm text-muted-foreground">
-                        Select a sabaq to {getActionLabel().toLowerCase()} for {user.name} ({user.role}).
+                        Select a sabaq to enroll {user.name}.
                     </div>
 
                     {loading ? (
@@ -118,17 +113,17 @@ export function AssignSabaqDialog({
                     <Button
                         variant="ghost"
                         onClick={() => onOpenChange(false)}
-                        disabled={assigning}
+                        disabled={enroll}
                     >
                         Cancel
                     </Button>
                     <Button
-                        variant="frosted-blue"
-                        onClick={handleAssign}
-                        disabled={!selectedSabaqId || assigning}
+                        variant="frosted-green"
+                        onClick={handleEnroll}
+                        disabled={!selectedSabaqId || enroll}
                     >
-                        {assigning && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        {getActionLabel()}
+                        {enroll && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                        Enroll
                     </Button>
                 </DialogFooter>
             </DialogContent>

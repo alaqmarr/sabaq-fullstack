@@ -13,7 +13,8 @@ import Link from 'next/link';
 import { UserDialog } from './user-dialog';
 import { WhatsAppIcon } from '@/components/icons/whatsapp-icon';
 import { AssignSabaqDialog } from './assign-sabaq-dialog';
-import { BookOpen } from 'lucide-react';
+import { EnrollSabaqDialog } from './enroll-sabaq-dialog';
+import { BookOpen, GraduationCap } from 'lucide-react';
 
 interface UserGridProps {
     users: any[];
@@ -24,6 +25,10 @@ export function UserGrid({ users, currentUserRole }: UserGridProps) {
     const [editingUser, setEditingUser] = useState<any>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [assignDialogState, setAssignDialogState] = useState<{ open: boolean; user: any | null }>({
+        open: false,
+        user: null,
+    });
+    const [enrollDialogState, setEnrollDialogState] = useState<{ open: boolean; user: any | null }>({
         open: false,
         user: null,
     });
@@ -267,22 +272,45 @@ export function UserGrid({ users, currentUserRole }: UserGridProps) {
                                             <span>chat</span>
                                         </Button>
                                     )}
+
                                     {canAssign && (
-                                        <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="h-8 px-3 gap-1.5 flex-1 min-w-[80px]"
-                                            onClick={(e) => {
-                                                e.stopPropagation();
-                                                e.preventDefault();
-                                                setAssignDialogState({ open: true, user });
-                                            }}
-                                            disabled={loading !== null}
-                                            title="Assign to Sabaq"
-                                        >
-                                            <BookOpen className="h-3.5 w-3.5" />
-                                            <span>assign</span>
-                                        </Button>
+                                        <>
+                                            {/* Enroll Button - for ALL users */}
+                                            <Button
+                                                variant="frosted-green"
+                                                size="sm"
+                                                className="h-8 px-3 gap-1.5 flex-1 min-w-[80px]"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    e.preventDefault();
+                                                    setEnrollDialogState({ open: true, user });
+                                                }}
+                                                disabled={loading !== null}
+                                                title="Enroll in Sabaq"
+                                            >
+                                                <GraduationCap className="h-3.5 w-3.5" />
+                                                <span>enroll</span>
+                                            </Button>
+
+                                            {/* Assign Button - Only for Admin Roles (Janab, Admin, etc.) */}
+                                            {['JANAB', 'ADMIN', 'MANAGER', 'ATTENDANCE_INCHARGE', 'SUPERADMIN'].includes(user.role) && (
+                                                <Button
+                                                    variant="frosted-blue"
+                                                    size="sm"
+                                                    className="h-8 px-3 gap-1.5 flex-1 min-w-[80px]"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        e.preventDefault();
+                                                        setAssignDialogState({ open: true, user });
+                                                    }}
+                                                    disabled={loading !== null}
+                                                    title="Assign Administration Role"
+                                                >
+                                                    <BookOpen className="h-3.5 w-3.5" />
+                                                    <span>assign</span>
+                                                </Button>
+                                            )}
+                                        </>
                                     )}
                                 </div>
                             </Card>
@@ -311,6 +339,21 @@ export function UserGrid({ users, currentUserRole }: UserGridProps) {
                         if (!open) {
                             setTimeout(() => {
                                 setAssignDialogState({ open: false, user: null });
+                            }, 300);
+                        }
+                    }}
+                />
+            )}
+
+            {enrollDialogState.user && (
+                <EnrollSabaqDialog
+                    user={enrollDialogState.user}
+                    open={enrollDialogState.open}
+                    onOpenChange={(open) => {
+                        setEnrollDialogState((prev) => ({ ...prev, open }));
+                        if (!open) {
+                            setTimeout(() => {
+                                setEnrollDialogState({ open: false, user: null });
                             }, 300);
                         }
                     }}

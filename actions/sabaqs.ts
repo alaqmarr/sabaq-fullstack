@@ -464,7 +464,11 @@ export async function getPublicSabaqInfo(sabaqId: string) {
   }
 }
 
-export async function assignUserToSabaq(userId: string, sabaqId: string) {
+export async function assignUserToSabaq(
+  userId: string,
+  sabaqId: string,
+  type: "ASSIGN" | "ENROLL" = "ASSIGN"
+) {
   try {
     // Only superadmin can assign freely
     const currentUser = await requirePermission("users", "promote");
@@ -493,64 +497,8 @@ export async function assignUserToSabaq(userId: string, sabaqId: string) {
 
     let message = "";
 
-    // Logic based on role
-    if (user.role === "JANAB") {
-      // Assign as Janab (overwrite existing if any)
-      await prisma.sabaq.update({
-        where: { id: sabaqId },
-        data: { janabId: userId },
-      });
-
-      // Increment counters
-      await prisma.user.update({
-        where: { id: userId },
-        data: { managedSabaqsCount: { increment: 1 } },
-      });
-
-      // Send email
-      if (user.email) {
-        await queueEmail(
-          user.email,
-          `Assigned as Janab for ${sabaq.name}`,
-          "janab-assignment",
-          {
-            janabName: user.name,
-            sabaqName: sabaq.name,
-            sabaqLevel: sabaq.level,
-            action: "assigned",
-          }
-        );
-      }
-      message = `Assigned ${user.name} as Janab for ${sabaq.name}`;
-    } else if (
-      ["ADMIN", "MANAGER", "ATTENDANCE_INCHARGE"].includes(user.role)
-    ) {
-      // Create SabaqAdmin entry
-      const existingAdmin = await prisma.sabaqAdmin.findUnique({
-        where: {
-          sabaqId_userId: {
-            sabaqId,
-            userId,
-          },
-        },
-      });
-
-      if (existingAdmin) {
-        return {
-          success: false,
-          error: "User is already an admin for this sabaq.",
-        };
-      }
-
-      await prisma.sabaqAdmin.create({
-        data: {
-          sabaqId,
-          userId,
-        },
-      });
-      message = `Assigned ${user.name} as Admin for ${sabaq.name}`;
-    } else if (user.role === "MUMIN") {
-      // Direct enrollment
+    if (type === "ENROLL") {
+      // Force enrollment logic irrespective of role
       const existingEnrollment = await prisma.enrollment.findUnique({
         where: {
           sabaqId_userId: {
@@ -584,11 +532,76 @@ export async function assignUserToSabaq(userId: string, sabaqId: string) {
         });
         message = `Enrolled ${user.name} in ${sabaq.name}`;
       }
+
+      // If user was Mumin, good. If Admin, they are now also enrolled.
+      // This is acceptable behavior.
     } else {
-      return {
-        success: false,
-        error: "Cannot assign Superadmin to a specific sabaq.",
-      };
+      // ASSIGN logic (Admin/Janab management)
+      if (user.role === "JANAB") {
+        // Assign as Janab (overwrite existing if any)
+        await prisma.sabaq.update({
+          where: { id: sabaqId },
+          data: { janabId: userId },
+        });
+
+        // Increment counters
+        await prisma.user.update({
+          where: { id: userId },
+          data: { managedSabaqsCount: { increment: 1 } },
+        });
+
+        // Send email
+        if (user.email) {
+          await queueEmail(
+            user.email,
+            `Assigned as Janab for ${sabaq.name}`,
+            "janab-assignment",
+            {
+              janabName: user.name,
+              sabaqName: sabaq.name,
+              sabaqLevel: sabaq.level,
+              action: "assigned",
+            }
+          );
+        }
+        message = `Assigned ${user.name} as Janab for ${sabaq.name}`;
+      } else if (
+        ["ADMIN", "MANAGER", "ATTENDANCE_INCHARGE"].includes(user.role)
+      ) {
+        // Create SabaqAdmin entry
+        const existingAdmin = await prisma.sabaqAdmin.findUnique({
+          where: {
+            sabaqId_userId: {
+              sabaqId,
+              userId,
+            },
+          },
+        });
+
+        if (existingAdmin) {
+          return {
+            success: false,
+            error: "User is already an admin for this sabaq.",
+          };
+        }
+
+        await prisma.sabaqAdmin.create({
+          data: {
+            sabaqId,
+            userId,
+          },
+        });
+        message = `Assigned ${user.name} as Admin for ${sabaq.name}`;
+      } else if (user.role === "MUMIN") {
+        // Fallback for MUMIN in ASSIGN mode -> treat as ENROLL
+        // Recursively call with ENROLL to avoid duplication
+        return assignUserToSabaq(userId, sabaqId, "ENROLL");
+      } else {
+        return {
+          success: false,
+          error: "Cannot assign Superadmin to a specific sabaq.",
+        };
+      }
     }
 
     await cache.invalidatePattern("sabaqs:*");
