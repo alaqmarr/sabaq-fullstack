@@ -1016,3 +1016,20 @@ export async function lookupUserForAttendance(query: string, sabaqId: string) {
     return { success: false, error: error.message };
   }
 }
+
+export async function checkUserRoleForQuickLogin(itsNumber: string) {
+  try {
+    const user = await prisma.user.findUnique({
+      where: { itsNumber },
+      select: { role: true },
+    });
+
+    if (user && user.role === "MUMIN") {
+      return { success: true, isMumin: true };
+    }
+
+    return { success: true, isMumin: false };
+  } catch (error) {
+    return { success: false, error: "Failed to check role" };
+  }
+}
