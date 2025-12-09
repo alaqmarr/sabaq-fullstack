@@ -24,7 +24,8 @@ export async function approveAttendanceRequest(
     if (!request) return { success: false, error: "Request not found" };
 
     // 2. Mark Attendance (which also clears the request in the updated logic)
-    const result = await markAttendanceManual(sessionId, itsNumber);
+    // Force Neon write (skip Firebase) as per user request for direct approval
+    const result = await markAttendanceManual(sessionId, itsNumber, true);
 
     if (!result.success) {
       return {

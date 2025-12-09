@@ -57,7 +57,8 @@ import { adminDb } from "@/lib/firebase-admin";
 // Mark attendance manually (Admin/Janab)
 export async function markAttendanceManual(
   sessionId: string,
-  itsNumber: string
+  itsNumber: string,
+  forceNeon: boolean = false
 ) {
   try {
     const session = await auth();
@@ -154,7 +155,7 @@ export async function markAttendanceManual(
     const attendanceId = generateAttendanceId(user.itsNumber, sessionId);
 
     // Write to Firebase
-    if (adminDb) {
+    if (adminDb && !forceNeon) {
       const attendanceRef = adminDb.ref(
         `sessions/${sessionId}/attendance/${user.id}`
       );
